@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  nama      String
+  npwp      String
+  jenisWP   String // "Orang Pribadi" | "Badan"
+  email     String
+  telepon   String
+  alamat    String
+  status    String // "Aktif" | "Tidak Aktif"
+  createdAt DateTime @default(now())
+
+  deadlines TaxDeadline[]
+  documents Document[]
+  invoices  Invoice[]
+
+  @@map("clients")
+}
+
+model TaxDeadline {
+  id           String   @id @default(cuid())
+  jenisPajak   String
+  deskripsi    String
+  tanggalBatas DateTime
+  masaPajak    String
+  status       String // "Sudah Lapor" | "Belum Lapor" | "Terlambat"
+  
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName   String? // Store redundantly for fast queries or relations
+
+  @@map("tax_deadlines")
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  nama          String
+  kategori      String // "Faktur Pajak" | "Bukti Potong" | "SPT" | "Laporan Keuangan" | "Lainnya"
+  ukuran        String
+  tanggalUpload DateTime @default(now())
+  catatan       String?
+
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName    String
+
+  @@map("documents")
+}
+
+model Invoice {
+  id           String   @id @default(cuid())
+  nomorInvoice String   @unique
+  tanggal      DateTime @default(now())
+  jatuhTempo   DateTime
+  subtotal     Float
+  ppn          Float
+  total        Float
+  status       String // "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo"
+  catatan      String?
+
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName   String
+
+  items        InvoiceItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  deskripsi   String
+  qty         Int
+  harga       Float
+  jumlah      Float
+
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}

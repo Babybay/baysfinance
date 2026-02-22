@@ -11,9 +11,9 @@ export function useRoles() {
         return { isLoaded: false, role: null as UserRole | null, clientId: undefined };
     }
 
-    // default to client if not set, for safety
-    // in a real app, you might want to default to null and handle setup
-    const role = (user?.publicMetadata?.role as UserRole) || "admin";
+    // Default to "client" if no role is set — new users are clients.
+    // Only users explicitly promoted via User Management become admins.
+    const role = (user?.publicMetadata?.role as UserRole) || "client";
     const clientId = user?.publicMetadata?.clientId as string | undefined;
 
     return {
