@@ -85,7 +85,7 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                     <p className="text-sm text-muted-foreground mt-1">{t.businessPermits.subtitle}</p>
                 </div>
                 <Link href="/dashboard/business-permits/new">
-                    <Button>
+                    <Button variant="accent">
                         <Plus className="h-4 w-4 mr-2" />
                         {t.businessPermits.newCase}
                     </Button>
@@ -118,7 +118,7 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                             <option value="Processing OSS">Proses OSS</option>
                             <option value="Issued">Terbit</option>
                         </select>
-                        <Button variant="outline" size="icon">
+                        <Button variant="soft" size="icon">
                             <Filter className="h-4 w-4" />
                         </Button>
                     </div>
@@ -159,13 +159,13 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                                         </div>
                                     </td>
                                     <td className="py-4">
-                                        <Badge variant={getStatusVariant(p.status)} className="capitalize">
+                                        <Badge variant={getStatusVariant(p.status) === "secondary" ? "neutral" : getStatusVariant(p.status) as any} className="capitalize">
                                             {getStatusLabel(p.status)}
                                         </Badge>
                                     </td>
                                     <td className="py-4 text-right">
                                         <Link href={`/dashboard/business-permits/${p.id}`}>
-                                            <Button variant="outline" size="sm">
+                                            <Button variant="soft">
                                                 <Eye className="h-4 w-4 mr-2" />
                                                 Lihat
                                             </Button>
@@ -211,12 +211,12 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                             </div>
                             <div className="grid grid-cols-2 gap-2 mt-4">
                                 <Link href={`/dashboard/business-permits/${p.id}`} className="w-full">
-                                    <Button variant="outline" size="sm" className="w-full">
+                                    <Button variant="soft" className="w-full">
                                         <Eye className="h-4 w-4 mr-2" /> Lihat
                                     </Button>
                                 </Link>
                                 {isAdmin && (
-                                    <Button variant="outline" size="sm" className="w-full">
+                                    <Button variant="soft" className="w-full">
                                         <FileEdit className="h-4 w-4 mr-2" /> Edit
                                     </Button>
                                 )}

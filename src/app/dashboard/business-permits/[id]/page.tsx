@@ -33,6 +33,16 @@ export default function BusinessPermitDetailPage() {
     const { isAdmin } = useRoles();
     const [permit, setPermit] = useState<BusinessPermitCase | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [documents, setDocuments] = useState([
+        { id: "d1", name: "KTP Direktur", status: "Approved", key: "" },
+        { id: "d2", name: "NPWP Perusahaan", status: "Approved", key: "" },
+        { id: "d3", name: "Akta Pendirian", status: "Pending", key: "" },
+        { id: "d4", name: "SK Kemenkumham", status: "Missing", key: "" },
+        { id: "d5", name: "Bukti Alamat Bisnis", status: "Missing", key: "" },
+    ]);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [activeDocId, setActiveDocId] = useState<string | null>(null);
 
     useEffect(() => {
         const stored = localStorage.getItem("pajak_permits");
@@ -41,6 +51,66 @@ export default function BusinessPermitDetailPage() {
         setPermit(found || null);
         setIsLoaded(true);
     }, [id]);
+
+    const handleUploadClick = (docId: string) => {
+        setActiveDocId(docId);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !activeDocId) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setDocuments(docs => docs.map(d =>
+                    d.id === activeDocId
+                        ? { ...d, status: "Pending", key: data.key }
+                        : d
+                ));
+                alert("Dokumen berhasil diunggah!");
+            } else {
+                alert("Gagal mengunggah: " + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Terjadi kesalahan saat mengunggah.");
+        } finally {
+            setIsUploading(false);
+            setActiveDocId(null);
+            e.target.value = "";
+        }
+    };
+
+    const handleDownload = async (key: string) => {
+        if (!key) {
+            alert("File belum tersedia untuk diunduh.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/documents/presigned?key=${key}`);
+            const data = await res.json();
+            if (data.url) {
+                window.open(data.url, "_blank");
+            } else {
+                alert("Gagal mengambil link unduhan: " + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Terjadi kesalahan saat mengunduh.");
+        }
+    };
 
     if (!isLoaded) {
         return (
@@ -71,8 +141,6 @@ export default function BusinessPermitDetailPage() {
         { key: "Completed", label: "Completed", progress: 100 },
     ];
 
-    const currentStepIndex = steps.findIndex(s => s.progress >= permit.progress);
-
     const getStatusVariant = (status: BusinessPermitStatus) => {
         switch (status) {
             case "Issued":
@@ -95,16 +163,23 @@ export default function BusinessPermitDetailPage() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-12">
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+            />
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" onClick={() => router.back()}>
+                    <Button variant="soft" size="icon" onClick={() => router.back()}>
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="font-serif text-2xl text-foreground">Detail Perijinan</h1>
-                            <Badge variant={getStatusVariant(permit.status)}>{permit.status}</Badge>
+                            <Badge variant={getStatusVariant(permit.status) === "secondary" ? "neutral" : getStatusVariant(permit.status) as any}>{permit.status}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             {permit.caseId} • {permit.clientName}
@@ -112,8 +187,8 @@ export default function BusinessPermitDetailPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline"><MessageSquare className="h-4 w-4 mr-2" /> Hubungi Advisor</Button>
-                    {isAdmin && <Button>Update Status</Button>}
+                    <Button variant="soft"><MessageSquare className="h-4 w-4 mr-2" /> Hubungi Advisor</Button>
+                    {isAdmin && <Button variant="accent">Update Status</Button>}
                 </div>
             </div>
 
@@ -135,8 +210,8 @@ export default function BusinessPermitDetailPage() {
                                 return (
                                     <div key={idx} className="relative z-10 flex flex-col items-center">
                                         <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors ${isCompleted ? "bg-accent border-accent text-accent-foreground" :
-                                                isCurrent ? "bg-card border-accent text-accent" :
-                                                    "bg-card border-border text-muted"
+                                            isCurrent ? "bg-card border-accent text-accent" :
+                                                "bg-card border-border text-muted"
                                             }`}>
                                             {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-xs font-bold">{idx + 1}</span>}
                                         </div>
@@ -154,16 +229,14 @@ export default function BusinessPermitDetailPage() {
                     <div className="bg-card rounded-[16px] border border-border p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="font-serif text-lg">Dokumen Persyaratan</h2>
-                            <Button variant="outline" size="sm"><Upload className="h-4 w-4 mr-2" /> Upload Dokumen</Button>
+                            {isUploading && (
+                                <div className="flex items-center gap-2 text-xs text-accent animate-pulse">
+                                    <Clock className="h-3 w-3" /> Mengunggah...
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-3">
-                            {[
-                                { name: "KTP Direktur", status: "Approved" },
-                                { name: "NPWP Perusahaan", status: "Approved" },
-                                { name: "Akta Pendirian", status: "Pending" },
-                                { name: "SK Kemenkumham", status: "Missing" },
-                                { name: "Bukti Alamat Bisnis", status: "Missing" },
-                            ].map((doc, idx) => (
+                            {documents.map((doc, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 rounded-[12px] bg-surface border border-transparent hover:border-border transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="h-10 w-10 rounded-[8px] bg-card flex items-center justify-center border border-border">
@@ -180,11 +253,18 @@ export default function BusinessPermitDetailPage() {
                                         ) : doc.status === "Pending" ? (
                                             <Badge variant="info">Menunggu Verifikasi</Badge>
                                         ) : (
-                                            <Badge variant="secondary">Wajib Unggah</Badge>
+                                            <Badge variant="neutral">Wajib Unggah</Badge>
                                         )}
-                                        <Button variant="outline" size="icon" className="h-8 w-8">
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
+
+                                        {doc.status === "Missing" ? (
+                                            <Button variant="soft" onClick={() => handleUploadClick(doc.id)}>
+                                                <Upload className="h-3 w-3 mr-1" /> Unggah
+                                            </Button>
+                                        ) : (
+                                            <Button variant="soft" size="icon" onClick={() => handleDownload(doc.key)}>
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -205,8 +285,8 @@ export default function BusinessPermitDetailPage() {
                                 <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Kategori Risiko</label>
                                 <div className="mt-1 flex items-center gap-2">
                                     <ShieldCheck className={`h-4 w-4 ${permit.riskCategory === "High" ? "text-error" :
-                                            permit.riskCategory === "Medium-High" ? "text-warning" :
-                                                "text-success"
+                                        permit.riskCategory === "Medium-High" ? "text-warning" :
+                                            "text-success"
                                         }`} />
                                     <p className="text-sm font-medium">{permit.riskCategory}</p>
                                 </div>
@@ -230,7 +310,7 @@ export default function BusinessPermitDetailPage() {
                         <p className="text-xs text-muted-foreground leading-relaxed mb-4">
                             Advisor kami siap membantu Anda jika terdapat kendala dalam pengumpulan dokumen atau proses di portal OSS.
                         </p>
-                        <Button variant="outline" className="w-full bg-card border-accent/20 text-accent hover:bg-accent hover:text-white transition-colors">
+                        <Button variant="soft" className="w-full bg-card border-accent/20 text-accent hover:bg-accent-muted transition-colors">
                             Buka Tiket Support
                         </Button>
                     </div>
