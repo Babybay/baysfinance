@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Client {
@@ -21,6 +20,7 @@ model Client {
   deadlines TaxDeadline[]
   documents Document[]
   invoices  Invoice[]
+  businessPermits BusinessPermitCase[]
 
   @@map("clients")
 }
@@ -86,4 +86,36 @@ model InvoiceItem {
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_items")
+}
+
+model BusinessPermitCase {
+  id           String   @id @default(cuid())
+  caseId       String   @unique
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName   String
+  advisorId    String
+  serviceType  String
+  riskCategory String
+  status       String
+  progress     Int
+  feeAmount    Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  documents    BusinessPermitDocument[]
+
+  @@map("business_permit_cases")
+}
+
+model BusinessPermitDocument {
+  id                 String             @id @default(cuid())
+  caseId             String
+  businessPermitCase BusinessPermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  docType            String
+  fileUrl            String?
+  verificationStatus String
+  comments           String?
+
+  @@map("business_permit_documents")
 }
