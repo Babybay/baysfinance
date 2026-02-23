@@ -92,6 +92,24 @@ export const en = {
         allInvoicesPaid: "All invoices paid! 🎉",
     },
 
+    // Services
+    services: {
+        heading: "Our Services",
+        subtitle: "Services we offer to help your business",
+        perijinanUsaha: "Business Permits",
+        perijinanBangunan: "Building Permits",
+        kitasKitap: "KITAS / KITAP",
+        perijinanMikol: "Liquor Permits",
+        akuntansi: "Accounting Services",
+        perpajakan: "Tax Services",
+        pendirianPerusahaan: "Company Establishment",
+        legalitas: "Legality & Business Permits",
+        izinTinggal: "Residence Permit Management (KITAS & VISA)",
+        audit: "Internal & External Audit",
+        appraisal: "Appraisal Services",
+        financialAdvisory: "Financial Advisory",
+    },
+
     // Dashboard Sidebar
     sidebar: {
         dashboard: "Dashboard",
@@ -101,6 +119,7 @@ export const en = {
         documents: "Documents",
         invoices: "Invoices",
         reports: "Reports",
+        businessPermits: "Business Permits (OSS)",
         userManagement: "User Management",
         myAccount: "My Account",
         backToHome: "Back to Home",
@@ -142,6 +161,31 @@ export const en = {
         en: "English",
         id: "Bahasa Indonesia",
     },
+    businessPermits: {
+        title: "Business Permits (OSS)",
+        subtitle: "Manage integrated electronic business licensing applications.",
+        newCase: "New Application",
+        table: {
+            caseId: "Case ID",
+            client: "Client",
+            type: "Service",
+            risk: "Risk",
+            progress: "Progress",
+            status: "Status",
+            updated: "Updated",
+        },
+        status: {
+            draft: "Draft",
+            waitingDocument: "Waiting Document",
+            verification: "Verification",
+            revisionRequired: "Revision Required",
+            processingOSS: "Processing OSS",
+            issued: "Issued",
+            completed: "Completed",
+            cancelled: "Cancelled",
+            onHold: "On Hold",
+        }
+    }
 };
 
 export type Translations = typeof en;

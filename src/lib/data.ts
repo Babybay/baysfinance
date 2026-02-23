@@ -56,6 +56,41 @@ export interface InvoiceItem {
     jumlah: number;
 }
 
+export interface BusinessPermitCase {
+    id: string;
+    caseId: string;
+    clientId: string;
+    clientName: string;
+    advisorId: string;
+    serviceType: "PT" | "CV" | "Individual" | "NIB" | "Sertifikat Standar" | "Operational Permit" | "Amendment";
+    riskCategory: "Low" | "Medium-Low" | "Medium-High" | "High";
+    status: BusinessPermitStatus;
+    progress: number;
+    feeAmount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type BusinessPermitStatus =
+    | "Draft"
+    | "Waiting Document"
+    | "Verification"
+    | "Revision Required"
+    | "Processing OSS"
+    | "Issued"
+    | "Completed"
+    | "Cancelled"
+    | "On Hold";
+
+export interface BusinessPermitDocument {
+    id: string;
+    caseId: string;
+    docType: string;
+    fileUrl?: string;
+    verificationStatus: "Pending" | "Approved" | "Rejected";
+    comments?: string;
+}
+
 // Format currency to IDR
 export function formatIDR(amount: number): string {
     return new Intl.NumberFormat("id-ID", {
@@ -128,6 +163,52 @@ export const sampleClients: Client[] = [
         status: "Tidak Aktif",
         createdAt: "2024-11-20",
     },
+];
+
+// Sample Business Permit Cases
+export const samplePermitCases: BusinessPermitCase[] = [
+    {
+        id: "bp1",
+        caseId: "BP-2026-001",
+        clientId: "c1",
+        clientName: "PT Maju Bersama",
+        advisorId: "admin",
+        serviceType: "PT",
+        riskCategory: "Medium-Low",
+        status: "Processing OSS",
+        progress: 50,
+        feeAmount: 15000000,
+        createdAt: "2026-02-01",
+        updatedAt: "2026-02-15",
+    },
+    {
+        id: "bp2",
+        caseId: "BP-2026-002",
+        clientId: "c2",
+        clientName: "CV Sejahtera Abadi",
+        advisorId: "admin",
+        serviceType: "NIB",
+        riskCategory: "Low",
+        status: "Issued",
+        progress: 75,
+        feeAmount: 5000000,
+        createdAt: "2026-02-05",
+        updatedAt: "2026-02-20",
+    },
+    {
+        id: "bp3",
+        caseId: "BP-2026-003",
+        clientId: "c4",
+        clientName: "PT Teknologi Nusantara",
+        advisorId: "admin",
+        serviceType: "Sertifikat Standar",
+        riskCategory: "High",
+        status: "Verification",
+        progress: 25,
+        feeAmount: 25000000,
+        createdAt: "2026-02-10",
+        updatedAt: "2026-02-23",
+    }
 ];
 
 // Sample tax deadlines
@@ -267,4 +348,9 @@ export function getFilteredDeadlines(allDeadlines: TaxDeadline[], role: "admin" 
 export function getFilteredDocuments(allDocs: Document[], role: "admin" | "client", clientId?: string) {
     if (role === "admin") return allDocs;
     return allDocs.filter(doc => doc.clientId === clientId);
+}
+
+export function getFilteredPermits(allPermits: BusinessPermitCase[], role: "admin" | "client", clientId?: string) {
+    if (role === "admin") return allPermits;
+    return allPermits.filter(p => p.clientId === clientId);
 }

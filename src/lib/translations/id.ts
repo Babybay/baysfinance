@@ -94,6 +94,24 @@ export const id: Translations = {
         allInvoicesPaid: "Semua invoice sudah lunas! 🎉",
     },
 
+    // Services
+    services: {
+        heading: "Layanan Kami",
+        subtitle: "Layanan yang kami tawarkan untuk membantu bisnis Anda",
+        perijinanUsaha: "Perijinan Usaha",
+        perijinanBangunan: "Perijinan Bangunan",
+        kitasKitap: "KITAS / KITAP",
+        perijinanMikol: "Perijinan Mikol",
+        akuntansi: "Jasa Akuntansi",
+        perpajakan: "Jasa Perpajakan",
+        pendirianPerusahaan: "Pendirian Perusahaan",
+        legalitas: "Legalitas & Izin Usaha",
+        izinTinggal: "Pengurusan Izin Tinggal (KITAS & VISA)",
+        audit: "Internal & Eksternal Audit",
+        appraisal: "Jasa Appraisal",
+        financialAdvisory: "Financial Advisory",
+    },
+
     // Dashboard Sidebar
     sidebar: {
         dashboard: "Dashboard",
@@ -103,6 +121,7 @@ export const id: Translations = {
         documents: "Dokumen",
         invoices: "Invoice",
         reports: "Laporan",
+        businessPermits: "Izin Usaha (OSS)",
         userManagement: "Manajemen User",
         myAccount: "Akun Saya",
         backToHome: "Kembali ke Beranda",
@@ -144,4 +163,29 @@ export const id: Translations = {
         en: "English",
         id: "Bahasa Indonesia",
     },
+    businessPermits: {
+        title: "Perijinan Usaha (OSS)",
+        subtitle: "Kelola aplikasi perijinan berusaha terintegrasi secara elektronik.",
+        newCase: "Buat Pengajuan Baru",
+        table: {
+            caseId: "ID Kasus",
+            client: "Klien",
+            type: "Layanan",
+            risk: "Risiko",
+            progress: "Progress",
+            status: "Status",
+            updated: "Pembaruan",
+        },
+        status: {
+            draft: "Draft",
+            waitingDocument: "Menunggu Dokumen",
+            verification: "Verifikasi",
+            revisionRequired: "Perlu Revisi",
+            processingOSS: "Proses OSS",
+            issued: "Terbit",
+            completed: "Selesai",
+            cancelled: "Dibatalkan",
+            onHold: "Ditangguhkan",
+        }
+    }
 };

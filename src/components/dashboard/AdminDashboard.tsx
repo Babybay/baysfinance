@@ -8,6 +8,9 @@ import { useI18n } from "@/lib/i18n";
 import {
     Users, CalendarDays, Receipt, BarChart3,
     ArrowRight, AlertTriangle, Clock,
+    Briefcase, Building2, Plane, Wine,
+    Calculator, Landmark, Scale, FileCheck,
+    Globe, ClipboardCheck, GemIcon, TrendingUp,
 } from "lucide-react";
 import {
     formatIDR,
@@ -31,6 +34,21 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
         .sort((a, b) => new Date(a.tanggalBatas).getTime() - new Date(b.tanggalBatas).getTime())
         .slice(0, 5);
     const invoicesBelum = invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").slice(0, 5);
+
+    const serviceItems = [
+        { icon: Briefcase, label: t.services.perijinanUsaha },
+        { icon: Building2, label: t.services.perijinanBangunan },
+        { icon: Plane, label: t.services.kitasKitap },
+        { icon: Wine, label: t.services.perijinanMikol },
+        { icon: Calculator, label: t.services.akuntansi },
+        { icon: Landmark, label: t.services.perpajakan },
+        { icon: Scale, label: t.services.pendirianPerusahaan },
+        { icon: FileCheck, label: t.services.legalitas },
+        { icon: Globe, label: t.services.izinTinggal },
+        { icon: ClipboardCheck, label: t.services.audit },
+        { icon: GemIcon, label: t.services.appraisal },
+        { icon: TrendingUp, label: t.services.financialAdvisory },
+    ];
 
     return (
         <div>
@@ -75,7 +93,7 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Upcoming Deadlines */}
                 <div className="bg-card rounded-[16px] border border-border p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -136,6 +154,27 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
                             ))
                         )}
                     </div>
+                </div>
+            </div>
+
+            {/* Services Section */}
+            <div className="bg-card rounded-[16px] border border-border p-6">
+                <div className="mb-6">
+                    <h2 className="font-serif font-normal text-foreground text-lg">{t.services.heading}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">{t.services.subtitle}</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {serviceItems.map((service, idx) => (
+                        <div
+                            key={idx}
+                            className="group flex flex-col items-center gap-3 p-4 rounded-[12px] bg-surface hover:bg-accent-muted border border-transparent hover:border-accent/20 transition-all duration-200 cursor-default"
+                        >
+                            <div className="h-10 w-10 rounded-[10px] bg-card border border-border group-hover:bg-accent-muted group-hover:border-accent/20 flex items-center justify-center transition-colors duration-200">
+                                <service.icon className="h-5 w-5 text-muted group-hover:text-accent transition-colors duration-200" />
+                            </div>
+                            <span className="text-xs font-medium text-foreground text-center leading-tight">{service.label}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

@@ -20,10 +20,6 @@ export function HomeContent() {
                 {/* Hero Section */}
                 <section className="relative pt-[120px] pb-[80px] lg:pt-[180px] lg:pb-[140px] px-4 sm:px-6 lg:px-8">
                     <div className="container mx-auto text-center max-w-[1200px]">
-                        <Badge variant="neutral" className="mb-[32px] px-3 py-1.5 text-body-sm">
-                            <span className="h-1.5 w-1.5 rounded-full bg-accent mr-2 animate-pulse"></span>
-                            {t.hero.badge}
-                        </Badge>
 
                         <h1 className="font-serif text-h4 md:text-h3 lg:text-h1 text-foreground max-w-[1100px] mx-auto text-balance mb-[32px] leading-[1.1]">
                             {t.hero.heading}
