@@ -126,7 +126,7 @@ export default function BusinessPermitDetailPage() {
                 <AlertCircle className="h-12 w-12 text-muted mx-auto mb-4" />
                 <h2 className="font-serif text-xl text-foreground">Kasus Tidak Ditemukan</h2>
                 <p className="text-muted-foreground mt-2">Data perijinan dengan ID tersebut tidak tersedia.</p>
-                <Button variant="outline" className="mt-6" onClick={() => router.back()}>
+                <Button variant="transparent" className="mt-6 border border-border" onClick={() => router.back()}>
                     <ChevronLeft className="h-4 w-4 mr-2" /> Kembali
                 </Button>
             </div>
@@ -155,7 +155,7 @@ export default function BusinessPermitDetailPage() {
             case "Cancelled":
                 return "danger";
             case "On Hold":
-                return "secondary";
+                return "default";
             default:
                 return "default";
         }
@@ -179,7 +179,7 @@ export default function BusinessPermitDetailPage() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="font-serif text-2xl text-foreground">Detail Perijinan</h1>
-                            <Badge variant={getStatusVariant(permit.status) === "secondary" ? "neutral" : getStatusVariant(permit.status) as any}>{permit.status}</Badge>
+                            <Badge variant={getStatusVariant(permit.status)}>{permit.status}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                             {permit.caseId} • {permit.clientName}
@@ -253,7 +253,7 @@ export default function BusinessPermitDetailPage() {
                                         ) : doc.status === "Pending" ? (
                                             <Badge variant="info">Menunggu Verifikasi</Badge>
                                         ) : (
-                                            <Badge variant="neutral">Wajib Unggah</Badge>
+                                            <Badge variant="default">Wajib Unggah</Badge>
                                         )}
 
                                         {doc.status === "Missing" ? (

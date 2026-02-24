@@ -115,8 +115,8 @@ export default function UserManagementPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={`p-4 rounded-[12px] flex items-center gap-3 border ${message.type === "success"
-                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
-                                : "bg-error-muted border-error/20 text-error"
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
+                            : "bg-error-muted border-error/20 text-error"
                             }`}
                     >
                         {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
@@ -151,7 +151,7 @@ export default function UserManagementPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Badge variant={user.role === "admin" ? "accent" : "secondary"}>
+                                        <Badge variant={user.role === "admin" ? "info" : "default"}>
                                             {user.role === "admin" ? t.userManagement.roles.admin : t.userManagement.roles.client}
                                         </Badge>
                                     </td>
@@ -167,7 +167,7 @@ export default function UserManagementPage() {
                                     <td className="px-6 py-4 text-right">
                                         <Button
                                             variant="soft"
-                                            size="sm"
+                                            size="default"
                                             onClick={() => setEditUser(user)}
                                             className="h-8 w-8 p-0"
                                         >

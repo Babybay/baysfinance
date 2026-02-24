@@ -7,6 +7,7 @@ export async function POST(req: Request) {
 
         // --- Svix signature verification (production) ---
         if (WEBHOOK_SECRET) {
+            // @ts-ignore
             const { Webhook } = await import("svix").catch(() => ({ Webhook: null }));
             if (Webhook) {
                 const svix_id = req.headers.get("svix-id");

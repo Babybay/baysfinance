@@ -94,7 +94,7 @@ function PPh21Calculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh 21</Button>
-                    <Button variant="outline" onClick={reset}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={reset}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
 
@@ -189,7 +189,7 @@ function PPh23Calculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh 23</Button>
-                    <Button variant="outline" onClick={() => { setJumlahBruto(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setJumlahBruto(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (
@@ -257,7 +257,7 @@ function PPNCalculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPN</Button>
-                    <Button variant="outline" onClick={() => { setDpp(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setDpp(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (
@@ -309,7 +309,7 @@ function PPhFinalUMKMCalculator() {
                 />
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh Final</Button>
-                    <Button variant="outline" onClick={() => { setOmzet(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setOmzet(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (

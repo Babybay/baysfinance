@@ -56,7 +56,7 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
             case "Cancelled":
                 return "danger";
             case "On Hold":
-                return "secondary";
+                return "neutral";
             default:
                 return "default";
         }
@@ -159,7 +159,7 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                                         </div>
                                     </td>
                                     <td className="py-4">
-                                        <Badge variant={getStatusVariant(p.status) === "secondary" ? "neutral" : getStatusVariant(p.status) as any} className="capitalize">
+                                        <Badge variant={getStatusVariant(p.status)} className="capitalize">
                                             {getStatusLabel(p.status)}
                                         </Badge>
                                     </td>

@@ -4,10 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
+import { getDashboardData } from "@/app/actions/dashboard-data";
 import {
-    sampleClients, sampleInvoices, sampleDeadlines,
-    Client, Invoice, TaxDeadline,
-    getFilteredClients, getFilteredInvoices, getFilteredDeadlines
+    Client, Invoice, TaxDeadline
 } from "@/lib/data";
 
 export default function DashboardPage() {
@@ -18,22 +17,47 @@ export default function DashboardPage() {
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        if (!roleLoaded) return;
+        const loadDashboardData = async () => {
+            if (!roleLoaded) return;
+            setIsLoaded(false);
 
-        const c = localStorage.getItem("pajak_clients");
-        const i = localStorage.getItem("pajak_invoices");
-        const d = localStorage.getItem("pajak_deadlines");
+            const currentRole = (role as string) || "admin";
+            const response = await getDashboardData(clientId, currentRole);
 
-        const allClients = c ? JSON.parse(c) : sampleClients;
-        const allInvoices = i ? JSON.parse(i) : sampleInvoices;
-        const allDeadlines = d ? JSON.parse(d) : sampleDeadlines;
+            if (response.success && response.data) {
+                // Map Prisma types to local types
+                const formattedClients = response.data.clients.map(c => ({
+                    ...c,
+                    jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
+                    status: c.status as "Aktif" | "Tidak Aktif",
+                    createdAt: new Date(c.createdAt).toISOString().split("T")[0]
+                }));
 
-        // Apply filtering based on role
-        const currentRole = (role as "admin" | "client") || "admin";
-        setClients(getFilteredClients(allClients, currentRole, clientId));
-        setInvoices(getFilteredInvoices(allInvoices, currentRole, clientId));
-        setDeadlines(getFilteredDeadlines(allDeadlines, currentRole, clientId));
-        setIsLoaded(true);
+                const formattedInvoices = response.data.invoices.map(i => ({
+                    ...i,
+                    tanggal: new Date(i.tanggal).toISOString().split("T")[0],
+                    jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
+                    status: i.status as "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo",
+                    items: [], // Note: items are not fetched stringently yet
+                    catatan: i.catatan || ""
+                }));
+
+                const formattedDeadlines = response.data.deadlines.map(d => ({
+                    ...d,
+                    tanggalBatas: new Date(d.tanggalBatas).toISOString().split("T")[0],
+                    status: d.status as "Sudah Lapor" | "Belum Lapor" | "Terlambat",
+                    clientName: d.clientName || undefined
+                }));
+
+                setClients(formattedClients);
+                setInvoices(formattedInvoices);
+                setDeadlines(formattedDeadlines);
+            }
+
+            setIsLoaded(true);
+        };
+
+        loadDashboardData();
     }, [roleLoaded, role, clientId]);
 
     if (!roleLoaded || !isLoaded) {

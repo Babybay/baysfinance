@@ -7,10 +7,12 @@ import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Plus, Search, Edit2, Trash2, Users, ShieldAlert } from "lucide-react";
-import { Client, sampleClients, generateId } from "@/lib/data";
+import { generateId } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { getClients, createClient, updateClient, deleteClient } from "@/app/actions/clients";
+import type { Client } from "@prisma/client";
 
-const emptyClient: Omit<Client, "id" | "createdAt"> = {
+const emptyClient = {
     nama: "",
     npwp: "",
     jenisWP: "Orang Pribadi",
@@ -26,45 +28,53 @@ export default function ClientsPage() {
     const [filterJenis, setFilterJenis] = useState("Semua");
     const [modalOpen, setModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [form, setForm] = useState(emptyClient);
+    const [form, setForm] = useState<Omit<Client, "id" | "createdAt">>(emptyClient);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
 
+    const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
-        const stored = localStorage.getItem("pajak_clients");
-        if (stored) {
-            setClients(JSON.parse(stored));
-        } else {
-            setClients(sampleClients);
-            localStorage.setItem("pajak_clients", JSON.stringify(sampleClients));
-        }
+        loadClients();
     }, []);
 
-    const saveClients = (updated: Client[]) => {
-        setClients(updated);
-        localStorage.setItem("pajak_clients", JSON.stringify(updated));
+    const loadClients = async () => {
+        setIsLoading(true);
+        const res = await getClients();
+        if (res.success && res.data) {
+            setClients(res.data);
+        }
+        setIsLoading(false);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (editingClient) {
-            const updated = clients.map((c) =>
-                c.id === editingClient.id ? { ...editingClient, ...form } : c
-            );
-            saveClients(updated);
+            const res = await updateClient(editingClient.id, form);
+            if (res.success && res.data) {
+                setClients(clients.map(c => c.id === editingClient.id ? res.data as Client : c));
+            } else {
+                alert(res.error || "Gagal memperbarui klien");
+            }
         } else {
-            const newClient: Client = {
-                ...form,
-                id: generateId(),
-                createdAt: new Date().toISOString().split("T")[0],
-            };
-            saveClients([newClient, ...clients]);
+            const res = await createClient(form);
+            if (res.success && res.data) {
+                setClients([res.data as Client, ...clients]);
+            } else {
+                alert(res.error || "Gagal menambahkan klien");
+            }
         }
         closeModal();
     };
 
-    const handleDelete = (id: string) => {
-        saveClients(clients.filter((c) => c.id !== id));
+    const handleDelete = async (id: string) => {
+        const res = await deleteClient(id);
+        if (res.success) {
+            setClients(clients.filter((c) => c.id !== id));
+        } else {
+            alert(res.error || "Gagal menghapus klien");
+        }
         setDeleteConfirm(null);
     };
 
@@ -103,7 +113,7 @@ export default function ClientsPage() {
         return matchSearch && matchFilter;
     });
 
-    if (!roleLoaded) {
+    if (!roleLoaded || isLoading) {
         return <div className="flex items-center justify-center py-20 animate-pulse text-muted-foreground">Memuat...</div>;
     }
 

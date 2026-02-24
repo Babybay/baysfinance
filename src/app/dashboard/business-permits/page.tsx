@@ -36,7 +36,7 @@ export default function BusinessPermitsPage() {
     return (
         <BusinessPermitList
             permits={permits}
-            isAdmin={isAdmin}
+            isAdmin={!!isAdmin}
         />
     );
 }
