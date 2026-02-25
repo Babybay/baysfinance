@@ -47,6 +47,7 @@ model Document {
   ukuran        String
   tanggalUpload DateTime @default(now())
   catatan       String?
+  fileUrl       String?
 
   clientId      String
   client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)

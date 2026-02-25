@@ -12,7 +12,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/client-s3": "^3.996.0",
     "@aws-sdk/s3-request-presigner": "^3.995.0",
     "@clerk/nextjs": "^6.38.1",
     "@prisma/adapter-pg": "^7.4.1",

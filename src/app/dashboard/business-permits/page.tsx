@@ -3,11 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { BusinessPermitList } from "@/components/dashboard/BusinessPermitList";
-import {
-    samplePermitCases,
-    BusinessPermitCase,
-    getFilteredPermits
-} from "@/lib/data";
+import { BusinessPermitCase } from "@/lib/data";
+import { getPermits } from "@/app/actions/business-permits";
 
 export default function BusinessPermitsPage() {
     const { role, clientId, isLoaded: roleLoaded, isAdmin } = useRoles();
@@ -16,14 +13,26 @@ export default function BusinessPermitsPage() {
 
     useEffect(() => {
         if (!roleLoaded) return;
-
-        const storedPermits = localStorage.getItem("pajak_permits");
-        const allPermits = storedPermits ? JSON.parse(storedPermits) : samplePermitCases;
-
-        const currentRole = (role as "admin" | "client") || "admin";
-        setPermits(getFilteredPermits(allPermits, currentRole, clientId));
-        setIsLoaded(true);
+        loadData();
     }, [roleLoaded, role, clientId]);
+
+    const loadData = async () => {
+        setIsLoaded(false);
+        const currentClientId = role === "client" ? clientId : undefined;
+        const res = await getPermits(currentClientId ?? undefined);
+
+        if (res.success && res.data) {
+            const formatted = (res.data as any[]).map(p => ({
+                ...p,
+                status: p.status as BusinessPermitCase["status"],
+                riskCategory: p.riskCategory as BusinessPermitCase["riskCategory"],
+                createdAt: new Date(p.createdAt).toISOString().split("T")[0],
+                updatedAt: new Date(p.updatedAt).toISOString().split("T")[0],
+            }));
+            setPermits(formatted);
+        }
+        setIsLoaded(true);
+    };
 
     if (!roleLoaded || !isLoaded) {
         return (

@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Search, Receipt, Eye, Trash2, Printer } from "lucide-react";
-import { Invoice, InvoiceItem, sampleInvoices, sampleClients, Client, formatIDR, generateId, getFilteredInvoices, getFilteredClients } from "@/lib/data";
+import { Invoice, InvoiceItem, Client, formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { getInvoices, createInvoice, updateInvoiceStatus } from "@/app/actions/invoices";
+import { getClients } from "@/app/actions/clients";
 
 const statusColors: Record<string, "default" | "info" | "success" | "warning" | "danger"> = {
     Draft: "default",
@@ -37,21 +39,41 @@ export default function InvoicesPage() {
 
     useEffect(() => {
         if (!roleLoaded) return;
-        const storedInv = localStorage.getItem("pajak_invoices");
-        const storedClients = localStorage.getItem("pajak_clients");
-
-        const allInvoices = storedInv ? JSON.parse(storedInv) : sampleInvoices;
-        const allClients = storedClients ? JSON.parse(storedClients) : sampleClients;
-
-        const currentRole = (role as "admin" | "client") || "admin";
-        setInvoices(getFilteredInvoices(allInvoices, currentRole, clientId));
-        setClients(getFilteredClients(allClients, currentRole, clientId));
-        setIsLoaded(true);
+        loadData();
     }, [roleLoaded, role, clientId]);
 
-    const saveInvoices = (updated: Invoice[]) => {
-        setInvoices(updated);
-        localStorage.setItem("pajak_invoices", JSON.stringify(updated));
+    const loadData = async () => {
+        setIsLoaded(false);
+        const currentClientId = role === "client" ? clientId : undefined;
+
+        const [invRes, clientsRes] = await Promise.all([
+            getInvoices(currentClientId ?? undefined),
+            getClients(),
+        ]);
+
+        if (invRes.success && invRes.data) {
+            const formatted = (invRes.data as any[]).map(i => ({
+                ...i,
+                tanggal: new Date(i.tanggal).toISOString().split("T")[0],
+                jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
+                status: i.status as Invoice["status"],
+                items: i.items || [],
+                catatan: i.catatan || "",
+            }));
+            setInvoices(formatted);
+        }
+
+        if (clientsRes.success && clientsRes.data) {
+            const formatted = (clientsRes.data as any[]).map(c => ({
+                ...c,
+                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
+                status: c.status as "Aktif" | "Tidak Aktif",
+                createdAt: new Date(c.createdAt).toISOString().split("T")[0],
+            }));
+            setClients(formatted);
+        }
+
+        setIsLoaded(true);
     };
 
     const addItem = () => setForm({ ...form, items: [...form.items, { deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
@@ -69,36 +91,32 @@ export default function InvoicesPage() {
         setForm({ ...form, items: updated });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const client = clients.find((c) => c.id === form.clientId);
-        const subtotal = form.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
-        const ppn = Math.round(subtotal * 0.11);
-
-        const invCount = invoices.length + 1;
-        const newInvoice: Invoice = {
-            id: generateId(),
-            nomorInvoice: `INV-2026-${String(invCount).padStart(3, "0")}`,
+        const res = await createInvoice({
             clientId: form.clientId,
-            clientName: client?.nama || "-",
-            tanggal: new Date().toISOString().split("T")[0],
             jatuhTempo: form.jatuhTempo,
-            items: form.items.map((item) => ({ ...item, jumlah: item.qty * item.harga })),
-            subtotal,
-            ppn,
-            total: subtotal + ppn,
-            status: "Draft",
             catatan: form.catatan,
-        };
-        saveInvoices([newInvoice, ...invoices]);
-        setModalOpen(false);
-        setForm({ clientId: "", jatuhTempo: "", catatan: "", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
+            items: form.items.map(item => ({
+                deskripsi: item.deskripsi,
+                qty: item.qty,
+                harga: item.harga,
+                jumlah: item.qty * item.harga,
+            })),
+        });
+        if (res.success) {
+            await loadData();
+            setModalOpen(false);
+            setForm({ clientId: "", jatuhTempo: "", catatan: "", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
+        }
     };
 
-    const updateStatus = (id: string, status: Invoice["status"]) => {
-        const updated = invoices.map((inv) => (inv.id === id ? { ...inv, status } : inv));
-        saveInvoices(updated);
-        if (viewInvoice?.id === id) setViewInvoice({ ...viewInvoice, status });
+    const handleUpdateStatus = async (id: string, status: Invoice["status"]) => {
+        const res = await updateInvoiceStatus(id, status);
+        if (res.success) {
+            setInvoices(invoices.map(inv => inv.id === id ? { ...inv, status } : inv));
+            if (viewInvoice?.id === id) setViewInvoice({ ...viewInvoice, status });
+        }
     };
 
     const filtered = invoices.filter((inv) => {
@@ -178,7 +196,13 @@ export default function InvoicesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {filtered.length === 0 ? (
+                            {!isLoaded ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-12">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto"></div>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-12 text-muted-foreground">
                                         <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -307,8 +331,8 @@ export default function InvoicesPage() {
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                             {isAdmin && (
                                 <>
-                                    <Button size="default" variant={viewInvoice.status === "Lunas" ? "secondary" : "accent"} onClick={() => updateStatus(viewInvoice.id, "Lunas")}>Tandai Lunas</Button>
-                                    <Button size="default" variant="soft" onClick={() => updateStatus(viewInvoice.id, "Terkirim")}>Tandai Terkirim</Button>
+                                    <Button size="default" variant={viewInvoice.status === "Lunas" ? "soft" : "accent"} onClick={() => handleUpdateStatus(viewInvoice.id, "Lunas")}>Tandai Lunas</Button>
+                                    <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, "Terkirim")}>Tandai Terkirim</Button>
                                 </>
                             )}
                             <Button size="default" variant="transparent"><Printer className="h-4 w-4 mr-1" /> Cetak</Button>

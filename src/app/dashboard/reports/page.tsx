@@ -2,22 +2,55 @@
 
 import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/Badge";
-import { formatIDR, sampleInvoices, sampleClients, sampleDeadlines, Invoice, Client, TaxDeadline } from "@/lib/data";
+import { formatIDR, Invoice, Client, TaxDeadline } from "@/lib/data";
 import { TrendingUp, TrendingDown, Users, Receipt, CalendarDays, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { getDashboardData } from "@/app/actions/dashboard-data";
 
 export default function ReportsPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [deadlines, setDeadlines] = useState<TaxDeadline[]>([]);
+    const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        const storedInv = localStorage.getItem("pajak_invoices");
-        const storedClients = localStorage.getItem("pajak_clients");
-        const storedDeadlines = localStorage.getItem("pajak_deadlines");
-        setInvoices(storedInv ? JSON.parse(storedInv) : sampleInvoices);
-        setClients(storedClients ? JSON.parse(storedClients) : sampleClients);
-        setDeadlines(storedDeadlines ? JSON.parse(storedDeadlines) : sampleDeadlines);
+        loadData();
     }, []);
+
+    const loadData = async () => {
+        setIsLoaded(false);
+        const response = await getDashboardData(undefined, "admin");
+
+        if (response.success && response.data) {
+            const formattedClients = response.data.clients.map(c => ({
+                ...c,
+                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
+                status: c.status as "Aktif" | "Tidak Aktif",
+                createdAt: new Date(c.createdAt).toISOString().split("T")[0]
+            }));
+
+            const formattedInvoices = response.data.invoices.map(i => ({
+                ...i,
+                tanggal: new Date(i.tanggal).toISOString().split("T")[0],
+                jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
+                status: i.status as "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo",
+                items: [],
+                catatan: i.catatan || ""
+            }));
+
+            const formattedDeadlines = response.data.deadlines.map(d => ({
+                ...d,
+                tanggalBatas: new Date(d.tanggalBatas).toISOString().split("T")[0],
+                status: d.status as "Sudah Lapor" | "Belum Lapor" | "Terlambat",
+                clientName: d.clientName || undefined
+            }));
+
+            setClients(formattedClients);
+            setInvoices(formattedInvoices);
+            setDeadlines(formattedDeadlines);
+        }
+
+        setIsLoaded(true);
+    };
 
     const totalPendapatan = invoices.filter((i) => i.status === "Lunas").reduce((s, i) => s + i.total, 0);
     const outstanding = invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").reduce((s, i) => s + i.total, 0);
@@ -50,6 +83,14 @@ export default function ReportsPage() {
         Lunas: invoices.filter((i) => i.status === "Lunas").length,
         "Jatuh Tempo": invoices.filter((i) => i.status === "Jatuh Tempo").length,
     };
+
+    if (!isLoaded) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+            </div>
+        );
+    }
 
     return (
         <div>

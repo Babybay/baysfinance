@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Search, FileText, Download, Eye, Trash2, Upload, FolderOpen } from "lucide-react";
-import { Document as DocType, sampleDocuments, sampleClients, Client, generateId, getFilteredDocuments, getFilteredClients } from "@/lib/data";
+import { Document as DocType, Client } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { getDocuments, uploadDocument, deleteDocument } from "@/app/actions/documents";
+import { getClients } from "@/app/actions/clients";
 
 const kategoriOptions = [
     { value: "Faktur Pajak", label: "Faktur Pajak" },
@@ -42,46 +44,73 @@ export default function DocumentsPage() {
         clientId: "",
         catatan: "",
     });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!roleLoaded) return;
-        const storedDocs = localStorage.getItem("pajak_documents");
-        const storedClients = localStorage.getItem("pajak_clients");
-
-        const allDocs = storedDocs ? JSON.parse(storedDocs) : sampleDocuments;
-        const allClients = storedClients ? JSON.parse(storedClients) : sampleClients;
-
-        const currentRole = (role as "admin" | "client") || "admin";
-        setDocuments(getFilteredDocuments(allDocs, currentRole, clientId));
-        setClients(getFilteredClients(allClients, currentRole, clientId));
-        setIsLoaded(true);
+        loadData();
     }, [roleLoaded, role, clientId]);
 
-    const saveDocs = (updated: DocType[]) => {
-        setDocuments(updated);
-        localStorage.setItem("pajak_documents", JSON.stringify(updated));
+    const loadData = async () => {
+        setIsLoaded(false);
+        const currentClientId = role === "client" ? clientId : undefined;
+
+        const [docsRes, clientsRes] = await Promise.all([
+            getDocuments(currentClientId ?? undefined),
+            getClients(),
+        ]);
+
+        if (docsRes.success && docsRes.data) {
+            const formatted = (docsRes.data as any[]).map(d => ({
+                ...d,
+                tanggalUpload: new Date(d.tanggalUpload).toISOString().split("T")[0],
+                kategori: d.kategori as DocType["kategori"],
+                catatan: d.catatan || "",
+            }));
+            setDocuments(formatted);
+        }
+
+        if (clientsRes.success && clientsRes.data) {
+            const formatted = (clientsRes.data as any[]).map(c => ({
+                ...c,
+                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
+                status: c.status as "Aktif" | "Tidak Aktif",
+                createdAt: new Date(c.createdAt).toISOString().split("T")[0],
+            }));
+            setClients(formatted);
+        }
+
+        setIsLoaded(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const client = clients.find((c) => c.id === form.clientId);
-        const newDoc: DocType = {
-            id: generateId(),
-            nama: form.nama,
-            kategori: form.kategori,
-            clientId: form.clientId,
-            clientName: client?.nama || "-",
-            ukuran: `${Math.floor(Math.random() * 5000 + 100)} KB`,
-            tanggalUpload: new Date().toISOString().split("T")[0],
-            catatan: form.catatan,
-        };
-        saveDocs([newDoc, ...documents]);
-        setModalOpen(false);
-        setForm({ nama: "", kategori: "Faktur Pajak", clientId: "", catatan: "" });
+
+        const formData = new FormData();
+        formData.append("nama", form.nama);
+        formData.append("kategori", form.kategori);
+        formData.append("clientId", role === "client" ? (clientId || "") : form.clientId);
+        formData.append("catatan", form.catatan);
+
+        if (selectedFile) {
+            formData.append("file", selectedFile);
+        }
+
+        const res = await uploadDocument(formData);
+        if (res.success) {
+            await loadData();
+            setModalOpen(false);
+            setForm({ nama: "", kategori: "Faktur Pajak", clientId: "", catatan: "" });
+            setSelectedFile(null);
+        }
     };
 
-    const handleDelete = (id: string) => {
-        saveDocs(documents.filter((d) => d.id !== id));
+    const handleDelete = async (id: string) => {
+        const res = await deleteDocument(id);
+        if (res.success) {
+            setDocuments(documents.filter((d) => d.id !== id));
+        }
     };
 
     const filtered = documents.filter((d) => {
@@ -117,7 +146,11 @@ export default function DocumentsPage() {
             </div>
 
             {/* Documents Grid */}
-            {filtered.length === 0 ? (
+            {!isLoaded ? (
+                <div className="flex items-center justify-center min-h-[200px]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+                </div>
+            ) : filtered.length === 0 ? (
                 <div className="bg-card rounded-[12px] border border-border p-12 text-center">
                     <FolderOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
                     <p className="text-muted-foreground">Tidak ada dokumen ditemukan</p>
@@ -164,10 +197,26 @@ export default function DocumentsPage() {
                             <Select label="Klien" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} options={clients.map((c) => ({ value: c.id, label: c.nama }))} placeholder="Pilih Klien" />
                         )}
                     </div>
-                    <div className="border-2 border-dashed border-border rounded-[12px] p-8 text-center">
+                    <div
+                        className="border-2 border-dashed border-border rounded-[12px] p-8 text-center cursor-pointer hover:border-accent/40 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                            accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx"
+                        />
                         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Drag &amp; drop file di sini atau klik untuk memilih</p>
-                        <p className="text-xs text-muted-foreground opacity-60 mt-1">PDF, JPG, PNG, XLSX (maks 10MB)</p>
+                        {selectedFile ? (
+                            <p className="text-sm text-accent font-medium">{selectedFile.name}</p>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">Klik untuk memilih file</p>
+                                <p className="text-xs text-muted-foreground opacity-60 mt-1">PDF, JPG, PNG, XLSX (maks 10MB)</p>
+                            </>
+                        )}
                     </div>
                     <Textarea label="Catatan" value={form.catatan} onChange={(e) => setForm({ ...form, catatan: e.target.value })} placeholder="Catatan tambahan..." />
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useRoles } from "@/lib/hooks/useRoles";
-import { sampleClients } from "@/lib/data";
+import { Client } from "@/lib/data";
+import { getClients } from "@/app/actions/clients";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +26,7 @@ export default function UserManagementPage() {
     const { t } = useI18n();
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const [users, setUsers] = useState<ManagedUser[]>([]);
+    const [allClients, setAllClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [editUser, setEditUser] = useState<ManagedUser | null>(null);
@@ -48,8 +50,22 @@ export default function UserManagementPage() {
     useEffect(() => {
         if (roleLoaded && isAdmin) {
             fetchUsers();
+            loadClients();
         }
     }, [roleLoaded, isAdmin]);
+
+    const loadClients = async () => {
+        const res = await getClients();
+        if (res.success && res.data) {
+            const formatted = (res.data as any[]).map(c => ({
+                ...c,
+                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
+                status: c.status as "Aktif" | "Tidak Aktif",
+                createdAt: new Date(c.createdAt).toISOString().split("T")[0],
+            }));
+            setAllClients(formatted);
+        }
+    };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -158,7 +174,7 @@ export default function UserManagementPage() {
                                     <td className="px-6 py-4">
                                         {user.role === "client" ? (
                                             <div className="text-sm text-foreground">
-                                                {sampleClients.find(c => c.id === user.clientId)?.nama || "—"}
+                                                {allClients.find(c => c.id === user.clientId)?.nama || "—"}
                                             </div>
                                         ) : (
                                             <div className="text-xs text-muted-foreground italic">Advisor Access</div>
@@ -220,7 +236,7 @@ export default function UserManagementPage() {
                                     onChange={(e) => setEditUser({ ...editUser, clientId: e.target.value })}
                                     options={[
                                         { value: "", label: t.userManagement.assignClient.none },
-                                        ...sampleClients.map(c => ({ value: c.id, label: c.nama }))
+                                        ...allClients.map(c => ({ value: c.id, label: c.nama }))
                                     ]}
                                     placeholder={t.userManagement.assignClient.placeholder}
                                 />

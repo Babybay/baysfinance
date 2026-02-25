@@ -20,11 +20,11 @@ import {
     MessageSquare
 } from "lucide-react";
 import {
-    samplePermitCases,
     BusinessPermitCase,
     BusinessPermitStatus,
     formatIDR
 } from "@/lib/data";
+import { getPermitById } from "@/app/actions/business-permits";
 
 export default function BusinessPermitDetailPage() {
     const { id } = useParams();
@@ -45,12 +45,24 @@ export default function BusinessPermitDetailPage() {
     const [activeDocId, setActiveDocId] = useState<string | null>(null);
 
     useEffect(() => {
-        const stored = localStorage.getItem("pajak_permits");
-        const all = stored ? JSON.parse(stored) : samplePermitCases;
-        const found = all.find((p: any) => p.id === id);
-        setPermit(found || null);
-        setIsLoaded(true);
+        loadPermit();
     }, [id]);
+
+    const loadPermit = async () => {
+        setIsLoaded(false);
+        const res = await getPermitById(id as string);
+        if (res.success && res.data) {
+            const p = res.data as any;
+            setPermit({
+                ...p,
+                status: p.status as BusinessPermitStatus,
+                riskCategory: p.riskCategory as BusinessPermitCase["riskCategory"],
+                createdAt: new Date(p.createdAt).toISOString().split("T")[0],
+                updatedAt: new Date(p.updatedAt).toISOString().split("T")[0],
+            });
+        }
+        setIsLoaded(true);
+    };
 
     const handleUploadClick = (docId: string) => {
         setActiveDocId(docId);

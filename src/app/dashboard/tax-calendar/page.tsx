@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { CalendarDays, AlertTriangle, CheckCircle2, Clock, Filter } from "lucide-react";
-import { TaxDeadline, sampleDeadlines, getFilteredDeadlines } from "@/lib/data";
+import { TaxDeadline } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { getDeadlines, updateDeadlineStatus } from "@/app/actions/deadlines";
 
 const months = [
     "Semua Bulan", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -43,26 +44,33 @@ export default function TaxCalendarPage() {
 
     useEffect(() => {
         if (!roleLoaded) return;
-        const stored = localStorage.getItem("pajak_deadlines");
-        const allDeadlines = stored ? JSON.parse(stored) : sampleDeadlines;
-
-        const currentRole = (role as "admin" | "client") || "admin";
-        setDeadlines(getFilteredDeadlines(allDeadlines, currentRole, clientId));
-        setIsLoaded(true);
+        loadData();
     }, [roleLoaded, role, clientId]);
 
-    const saveDeadlines = (updated: TaxDeadline[]) => {
-        setDeadlines(updated);
-        localStorage.setItem("pajak_deadlines", JSON.stringify(updated));
+    const loadData = async () => {
+        setIsLoaded(false);
+        const currentClientId = role === "client" ? clientId : undefined;
+        const res = await getDeadlines(currentClientId ?? undefined);
+
+        if (res.success && res.data) {
+            const formatted = (res.data as any[]).map(d => ({
+                ...d,
+                tanggalBatas: new Date(d.tanggalBatas).toISOString().split("T")[0],
+                status: d.status as TaxDeadline["status"],
+                clientName: d.clientName || undefined,
+            }));
+            setDeadlines(formatted);
+        }
+        setIsLoaded(true);
     };
 
-    const toggleStatus = (id: string, newStatus: TaxDeadline["status"]) => {
-        const updated = deadlines.map((d) =>
-            d.id === id ? { ...d, status: newStatus } : d
-        );
-        saveDeadlines(updated);
-        if (selectedDeadline?.id === id) {
-            setSelectedDeadline({ ...selectedDeadline, status: newStatus });
+    const toggleStatus = async (id: string, newStatus: TaxDeadline["status"]) => {
+        const res = await updateDeadlineStatus(id, newStatus);
+        if (res.success) {
+            setDeadlines(deadlines.map(d => d.id === id ? { ...d, status: newStatus } : d));
+            if (selectedDeadline?.id === id) {
+                setSelectedDeadline({ ...selectedDeadline, status: newStatus });
+            }
         }
     };
 
@@ -114,25 +122,16 @@ export default function TaxCalendarPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Filter className="h-4 w-4" /> Filter:
                 </div>
-                <select
-                    value={filterMonth}
-                    onChange={(e) => setFilterMonth(e.target.value)}
-                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-                >
+                <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
+                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40">
                     {months.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
-                <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-                >
+                <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
+                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40">
                     {taxTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-                >
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                    className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40">
                     <option value="Semua">Semua Status</option>
                     <option value="Sudah Lapor">Sudah Lapor</option>
                     <option value="Belum Lapor">Belum Lapor</option>
@@ -142,7 +141,11 @@ export default function TaxCalendarPage() {
 
             {/* Deadline List */}
             <div className="space-y-3">
-                {filtered.length === 0 ? (
+                {!isLoaded ? (
+                    <div className="flex items-center justify-center min-h-[200px]">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+                    </div>
+                ) : filtered.length === 0 ? (
                     <div className="bg-card rounded-[12px] border border-border p-12 text-center">
                         <CalendarDays className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
                         <p className="text-muted-foreground">Tidak ada deadline ditemukan</p>
@@ -228,7 +231,7 @@ export default function TaxCalendarPage() {
                         <div className="flex gap-2 pt-4 border-t border-border">
                             <Button
                                 size="default"
-                                variant={selectedDeadline.status === "Sudah Lapor" ? "secondary" : "accent"}
+                                variant={selectedDeadline.status === "Sudah Lapor" ? "soft" : "accent"}
                                 onClick={() => toggleStatus(selectedDeadline.id, "Sudah Lapor")}
                             >
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Tandai Sudah Lapor
