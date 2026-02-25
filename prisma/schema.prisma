@@ -20,7 +20,7 @@ model Client {
   deadlines TaxDeadline[]
   documents Document[]
   invoices  Invoice[]
-  businessPermits BusinessPermitCase[]
+  permits   PermitCase[]
 
   @@map("clients")
 }
@@ -89,34 +89,108 @@ model InvoiceItem {
   @@map("invoice_items")
 }
 
-model BusinessPermitCase {
+// ─── PERMIT SYSTEM (Scalable) ────────────────────────────────────────────────
+
+// Config: defines available permit types and their templates
+model PermitType {
+  id             String   @id @default(cuid())
+  slug           String   @unique  // "business", "building", "kitas"
+  name           String             // "Perijinan Usaha"
+  caseIdPrefix   String             // "NIB", "PBG", "KITAS"
+  description    String?
+  icon           String?            // lucide icon name e.g. "Briefcase"
+
+  requiredDocs   PermitTypeDocument[]
+  checklistItems PermitTypeChecklist[]
+  cases          PermitCase[]
+
+  @@map("permit_types")
+}
+
+// Config: required documents template per permit type
+model PermitTypeDocument {
+  id           String     @id @default(cuid())
+  permitTypeId String
+  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
+  docType      String     // "KTP Direktur"
+  isRequired   Boolean    @default(true)
+  sortOrder    Int        @default(0)
+
+  @@map("permit_type_documents")
+}
+
+// Config: checklist/signature template per permit type
+model PermitTypeChecklist {
+  id           String     @id @default(cuid())
+  permitTypeId String
+  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
+  label        String     // "Saya menyetujui syarat & ketentuan OSS"
+  description  String?
+  sortOrder    Int        @default(0)
+
+  @@map("permit_type_checklists")
+}
+
+// Sequential counter for auto-generated case IDs
+model PermitCounter {
+  id      String @id  // format: "NIB-2026-02"
+  counter Int    @default(0)
+
+  @@map("permit_counters")
+}
+
+// Data: individual permit case
+model PermitCase {
   id           String   @id @default(cuid())
-  caseId       String   @unique
+  caseId       String   @unique    // auto-generated: "NIB-2026-02-0001"
+
+  permitTypeId String
+  permitType   PermitType @relation(fields: [permitTypeId], references: [id])
+
   clientId     String
   client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientName   String
-  advisorId    String
-  serviceType  String
+  advisorId    String?
+  serviceType  String              // specific service within the type
   riskCategory String
-  status       String
+  status       String              // "Draft" | "Waiting Document" | etc.
   progress     Int
   feeAmount    Float
+  notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  documents    BusinessPermitDocument[]
+  documents    PermitDocument[]
+  checklists   PermitChecklist[]
 
-  @@map("business_permit_cases")
+  @@map("permit_cases")
 }
 
-model BusinessPermitDocument {
-  id                 String             @id @default(cuid())
+// Data: documents for a specific permit case
+model PermitDocument {
+  id                 String     @id @default(cuid())
   caseId             String
-  businessPermitCase BusinessPermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  permitCase         PermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   docType            String
   fileUrl            String?
-  verificationStatus String
+  verificationStatus String     // "Pending" | "Approved" | "Rejected"
   comments           String?
+  sortOrder          Int        @default(0)
 
-  @@map("business_permit_documents")
+  @@map("permit_documents")
+}
+
+// Data: checklist/signature items for a specific permit case
+model PermitChecklist {
+  id          String     @id @default(cuid())
+  caseId      String
+  permitCase  PermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  label       String
+  description String?
+  isChecked   Boolean    @default(false)
+  checkedAt   DateTime?
+  checkedBy   String?    // userId who checked
+  sortOrder   Int        @default(0)
+
+  @@map("permit_checklists")
 }

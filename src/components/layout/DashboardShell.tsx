@@ -31,7 +31,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         { href: "/dashboard", label: t.sidebar.dashboard, icon: LayoutDashboard, roles: ["admin", "client"] },
         { href: "/dashboard/clients", label: t.sidebar.clients, icon: Users, roles: ["admin"] },
         { href: "/dashboard/tax-calendar", label: t.sidebar.taxCalendar, icon: CalendarDays, roles: ["admin", "client"] },
-        { href: "/dashboard/business-permits", label: t.sidebar.businessPermits, icon: FileCheck, roles: ["admin", "client"] },
+        { href: "/dashboard/permits", label: t.sidebar.permits, icon: FileCheck, roles: ["admin", "client"] },
         { href: "/dashboard/tax-calculator", label: t.sidebar.taxCalculator, icon: Calculator, roles: ["admin"] },
         { href: "/dashboard/documents", label: t.sidebar.documents, icon: FileText, roles: ["admin", "client"] },
         { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: Receipt, roles: ["admin", "client"] },

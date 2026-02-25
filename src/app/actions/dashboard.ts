@@ -16,10 +16,10 @@ export async function getDashboardStats() {
         });
         const totalPendingInvoice = invoices.reduce((acc, inv) => acc + inv.total, 0);
 
-        const permits = await prisma.businessPermitCase.count({
+        const permits = await prisma.permitCase.count({
             where: {
                 status: {
-                    in: ["Processing OSS", "Verification", "Waiting Document", "Revision Required"]
+                    in: ["Processing", "Verification", "Waiting Document", "Revision Required"]
                 }
             }
         });

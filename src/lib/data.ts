@@ -56,40 +56,91 @@ export interface InvoiceItem {
     jumlah: number;
 }
 
-export interface BusinessPermitCase {
+// ─── SCALABLE PERMITS SYSTEM ─────────────────────────────────────────────────
+
+export interface PermitType {
     id: string;
-    caseId: string;
-    clientId: string;
-    clientName: string;
-    advisorId: string;
-    serviceType: "PT" | "CV" | "Individual" | "NIB" | "Sertifikat Standar" | "Operational Permit" | "Amendment";
-    riskCategory: "Low" | "Medium-Low" | "Medium-High" | "High";
-    status: BusinessPermitStatus;
-    progress: number;
-    feeAmount: number;
-    createdAt: string;
-    updatedAt: string;
+    slug: string;
+    name: string;
+    caseIdPrefix: string;
+    description?: string;
+    icon?: string;
+    requiredDocs?: PermitTypeDocumentTemplate[];
+    checklistItems?: PermitTypeChecklistTemplate[];
 }
 
-export type BusinessPermitStatus =
+export interface PermitTypeDocumentTemplate {
+    id: string;
+    docType: string;
+    isRequired: boolean;
+    sortOrder: number;
+}
+
+export interface PermitTypeChecklistTemplate {
+    id: string;
+    label: string;
+    description?: string;
+    sortOrder: number;
+}
+
+export interface PermitCase {
+    id: string;
+    caseId: string;
+    permitTypeId: string;
+    permitType?: PermitType;
+    clientId: string;
+    clientName: string;
+    advisorId?: string;
+    serviceType: string;
+    riskCategory: PermitRiskCategory;
+    status: PermitStatus;
+    progress: number;
+    feeAmount: number;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+    documents?: PermitDocument[];
+    checklists?: PermitChecklist[];
+}
+
+export type PermitRiskCategory = "Low" | "Medium-Low" | "Medium-High" | "High";
+
+export type PermitStatus =
     | "Draft"
     | "Waiting Document"
     | "Verification"
     | "Revision Required"
-    | "Processing OSS"
+    | "Processing"
     | "Issued"
     | "Completed"
     | "Cancelled"
     | "On Hold";
 
-export interface BusinessPermitDocument {
+export interface PermitDocument {
     id: string;
     caseId: string;
     docType: string;
     fileUrl?: string;
     verificationStatus: "Pending" | "Approved" | "Rejected";
     comments?: string;
+    sortOrder: number;
 }
+
+export interface PermitChecklist {
+    id: string;
+    caseId: string;
+    label: string;
+    description?: string;
+    isChecked: boolean;
+    checkedAt?: string;
+    checkedBy?: string;
+    sortOrder: number;
+}
+
+// Backward compatibility aliases
+export type BusinessPermitCase = PermitCase;
+export type BusinessPermitStatus = PermitStatus;
+export type BusinessPermitDocument = PermitDocument;
 
 // Format currency to IDR
 export function formatIDR(amount: number): string {
@@ -106,19 +157,11 @@ export function generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Sample clients data
+// Sample data (empty — all fetched from DB)
 export const sampleClients: Client[] = [];
-
-// Sample Business Permit Cases
-export const samplePermitCases: BusinessPermitCase[] = [];
-
-// Sample tax deadlines
+export const samplePermitCases: PermitCase[] = [];
 export const sampleDeadlines: TaxDeadline[] = [];
-
-// Sample documents
 export const sampleDocuments: Document[] = [];
-
-// Sample invoices
 export const sampleInvoices: Invoice[] = [];
 
 // PTKP 2024 values
@@ -166,7 +209,7 @@ export function getFilteredDocuments(allDocs: Document[], role: "admin" | "clien
     return allDocs.filter(doc => doc.clientId === clientId);
 }
 
-export function getFilteredPermits(allPermits: BusinessPermitCase[], role: "admin" | "client", clientId?: string) {
+export function getFilteredPermits(allPermits: PermitCase[], role: "admin" | "client", clientId?: string) {
     if (role === "admin") return allPermits;
     return allPermits.filter(p => p.clientId === clientId);
 }

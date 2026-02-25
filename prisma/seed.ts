@@ -229,34 +229,209 @@ async function main() {
 
     console.log("✅ Invoices seeded");
 
-    // ── Business Permit Cases ─────────────────────────────────────────────────
-    await prisma.businessPermitCase.upsert({
+    // ── Permit Types (Templates) ──────────────────────────────────────────────
+    const ptBusiness = await prisma.permitType.upsert({
+        where: { slug: "business" },
+        update: {},
+        create: {
+            slug: "business",
+            name: "Perijinan Usaha",
+            caseIdPrefix: "NIB",
+            description: "Perijinan usaha melalui OSS (NIB, Sertifikat Standar, dll)",
+            icon: "Briefcase",
+            requiredDocs: {
+                create: [
+                    { docType: "KTP Direktur / Penanggung Jawab", sortOrder: 0 },
+                    { docType: "NPWP Perusahaan", sortOrder: 1 },
+                    { docType: "Akta Pendirian & Perubahannya", sortOrder: 2 },
+                    { docType: "SK Kemenkumham", sortOrder: 3 },
+                    { docType: "Bukti Kepemilikan/Sewa Tempat Usaha", sortOrder: 4 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyatakan bahwa KBLI yang dipilih sesuai dengan kegiatan usaha yang dijalankan", sortOrder: 0 },
+                    { label: "Saya menyetujui Syarat & Ketentuan penggunaan sistem OSS", sortOrder: 1 },
+                ],
+            },
+        },
+    });
+
+    const ptBuilding = await prisma.permitType.upsert({
+        where: { slug: "building" },
+        update: {},
+        create: {
+            slug: "building",
+            name: "Perijinan Bangunan",
+            caseIdPrefix: "PBG",
+            description: "Persetujuan Bangunan Gedung (PBG) / IMB",
+            icon: "Building2",
+            requiredDocs: {
+                create: [
+                    { docType: "KTP Pemilik Bangunan", sortOrder: 0 },
+                    { docType: "Sertifikat Tanah / Bukti Kepemilikan", sortOrder: 1 },
+                    { docType: "Gambar Arsitektur & Rencana Teknis", sortOrder: 2 },
+                    { docType: "Rekomendasi Tata Ruang", sortOrder: 3 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyatakan bahwa bangunan memenuhi standar teknis yang berlaku", sortOrder: 0 },
+                    { label: "Saya menyetujui ketentuan Keselamatan dan Kesehatan Kerja (K3)", sortOrder: 1 },
+                ],
+            },
+        },
+    });
+
+    const ptKitas = await prisma.permitType.upsert({
+        where: { slug: "kitas" },
+        update: {},
+        create: {
+            slug: "kitas",
+            name: "KITAS / KITAP",
+            caseIdPrefix: "KITAS",
+            description: "Pengurusan Izin Tinggal Terbatas/Tetap untuk WNA",
+            icon: "Plane",
+            requiredDocs: {
+                create: [
+                    { docType: "Paspor (salinan seluruh halaman)", sortOrder: 0 },
+                    { docType: "Surat Sponsor / Invitation Letter", sortOrder: 1 },
+                    { docType: "CV / Riwayat Hidup", sortOrder: 2 },
+                    { docType: "Pas Foto 4x6 (latar merah)", sortOrder: 3 },
+                    { docType: "RPTKA (untuk tenaga kerja asing)", sortOrder: 4 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyatakan data keimigrasian yang diajukan adalah benar dan sah", sortOrder: 0 },
+                    { label: "Saya bersedia mematuhi peraturan keimigrasian Republik Indonesia", sortOrder: 1 },
+                ],
+            },
+        },
+    });
+
+    const ptMikol = await prisma.permitType.upsert({
+        where: { slug: "mikol" },
+        update: {},
+        create: {
+            slug: "mikol",
+            name: "Perijinan Mikol",
+            caseIdPrefix: "MIKOL",
+            description: "Perijinan Minuman Beralkohol (SIUP-MB)",
+            icon: "Wine",
+            requiredDocs: {
+                create: [
+                    { docType: "SIUP-MB atau Izin Usaha Terkait", sortOrder: 0 },
+                    { docType: "TDUP (Tanda Daftar Usaha Pariwisata)", sortOrder: 1 },
+                    { docType: "Sertifikat Laik Sehat", sortOrder: 2 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyatakan kepatuhan terhadap regulasi peredaran minuman beralkohol", sortOrder: 0 },
+                ],
+            },
+        },
+    });
+
+    const ptCompany = await prisma.permitType.upsert({
+        where: { slug: "company" },
+        update: {},
+        create: {
+            slug: "company",
+            name: "Pendirian Perusahaan",
+            caseIdPrefix: "PT",
+            description: "Pendirian PT, CV, Firma, dan badan usaha lainnya",
+            icon: "Scale",
+            requiredDocs: {
+                create: [
+                    { docType: "KTP Seluruh Pendiri", sortOrder: 0 },
+                    { docType: "NPWP Seluruh Pendiri", sortOrder: 1 },
+                    { docType: "Draft Akta Notaris", sortOrder: 2 },
+                    { docType: "Bukti Alamat Domisili Perusahaan", sortOrder: 3 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyetujui Anggaran Dasar Perusahaan yang tercantum dalam Akta", sortOrder: 0 },
+                    { label: "Saya menyatakan modal disetor sesuai ketentuan yang berlaku", sortOrder: 1 },
+                ],
+            },
+        },
+    });
+
+    const ptLegality = await prisma.permitType.upsert({
+        where: { slug: "legality" },
+        update: {},
+        create: {
+            slug: "legality",
+            name: "Legalitas & Izin Usaha",
+            caseIdPrefix: "LEG",
+            description: "Pengurusan legalitas usaha (NIB, SIUP, TDP, dll)",
+            icon: "FileCheck",
+            requiredDocs: {
+                create: [
+                    { docType: "NIB (Nomor Induk Berusaha)", sortOrder: 0 },
+                    { docType: "Sertifikat Standar", sortOrder: 1 },
+                    { docType: "SIUP", sortOrder: 2 },
+                    { docType: "TDP", sortOrder: 3 },
+                ],
+            },
+            checklistItems: {
+                create: [
+                    { label: "Saya menyatakan kepatuhan terhadap seluruh regulasi perijinan yang berlaku", sortOrder: 0 },
+                ],
+            },
+        },
+    });
+
+    console.log("✅ Permit Types seeded");
+
+    // ── Permit Cases (sample data) ──────────────────────────────────────────
+    await prisma.permitCase.upsert({
         where: { id: "bp1" },
         update: {},
         create: {
             id: "bp1",
-            caseId: "BP-2026-001",
+            caseId: "NIB-2026-02-0001",
+            permitTypeId: ptBusiness.id,
             clientId: "c1",
             clientName: "PT Maju Bersama",
             advisorId: "admin",
-            serviceType: "PT",
+            serviceType: "NIB Baru",
             riskCategory: "Medium-Low",
-            status: "Processing OSS",
+            status: "Processing",
             progress: 50,
             feeAmount: 15000000,
+            documents: {
+                create: [
+                    { docType: "KTP Direktur / Penanggung Jawab", verificationStatus: "Approved", sortOrder: 0 },
+                    { docType: "NPWP Perusahaan", verificationStatus: "Approved", sortOrder: 1 },
+                    { docType: "Akta Pendirian & Perubahannya", verificationStatus: "Pending", sortOrder: 2 },
+                    { docType: "SK Kemenkumham", verificationStatus: "Pending", sortOrder: 3 },
+                    { docType: "Bukti Kepemilikan/Sewa Tempat Usaha", verificationStatus: "Pending", sortOrder: 4 },
+                ],
+            },
+            checklists: {
+                create: [
+                    { label: "Saya menyatakan bahwa KBLI yang dipilih sesuai dengan kegiatan usaha yang dijalankan", isChecked: true, checkedAt: new Date(), sortOrder: 0 },
+                    { label: "Saya menyetujui Syarat & Ketentuan penggunaan sistem OSS", isChecked: true, checkedAt: new Date(), sortOrder: 1 },
+                ],
+            },
         },
     });
 
-    await prisma.businessPermitCase.upsert({
+    await prisma.permitCase.upsert({
         where: { id: "bp2" },
         update: {},
         create: {
             id: "bp2",
-            caseId: "BP-2026-002",
+            caseId: "PBG-2026-02-0001",
+            permitTypeId: ptBuilding.id,
             clientId: "c2",
             clientName: "CV Sejahtera Abadi",
             advisorId: "admin",
-            serviceType: "NIB",
+            serviceType: "PBG Baru",
             riskCategory: "Low",
             status: "Issued",
             progress: 75,
@@ -264,16 +439,17 @@ async function main() {
         },
     });
 
-    await prisma.businessPermitCase.upsert({
+    await prisma.permitCase.upsert({
         where: { id: "bp3" },
         update: {},
         create: {
             id: "bp3",
-            caseId: "BP-2026-003",
+            caseId: "KITAS-2026-02-0001",
+            permitTypeId: ptKitas.id,
             clientId: "c4",
             clientName: "PT Teknologi Nusantara",
             advisorId: "admin",
-            serviceType: "Sertifikat Standar",
+            serviceType: "KITAS Baru",
             riskCategory: "High",
             status: "Verification",
             progress: 25,
@@ -281,7 +457,7 @@ async function main() {
         },
     });
 
-    console.log("✅ Business Permit Cases seeded");
+    console.log("✅ Permit Cases seeded");
     console.log("🎉 Seeding complete!");
 }
 

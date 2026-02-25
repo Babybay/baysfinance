@@ -1,0 +1,8 @@
+﻿src/app/actions/business-permits.ts(9,38): error TS2339: Property 'businessPermitCase' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/actions/business-permits.ts(24,37): error TS2339: Property 'businessPermitCase' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/actions/business-permits.ts(39,37): error TS2339: Property 'businessPermitCase' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/actions/business-permits.ts(53,39): error TS2339: Property 'businessPermitDocument' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/actions/business-permits.ts(70,39): error TS2339: Property 'businessPermitDocument' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/actions/dashboard.ts(19,38): error TS2339: Property 'businessPermitCase' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/dashboard/business-permits/[id]/page.tsx(188,18): error TS2678: Type '"Processing OSS"' is not comparable to type 'PermitStatus'.
+src/components/dashboard/BusinessPermitList.tsx(50,18): error TS2678: Type '"Processing OSS"' is not comparable to type 'PermitStatus'.
