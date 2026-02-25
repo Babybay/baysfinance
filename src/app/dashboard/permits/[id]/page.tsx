@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { PermitCase, PermitStatus, formatIDR } from "@/lib/data";
 import {
-    getPermitById, verifyDocument, updatePermitDocument, updateChecklistItem
+    getPermitById, verifyDocument, updatePermitDocument, updateChecklistItem, updatePermitStatus
 } from "@/app/actions/permits";
 
 export default function PermitDetailPage() {
@@ -27,6 +27,28 @@ export default function PermitDetailPage() {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [activeTab, setActiveTab] = useState<"docs" | "checklist">("docs");
+
+    // Status update modal
+    const [statusModalOpen, setStatusModalOpen] = useState(false);
+    const [newStatus, setNewStatus] = useState("");
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+    const statusProgressMap: Record<string, number> = {
+        "Draft": 0,
+        "Waiting Document": 10,
+        "Verification": 25,
+        "Revision Required": 25,
+        "Processing": 50,
+        "Issued": 75,
+        "Completed": 100,
+        "Cancelled": 0,
+        "On Hold": 0,
+    };
+
+    const workflowStatuses = [
+        "Draft", "Waiting Document", "Verification", "Revision Required",
+        "Processing", "Issued", "Completed", "Cancelled", "On Hold",
+    ];
 
     // Reject modal
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -112,6 +134,18 @@ export default function PermitDetailPage() {
         }
     };
 
+    const handleStatusUpdate = async () => {
+        if (!newStatus || !permit) return;
+        setIsUpdatingStatus(true);
+        const progress = statusProgressMap[newStatus] ?? permit.progress;
+        const res = await updatePermitStatus(permit.id, newStatus, progress);
+        if (res.success) {
+            setPermit((prev: any) => ({ ...prev, status: newStatus, progress }));
+            setStatusModalOpen(false);
+        }
+        setIsUpdatingStatus(false);
+    };
+
     if (!isLoaded) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -176,7 +210,7 @@ export default function PermitDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="soft"><MessageSquare className="h-4 w-4 mr-2" /> Hubungi Advisor</Button>
-                    {isAdmin && <Button variant="accent">Update Status</Button>}
+                    {isAdmin && <Button variant="accent" onClick={() => { setNewStatus(permit.status); setStatusModalOpen(true); }}>Update Status</Button>}
                 </div>
             </div>
 
@@ -195,8 +229,8 @@ export default function PermitDetailPage() {
                                 return (
                                     <div key={idx} className="relative z-10 flex flex-col items-center">
                                         <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors ${isCompleted ? "bg-accent border-accent text-accent-foreground" :
-                                                isCurrent ? "bg-card border-accent text-accent" :
-                                                    "bg-card border-border text-muted"
+                                            isCurrent ? "bg-card border-accent text-accent" :
+                                                "bg-card border-border text-muted"
                                             }`}>
                                             {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-xs font-bold">{idx + 1}</span>}
                                         </div>
@@ -299,8 +333,8 @@ export default function PermitDetailPage() {
                                             <label
                                                 key={item.id}
                                                 className={`flex items-start gap-3 p-3 rounded-[12px] border-2 transition-all ${item.isChecked
-                                                        ? "border-accent bg-accent-muted/50 cursor-default"
-                                                        : "border-border bg-surface hover:border-accent/30 cursor-pointer"
+                                                    ? "border-accent bg-accent-muted/50 cursor-default"
+                                                    : "border-border bg-surface hover:border-accent/30 cursor-pointer"
                                                     }`}
                                             >
                                                 <input
@@ -354,7 +388,7 @@ export default function PermitDetailPage() {
                                 <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Kategori Risiko</label>
                                 <div className="mt-1 flex items-center gap-2">
                                     <ShieldCheck className={`h-4 w-4 ${permit.riskCategory === "High" ? "text-error" :
-                                            permit.riskCategory === "Medium-High" ? "text-warning" : "text-success"
+                                        permit.riskCategory === "Medium-High" ? "text-warning" : "text-success"
                                         }`} />
                                     <p className="text-sm font-medium">{permit.riskCategory}</p>
                                 </div>
@@ -425,6 +459,44 @@ export default function PermitDetailPage() {
                             disabled={!rejectComment}
                         >
                             Konfirmasi Tolak
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Status Update Modal */}
+            <Modal isOpen={statusModalOpen} onClose={() => setStatusModalOpen(false)} title="Update Status Perijinan" size="md">
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Pilih status baru untuk kasus <span className="font-mono text-accent">{permit.caseId}</span></p>
+                    <div>
+                        <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1 block">Status Baru</label>
+                        <select
+                            value={newStatus}
+                            onChange={(e) => setNewStatus(e.target.value)}
+                            className="w-full h-10 rounded-[8px] border border-border bg-surface px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                        >
+                            {workflowStatuses.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="p-3 rounded-[8px] bg-surface border border-border">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Progress</span>
+                            <span className="font-semibold text-foreground">{statusProgressMap[newStatus] ?? 0}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-card rounded-full overflow-hidden">
+                            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${statusProgressMap[newStatus] ?? 0}%` }} />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button variant="soft" onClick={() => setStatusModalOpen(false)}>Batal</Button>
+                        <Button
+                            variant="accent"
+                            onClick={handleStatusUpdate}
+                            disabled={isUpdatingStatus || newStatus === permit.status}
+                        >
+                            {isUpdatingStatus ? "Menyimpan..." : "Simpan Perubahan"}
                         </Button>
                     </div>
                 </div>
