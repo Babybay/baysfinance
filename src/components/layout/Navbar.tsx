@@ -34,6 +34,9 @@ export function Navbar() {
                         <Link href="#pricing" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
                             {t.nav.pricing}
                         </Link>
+                        <Link href="/procedures" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
+                            {t.nav.procedures}
+                        </Link>
                     </nav>
                 </div>
                 <div className="flex items-center justify-end space-x-3">
@@ -97,6 +100,13 @@ export function Navbar() {
                             className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
                         >
                             {t.nav.pricing}
+                        </Link>
+                        <Link
+                            href="/procedures"
+                            onClick={() => setMobileOpen(false)}
+                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
+                        >
+                            {t.nav.procedures}
                         </Link>
 
                         <div className="border-t border-border pt-[16px] flex flex-col gap-[12px]">
