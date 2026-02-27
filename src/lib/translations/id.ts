@@ -3,39 +3,89 @@ import type { Translations } from "./en";
 export const id: Translations = {
     // Metadata
     meta: {
-        title: "PajakConsult — Platform Konsultan Pajak",
-        description: "Platform all-in-one untuk konsultan pajak: kelola klien, hitung pajak, pantau deadline, buat invoice, dan kelola dokumen.",
+        title: "Bay'sConsult — Platform Konsultan Pajak & Bisnis",
+        description: "Platform all-in-one untuk konsultan pajak: kelola klien, otomatisasi kepatuhan, pantau deadline, dan kembangkan praktik Anda.",
     },
 
     // Navbar
     nav: {
         features: "Fitur",
+        services: "Layanan",
         pricing: "Harga",
+        about: "Tentang",
         signIn: "Masuk",
-        signUp: "Daftar",
+        signUp: "Coba Gratis",
         dashboard: "Dashboard",
     },
 
     // Hero
     hero: {
-        badge: "Platform Konsultan Pajak #1 di Indonesia",
-        heading: "Kelola Pajak Klien Lebih Mudah & Cepat.",
-        description: "Platform all-in-one untuk konsultan pajak: kelola klien, hitung pajak, pantau deadline, buat invoice, dan kelola dokumen.",
-        cta: "Mulai Gratis",
-        ctaSecondary: "Lihat Fitur",
+        badge: "Dipercaya 100+ konsultan pajak di seluruh Indonesia",
+        heading: "Jangan Kehilangan Klien Karena Deadline Terlewat.",
+        description: "Platform all-in-one yang membantu profesional pajak mengelola klien, mengotomatisasi kepatuhan, dan mengembangkan praktik — tanpa kekacauan.",
+        cta: "Mulai Uji Coba Gratis",
+        ctaSecondary: "Tonton Demo 2 Menit",
+        trustNoCard: "Tanpa kartu kredit",
+        trustFreeTrial: "Gratis 14 hari",
+        trustSetup: "Setup dalam 5 menit",
+        trustCancel: "Batalkan kapan saja",
+    },
+
+    // Social Proof
+    socialProof: {
+        label: "Dipercaya oleh firma terkemuka di",
+        cities: "Jakarta · Surabaya · Bali · Medan · Bandung",
+    },
+
+    // Problem Section
+    problem: {
+        heading: "Terdengar Familiar?",
+        description: "Kebanyakan konsultan pajak tenggelam dalam pekerjaan manual. Anda tidak menjadi ahli hanya untuk menghabiskan waktu di spreadsheet.",
+        items: [
+            {
+                title: "Deadline terlewat, klien kecewa",
+                description: "Melacak puluhan deadline pajak di spreadsheet mengakibatkan kesalahan mahal dan kehilangan klien.",
+            },
+            {
+                title: "Berjam-jam mengejar dokumen",
+                description: "Email bolak-balik untuk file yang kurang menghabiskan waktu yang seharusnya digunakan untuk advisory.",
+            },
+            {
+                title: "Perhitungan manual, risiko konstan",
+                description: "Satu angka salah dalam perhitungan pajak bisa berarti denda, audit, dan hilangnya kepercayaan.",
+            },
+        ],
+    },
+
+    // Services
+    services: {
+        heading: "Apa yang Kami Berikan",
+        subtitle: "Layanan konsultasi komprehensif yang didukung teknologi dan keahlian mendalam.",
+        perijinanUsaha: "Perijinan Usaha",
+        perijinanBangunan: "Perijinan Bangunan",
+        kitasKitap: "KITAS / KITAP",
+        perijinanMikol: "Perijinan Mikol",
+        akuntansi: "Jasa Akuntansi",
+        perpajakan: "Jasa Perpajakan",
+        pendirianPerusahaan: "Pendirian Perusahaan",
+        legalitas: "Legalitas & Izin Usaha",
+        izinTinggal: "Pengurusan Izin Tinggal (KITAS & VISA)",
+        audit: "Internal & Eksternal Audit",
+        appraisal: "Jasa Appraisal",
+        financialAdvisory: "Financial Advisory",
     },
 
     // Features
     features: {
-        heading: "Semua yang Anda Butuhkan",
-        description: "Infrastruktur lengkap untuk mengelola praktik konsultasi pajak Anda dengan standar enterprise.",
+        heading: "Platform yang Menjalankan Praktik Anda",
+        description: "Semua alat yang Anda butuhkan, terintegrasi dalam satu sistem. Tidak perlu lagi berganti-ganti spreadsheet, email, dan lemari arsip.",
         clientManagement: {
             title: "Manajemen Klien",
             description: "Kelola data klien lengkap dengan NPWP, jenis WP, dan status perusahaan dalam satu dashboard terpusat.",
         },
         taxCalendar: {
             title: "Kalender Pajak",
-            description: "Pantau otomatis deadline SPT Tahunan, PPN Masa, PPh 21/23/25 dengan indikator status real-time.",
+            description: "Jangan lewatkan deadline lagi. Pantau semua kewajiban pajak otomatis dengan indikator status real-time.",
         },
         taxCalculator: {
             title: "Kalkulator Pajak",
@@ -47,7 +97,7 @@ export const id: Translations = {
         },
         invoiceBilling: {
             title: "Invoice & Billing",
-            description: "Buat dan terbitkan invoice konsultasi dengan perhitungan otomatis PPN dan pelacakan status pelunasan.",
+            description: "Buat invoice profesional dalam hitungan menit dengan perhitungan PPN otomatis dan pelacakan pembayaran real-time.",
         },
         complianceReports: {
             title: "Laporan Kepatuhan",
@@ -55,24 +105,60 @@ export const id: Translations = {
         },
     },
 
+    // Founder
+    founder: {
+        heading: "Dibangun oleh Praktisi, Bukan Hanya Developer",
+        name: "Tim Bay's Finance",
+        title: "Ahli Konsultasi Pajak & Bisnis",
+        bio: "Dengan pengalaman lebih dari satu dekade dalam hukum pajak Indonesia, perizinan usaha, dan advisory keuangan, tim kami membangun Bay'sConsult untuk menyelesaikan masalah yang kami hadapi setiap hari. Kami memahami tekanan deadline kepatuhan, kompleksitas manajemen multi-klien, dan kebutuhan akan akurasi — karena kami mengalaminya sendiri.",
+        credential1: "10+ Tahun di Konsultasi Pajak",
+        credential2: "Ratusan Bisnis Dilayani",
+        credential3: "Keahlian Regulasi Mendalam",
+    },
+
+    // Testimonials
+    testimonials: {
+        heading: "Dengar dari Klien Kami",
+        description: "Profesional pajak di seluruh Indonesia mempercayai Bay'sConsult untuk menjalankan praktik mereka.",
+        items: [
+            {
+                quote: "Platform ini mengubah cara kami mengelola deadline pajak klien. Kami beralih dari spreadsheet ke kalender otomatis penuh dalam kurang dari seminggu.",
+                name: "Sarah Mitchell",
+                role: "Konsultan Pajak Senior, Mitchell & Co.",
+            },
+            {
+                quote: "Manajemen dokumen saja sudah menghemat berjam-jam setiap minggu. Semuanya terorganisir, mudah dicari, dan dibagikan ke klien secara instan.",
+                name: "David Lim",
+                role: "Partner, Lim Accounting Group",
+            },
+            {
+                quote: "Invoicing dulu sangat merepotkan. Sekarang hanya butuh beberapa menit. Klien kami bahkan memuji betapa profesionalnya tampilan billing-nya.",
+                name: "Priya Nair",
+                role: "Founder, Nair Financial Advisory",
+            },
+        ],
+    },
+
     // CTA
     cta: {
-        heading: "Mulai Efisiensi Praktik Anda",
-        description: "Akselerasi alur kerja konsultasi pajak Anda hari ini dengan standar keamanan dan akurasi tinggi.",
-        button: "Buat Akun Sekarang",
+        heading: "Siap Mengembangkan Praktik Anda?",
+        description: "Bergabung dengan 100+ profesional pajak yang menghemat 10+ jam setiap minggu dengan Bay'sConsult.",
+        button: "Mulai Uji Coba Gratis",
         free: "Gratis 14 hari",
         noCard: "Tanpa kartu kredit",
+        guarantee: "Batalkan kapan saja — tanpa pertanyaan",
     },
 
     // Footer
     footer: {
-        description: "Infrastruktur kelas enterprise untuk efisiensi maksimal bagi konsultan pajak di seluruh Indonesia.",
+        description: "Platform modern untuk konsultan pajak yang ingin lebih sedikit waktu untuk admin dan lebih banyak waktu untuk memberikan nasihat kepada klien.",
         platform: "Platform",
         company: "Perusahaan",
         privacy: "Kebijakan Privasi",
         terms: "Syarat & Ketentuan",
         contact: "Kontak",
         copyright: "Hak Cipta Dilindungi.",
+        security: "Data Anda dienkripsi dan disimpan dengan aman",
     },
 
     // Dashboard
@@ -92,24 +178,6 @@ export const id: Translations = {
         allDeadlinesMet: "Semua deadline sudah terpenuhi! 🎉",
         unpaidInvoices: "Invoice Belum Lunas",
         allInvoicesPaid: "Semua invoice sudah lunas! 🎉",
-    },
-
-    // Services
-    services: {
-        heading: "Layanan Kami",
-        subtitle: "Layanan yang kami tawarkan untuk membantu bisnis Anda",
-        perijinanUsaha: "Perijinan Usaha",
-        perijinanBangunan: "Perijinan Bangunan",
-        kitasKitap: "KITAS / KITAP",
-        perijinanMikol: "Perijinan Mikol",
-        akuntansi: "Jasa Akuntansi",
-        perpajakan: "Jasa Perpajakan",
-        pendirianPerusahaan: "Pendirian Perusahaan",
-        legalitas: "Legalitas & Izin Usaha",
-        izinTinggal: "Pengurusan Izin Tinggal (KITAS & VISA)",
-        audit: "Internal & Eksternal Audit",
-        appraisal: "Jasa Appraisal",
-        financialAdvisory: "Financial Advisory",
     },
 
     // Dashboard Sidebar
