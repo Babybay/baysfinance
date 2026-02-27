@@ -53,7 +53,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
                 <div className="h-16 flex items-center justify-between px-5 border-b border-border shrink-0">
-                    <Link href="/" className="font-serif text-lg tracking-tight text-foreground">PajakConsult</Link>
+                    <Link href="/" className="font-serif text-lg tracking-tight text-foreground">Bay&apos;sConsult</Link>
                     <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded-[8px] hover:bg-surface">
                         <X className="h-5 w-5 text-muted" />
                     </button>
@@ -92,7 +92,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         </Link>
                     </div>
                     <div className="lg:hidden">
-                        <span className="font-serif text-foreground">PajakConsult</span>
+                        <span className="font-serif text-foreground">Bay&apos;sConsult</span>
                     </div>
                     <div className="lg:hidden">
                         <UserButton afterSignOutUrl="/" />
