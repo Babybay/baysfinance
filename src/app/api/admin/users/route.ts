@@ -1,19 +1,12 @@
-import { clerkClient, auth } from "@clerk/nextjs/server";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 async function isCurrentUserAdmin(): Promise<boolean> {
-    const { userId, sessionClaims } = await auth();
-    if (!userId) return false;
+    const user = await currentUser();
+    if (!user) return false;
 
-    // Fast path: check session claims first
-    const roleFromClaims = (sessionClaims as { metadata?: { role?: string } } | null)?.metadata?.role;
-    if (roleFromClaims === "admin") return true;
-
-    // Slow path: session may be stale, check Clerk user record directly
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    const roleFromMetadata = (user.publicMetadata as { role?: string })?.role;
-    return roleFromMetadata === "admin";
+    const role = (user.publicMetadata as { role?: string })?.role;
+    return role === "admin";
 }
 
 export async function GET() {

@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactCompiler: true,
-  eslint: {
-    ignoreDuringBuilds: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pub-5d46654b7ae246ccababc4ece9ce8590.r2.dev',
+      },
+    ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  output: 'standalone',
 };
 
 export default nextConfig;

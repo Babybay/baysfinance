@@ -25,7 +25,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { t } = useI18n();
-    const { role, isLoaded } = useRoles();
+    const { role } = useRoles();
 
     const sidebarLinks = [
         { href: "/dashboard", label: t.sidebar.dashboard, icon: LayoutDashboard, roles: ["admin", "client"] },
@@ -39,11 +39,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         { href: "/dashboard/users", label: t.sidebar.userManagement, icon: Users, roles: ["admin"] },
     ].filter(link => role && link.roles.includes(role));
 
-    if (!isLoaded) {
-        return <div className="min-h-screen flex items-center justify-center bg-surface">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
-        </div>;
-    }
+    // Loading state is now handled by Next.js layouts and server components
 
     return (
         <div className="min-h-screen flex bg-surface">

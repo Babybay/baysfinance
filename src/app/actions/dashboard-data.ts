@@ -10,14 +10,24 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
         let deadlines: TaxDeadline[] = [];
 
         if (role === "admin") {
-            clients = await prisma.client.findMany({ orderBy: { createdAt: "desc" } });
-            invoices = await prisma.invoice.findMany({ orderBy: { tanggal: "desc" } });
-            deadlines = await prisma.taxDeadline.findMany({ orderBy: { tanggalBatas: "asc" } });
+            // Fetch all for admin
+            clients = await prisma.client.findMany({
+                orderBy: { createdAt: "desc" }
+            });
+            invoices = await prisma.invoice.findMany({
+                orderBy: { tanggal: "desc" },
+                take: 20 // Limit initial load for performance
+            });
+            deadlines = await prisma.taxDeadline.findMany({
+                orderBy: { tanggalBatas: "asc" }
+            });
         } else if (clientId) {
+            // Fetch only for specific client
             clients = await prisma.client.findMany({ where: { id: clientId } });
             invoices = await prisma.invoice.findMany({
                 where: { clientId },
-                orderBy: { tanggal: "desc" }
+                orderBy: { tanggal: "desc" },
+                take: 20
             });
             deadlines = await prisma.taxDeadline.findMany({
                 where: { clientId },
