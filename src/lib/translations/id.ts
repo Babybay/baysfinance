@@ -655,5 +655,3 @@ export const id: Translations = {
         ],
     }
 };
-
-export type Translations = typeof id;

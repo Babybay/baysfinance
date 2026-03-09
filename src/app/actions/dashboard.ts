@@ -2,16 +2,17 @@
 
 import { prisma } from "@/lib/prisma";
 import { formatIDR } from "@/lib/data";
+import { PermitCaseStatus, ClientStatus, InvoiceStatus } from "@prisma/client";
 
 export async function getDashboardStats() {
     try {
         const clients = await prisma.client.count();
         const activeClients = await prisma.client.count({
-            where: { status: "Aktif" }
+            where: { status: ClientStatus.Aktif }
         });
 
         const invoices = await prisma.invoice.findMany({
-            where: { status: "Terkirim" },
+            where: { status: InvoiceStatus.Terkirim },
             select: { total: true }
         });
         const totalPendingInvoice = invoices.reduce((acc, inv) => acc + inv.total, 0);
@@ -19,7 +20,7 @@ export async function getDashboardStats() {
         const permits = await prisma.permitCase.count({
             where: {
                 status: {
-                    in: ["Processing", "Verification", "Waiting Document", "Revision Required"]
+                    in: [PermitCaseStatus.Processing, PermitCaseStatus.WaitingDocument]
                 }
             }
         });

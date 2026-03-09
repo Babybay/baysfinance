@@ -9,6 +9,7 @@ import {
     Search, Plus, Eye, Filter, ArrowUpDown
 } from "lucide-react";
 import { PermitCase, PermitStatus, formatIDR } from "@/lib/data";
+import { PermitCaseStatus } from "@prisma/client";
 
 interface PermitListProps {
     permits: PermitCase[];
@@ -32,20 +33,15 @@ export function PermitList({ permits, permitTypes, isAdmin }: PermitListProps) {
         return matchesSearch && matchesStatus && matchesType;
     });
 
-    const getStatusVariant = (status: PermitStatus) => {
+    const getStatusVariant = (status: PermitCaseStatus) => {
         switch (status) {
-            case "Issued":
-            case "Completed":
+            case PermitCaseStatus.Issued:
                 return "success";
-            case "Processing":
-            case "Verification":
+            case PermitCaseStatus.Processing:
                 return "info";
-            case "Waiting Document":
-            case "Revision Required":
+            case PermitCaseStatus.WaitingDocument:
                 return "warning";
-            case "Cancelled":
-                return "danger";
-            case "On Hold":
+            case PermitCaseStatus.Draft:
                 return "neutral";
             default:
                 return "default";
@@ -97,12 +93,10 @@ export function PermitList({ permits, permitTypes, isAdmin }: PermitListProps) {
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
                             <option value="all">Semua Status</option>
-                            <option value="Draft">Draft</option>
-                            <option value="Waiting Document">Menunggu Dokumen</option>
-                            <option value="Verification">Verifikasi</option>
-                            <option value="Processing">Proses</option>
-                            <option value="Issued">Terbit</option>
-                            <option value="Completed">Selesai</option>
+                            <option value={PermitCaseStatus.Draft}>Draft</option>
+                            <option value={PermitCaseStatus.WaitingDocument}>Menunggu Dokumen</option>
+                            <option value={PermitCaseStatus.Processing}>Proses</option>
+                            <option value={PermitCaseStatus.Issued}>Terbit</option>
                         </select>
                     </div>
                 </div>
@@ -116,7 +110,6 @@ export function PermitList({ permits, permitTypes, isAdmin }: PermitListProps) {
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">Jenis</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">Klien</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">Layanan</th>
-                                <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">Progress</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">Status</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider text-right">Aksi</th>
                             </tr>
@@ -132,14 +125,6 @@ export function PermitList({ permits, permitTypes, isAdmin }: PermitListProps) {
                                     </td>
                                     <td className="py-4 text-sm text-foreground">{p.clientName}</td>
                                     <td className="py-4 text-sm text-muted-foreground">{p.serviceType}</td>
-                                    <td className="py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-24 h-1.5 bg-surface rounded-full overflow-hidden">
-                                                <div className="h-full bg-accent transition-all duration-500" style={{ width: `${p.progress}%` }} />
-                                            </div>
-                                            <span className="text-xs font-medium text-muted">{p.progress}%</span>
-                                        </div>
-                                    </td>
                                     <td className="py-4">
                                         <Badge variant={getStatusVariant(p.status)} className="capitalize">{p.status}</Badge>
                                     </td>
@@ -170,15 +155,11 @@ export function PermitList({ permits, permitTypes, isAdmin }: PermitListProps) {
                                     <p className="font-mono font-medium text-foreground text-sm">{p.caseId}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">{p.clientName}</p>
                                 </div>
-                                <Badge variant={getStatusVariant(p.status)}>{p.status}</Badge>
+                                <Badge variant={getStatusVariant(p.status as PermitCaseStatus)}>{p.status}</Badge>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span className="text-muted-foreground">{p.serviceType}</span>
-                                    <span className="font-medium">{p.progress}%</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-card rounded-full overflow-hidden">
-                                    <div className="h-full bg-accent transition-all" style={{ width: `${p.progress}%` }} />
                                 </div>
                             </div>
                             <div className="mt-4">

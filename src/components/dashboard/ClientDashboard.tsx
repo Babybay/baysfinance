@@ -14,6 +14,7 @@ import {
     formatIDR,
     Client, Invoice, TaxDeadline,
 } from "@/lib/data";
+import { InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
 
 interface ClientDashboardProps {
     client: Client | null;
@@ -44,24 +45,24 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
     }
 
     // ── Computed data ─────────────────────────────────────────
-    const outstanding = invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").reduce((s, i) => s + i.total, 0);
-    const overdueCount = deadlines.filter((d) => d.status === "Terlambat").length;
+    const outstanding = invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((s, i) => s + i.total, 0);
+    const overdueCount = deadlines.filter((d) => d.status === TaxDeadlineStatus.Terlambat).length;
     const isHealthy = overdueCount === 0;
 
     const deadlineSoon = deadlines
-        .filter((d) => d.status === "Belum Lapor" || d.status === "Terlambat")
+        .filter((d) => d.status === TaxDeadlineStatus.BelumLapor || d.status === TaxDeadlineStatus.Terlambat)
         .sort((a, b) => {
-            if (a.status === "Terlambat" && b.status !== "Terlambat") return -1;
-            if (a.status !== "Terlambat" && b.status === "Terlambat") return 1;
+            if (a.status === TaxDeadlineStatus.Terlambat && b.status !== TaxDeadlineStatus.Terlambat) return -1;
+            if (a.status !== TaxDeadlineStatus.Terlambat && b.status === TaxDeadlineStatus.Terlambat) return 1;
             return new Date(a.tanggalBatas).getTime() - new Date(b.tanggalBatas).getTime();
         })
         .slice(0, 5);
 
     const invoicesBelum = invoices
-        .filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo")
+        .filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo)
         .sort((a, b) => {
-            if (a.status === "Jatuh Tempo" && b.status !== "Jatuh Tempo") return -1;
-            if (a.status !== "Jatuh Tempo" && b.status === "Jatuh Tempo") return 1;
+            if (a.status === InvoiceStatus.JatuhTempo && b.status !== InvoiceStatus.JatuhTempo) return -1;
+            if (a.status !== InvoiceStatus.JatuhTempo && b.status === InvoiceStatus.JatuhTempo) return 1;
             return new Date(a.jatuhTempo).getTime() - new Date(b.jatuhTempo).getTime();
         })
         .slice(0, 5);
@@ -154,9 +155,9 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                             </div>
                         ) : (
                             deadlineSoon.map((d) => (
-                                <div key={d.id} className={`flex items-center justify-between p-3 rounded-[8px] transition-colors ${d.status === "Terlambat" ? "bg-error-muted border border-error/10" : "bg-surface hover:bg-border/50"}`}>
+                                <div key={d.id} className={`flex items-center justify-between p-3 rounded-[8px] transition-colors ${d.status === TaxDeadlineStatus.Terlambat ? "bg-error-muted border border-error/10" : "bg-surface hover:bg-border/50"}`}>
                                     <div className="flex items-center gap-3 min-w-0">
-                                        {d.status === "Terlambat" ? (
+                                        {d.status === TaxDeadlineStatus.Terlambat ? (
                                             <AlertTriangle className="h-4 w-4 text-error shrink-0" />
                                         ) : (
                                             <Clock className="h-4 w-4 text-accent shrink-0" />
@@ -198,7 +199,7 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
                                         <p className="text-sm font-semibold text-foreground">{formatIDR(inv.total)}</p>
-                                        <Badge variant={inv.status === "Jatuh Tempo" ? "danger" : "info"} className="mt-1">{inv.status}</Badge>
+                                        <Badge variant={inv.status === InvoiceStatus.JatuhTempo ? "danger" : "info"} className="mt-1">{inv.status === InvoiceStatus.JatuhTempo ? "Jatuh Tempo" : inv.status}</Badge>
                                     </div>
                                 </div>
                             ))

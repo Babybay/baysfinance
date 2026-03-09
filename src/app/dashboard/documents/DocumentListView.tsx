@@ -11,22 +11,23 @@ import { Search, FileText, Download, Eye, Trash2, Upload, FolderOpen } from "luc
 import { Document as DocType, Client } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { uploadDocument, deleteDocument } from "@/app/actions/documents";
+import { DocumentKategori } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 const kategoriOptions = [
-    { value: "Faktur Pajak", label: "Faktur Pajak" },
-    { value: "Bukti Potong", label: "Bukti Potong" },
-    { value: "SPT", label: "SPT" },
-    { value: "Laporan Keuangan", label: "Laporan Keuangan" },
-    { value: "Lainnya", label: "Lainnya" },
+    { value: DocumentKategori.FakturPajak, label: "Faktur Pajak" },
+    { value: DocumentKategori.BuktiPotong, label: "Bukti Potong" },
+    { value: DocumentKategori.SPT, label: "SPT" },
+    { value: DocumentKategori.LaporanKeuangan, label: "Laporan Keuangan" },
+    { value: DocumentKategori.Lainnya, label: "Lainnya" },
 ];
 
 const kategoriColors: Record<string, "info" | "success" | "warning" | "danger" | "default"> = {
-    "Faktur Pajak": "info",
-    "Bukti Potong": "success",
-    "SPT": "warning",
-    "Laporan Keuangan": "danger",
-    "Lainnya": "default",
+    [DocumentKategori.FakturPajak]: "info",
+    [DocumentKategori.BuktiPotong]: "success",
+    [DocumentKategori.SPT]: "warning",
+    [DocumentKategori.LaporanKeuangan]: "danger",
+    [DocumentKategori.Lainnya]: "default",
 };
 
 interface DocumentListViewProps {
@@ -45,7 +46,7 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
 
     const [form, setForm] = useState({
         nama: "",
-        kategori: "Faktur Pajak" as DocType["kategori"],
+        kategori: DocumentKategori.FakturPajak as DocType["kategori"],
         clientId: "",
         catatan: "",
     });
@@ -69,7 +70,7 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
         if (res.success) {
             router.refresh(); // Refresh server data
             setModalOpen(false);
-            setForm({ nama: "", kategori: "Faktur Pajak", clientId: "", catatan: "" });
+            setForm({ nama: "", kategori: DocumentKategori.FakturPajak, clientId: "", catatan: "" });
             setSelectedFile(null);
         } else {
             alert(res.error || "Gagal mengupload dokumen");

@@ -1,14 +1,15 @@
 // Shared types and data for the tax consulting application
+import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus } from "@prisma/client";
 
 export interface Client {
     id: string;
     nama: string;
     npwp: string;
-    jenisWP: "Orang Pribadi" | "Badan";
+    jenisWP: JenisWP;
     email: string;
     telepon: string;
     alamat: string;
-    status: "Aktif" | "Tidak Aktif";
+    status: ClientStatus;
     createdAt: string;
 }
 
@@ -18,7 +19,7 @@ export interface TaxDeadline {
     deskripsi: string;
     tanggalBatas: string;
     masaPajak: string;
-    status: "Sudah Lapor" | "Belum Lapor" | "Terlambat";
+    status: TaxDeadlineStatus;
     clientId?: string;
     clientName?: string;
 }
@@ -26,7 +27,7 @@ export interface TaxDeadline {
 export interface Document {
     id: string;
     nama: string;
-    kategori: "Faktur Pajak" | "Bukti Potong" | "SPT" | "Laporan Keuangan" | "Lainnya";
+    kategori: DocumentKategori;
     clientId: string;
     clientName: string;
     ukuran: string;
@@ -45,7 +46,7 @@ export interface Invoice {
     subtotal: number;
     ppn: number;
     total: number;
-    status: "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo";
+    status: InvoiceStatus;
     catatan: string;
 }
 
@@ -94,7 +95,6 @@ export interface PermitCase {
     serviceType: string;
     riskCategory: PermitRiskCategory;
     status: PermitStatus;
-    progress: number;
     feeAmount: number;
     notes?: string;
     createdAt: string;
@@ -103,25 +103,15 @@ export interface PermitCase {
     checklists?: PermitChecklist[];
 }
 
+export type PermitStatus = PermitCaseStatus;
 export type PermitRiskCategory = "Low" | "Medium-Low" | "Medium-High" | "High";
-
-export type PermitStatus =
-    | "Draft"
-    | "Waiting Document"
-    | "Verification"
-    | "Revision Required"
-    | "Processing"
-    | "Issued"
-    | "Completed"
-    | "Cancelled"
-    | "On Hold";
 
 export interface PermitDocument {
     id: string;
     caseId: string;
     docType: string;
     fileUrl?: string;
-    verificationStatus: "Pending" | "Approved" | "Rejected";
+    verificationStatus: VerificationStatus;
     comments?: string;
     sortOrder: number;
 }

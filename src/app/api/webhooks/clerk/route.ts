@@ -51,24 +51,50 @@ interface ClerkUserData {
     email_addresses?: { email_address: string }[];
 }
 
+import { prisma } from "@/lib/prisma";
+import { Role } from "@prisma/client";
+
 async function handleEvent(eventType: string, userData: ClerkUserData) {
-    if (eventType === "user.created" && userData?.id) {
+    if ((eventType === "user.created" || eventType === "user.updated") && userData?.id) {
         const client = await clerkClient();
+        const user = await client.users.getUser(userData.id);
 
-        // Generate a unique clientId based on the Clerk user ID
-        // This creates a stable, unique ID like "cl_abc123xyz"
-        const clientId = `cl_${userData.id.replace("user_", "")}`;
+        const email = userData.email_addresses?.[0]?.email_address || "";
+        const name = [userData.first_name, userData.last_name].filter(Boolean).join(" ") || "User";
 
-        // Auto-assign "client" role + unique clientId
-        await client.users.updateUserMetadata(userData.id, {
-            publicMetadata: {
-                role: "client",
-                clientId,
-            },
-        });
+        // 1. Sync local User model for Staff/Admin
+        const publicRole = user.publicMetadata.role as string;
+        if (publicRole === "admin" || publicRole === "staff") {
+            await prisma.user.upsert({
+                where: { clerkId: userData.id },
+                update: {
+                    name,
+                    email,
+                    role: publicRole === "admin" ? Role.Admin : Role.Staff,
+                },
+                create: {
+                    clerkId: userData.id,
+                    name,
+                    email,
+                    role: publicRole === "admin" ? Role.Admin : Role.Staff,
+                }
+            });
+            console.log(`[CLERK_WEBHOOK] Synced local User: ${userData.id} as ${publicRole}`);
+        }
 
-        console.log(`[CLERK_WEBHOOK] Assigned role=client, clientId=${clientId} to user: ${userData.id}`);
-        return NextResponse.json({ message: "Role & clientId assigned", userId: userData.id, clientId });
+        // 2. Handle specific user.created logic (e.g. auto-assigning client role if needed)
+        if (eventType === "user.created" && !publicRole) {
+            const clientId = `cl_${userData.id.replace("user_", "")}`;
+            await client.users.updateUserMetadata(userData.id, {
+                publicMetadata: {
+                    role: "client",
+                    clientId,
+                },
+            });
+            console.log(`[CLERK_WEBHOOK] Auto-assigned role=client to user: ${userData.id}`);
+        }
+
+        return NextResponse.json({ message: "Sync complete", userId: userData.id });
     }
 
     return NextResponse.json({ message: "Event ignored", type: eventType });

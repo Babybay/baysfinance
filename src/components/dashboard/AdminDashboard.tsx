@@ -14,6 +14,7 @@ import {
     formatIDR,
     Client, Invoice, TaxDeadline,
 } from "@/lib/data";
+import { ClientStatus, InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
 
 interface AdminDashboardProps {
     clients: Client[];
@@ -24,29 +25,29 @@ interface AdminDashboardProps {
 export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardProps) {
     const { t } = useI18n();
 
-    const klienAktif = clients.filter((c) => c.status === "Aktif").length;
-    const pendapatan = invoices.filter((i) => i.status === "Lunas").reduce((s, i) => s + i.total, 0);
-    const outstanding = invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").reduce((s, i) => s + i.total, 0);
-    const overdueCount = deadlines.filter((d) => d.status === "Terlambat").length;
-    const pendingCount = deadlines.filter((d) => d.status === "Belum Lapor").length;
+    const klienAktif = clients.filter((c) => c.status === ClientStatus.Aktif).length;
+    const pendapatan = invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((s, i) => s + i.total, 0);
+    const outstanding = invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((s, i) => s + i.total, 0);
+    const overdueCount = deadlines.filter((d) => d.status === TaxDeadlineStatus.Terlambat).length;
+    const pendingCount = deadlines.filter((d) => d.status === TaxDeadlineStatus.BelumLapor).length;
     const totalUrgent = overdueCount + pendingCount;
 
     const deadlineSoon = deadlines
-        .filter((d) => d.status === "Belum Lapor" || d.status === "Terlambat")
+        .filter((d) => d.status === TaxDeadlineStatus.BelumLapor || d.status === TaxDeadlineStatus.Terlambat)
         .sort((a, b) => {
             // Overdue first, then by date
-            if (a.status === "Terlambat" && b.status !== "Terlambat") return -1;
-            if (a.status !== "Terlambat" && b.status === "Terlambat") return 1;
+            if (a.status === TaxDeadlineStatus.Terlambat && b.status !== TaxDeadlineStatus.Terlambat) return -1;
+            if (a.status !== TaxDeadlineStatus.Terlambat && b.status === TaxDeadlineStatus.Terlambat) return 1;
             return new Date(a.tanggalBatas).getTime() - new Date(b.tanggalBatas).getTime();
         })
         .slice(0, 5);
 
     const invoicesBelum = invoices
-        .filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo")
+        .filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo)
         .sort((a, b) => {
             // Overdue first
-            if (a.status === "Jatuh Tempo" && b.status !== "Jatuh Tempo") return -1;
-            if (a.status !== "Jatuh Tempo" && b.status === "Jatuh Tempo") return 1;
+            if (a.status === InvoiceStatus.JatuhTempo && b.status !== InvoiceStatus.JatuhTempo) return -1;
+            if (a.status !== InvoiceStatus.JatuhTempo && b.status === InvoiceStatus.JatuhTempo) return 1;
             return new Date(a.jatuhTempo).getTime() - new Date(b.jatuhTempo).getTime();
         })
         .slice(0, 5);
@@ -65,8 +66,8 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* North Star: Overdue Deadlines */}
                 <div className={`rounded-[16px] border p-5 transition-shadow hover:shadow-[var(--shadow-color)_0px_4px_24px_0px] ${isHealthy
-                        ? "bg-card border-border"
-                        : "bg-error-muted border-error/20"
+                    ? "bg-card border-border"
+                    : "bg-error-muted border-error/20"
                     }`}>
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-muted-foreground">{t.dashboard.upcomingDeadlines}</span>
@@ -161,9 +162,9 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
                             </div>
                         ) : (
                             deadlineSoon.map((d) => (
-                                <div key={d.id} className={`flex items-center justify-between p-3 rounded-[8px] transition-colors ${d.status === "Terlambat" ? "bg-error-muted border border-error/10" : "bg-surface hover:bg-border/50"}`}>
+                                <div key={d.id} className={`flex items-center justify-between p-3 rounded-[8px] transition-colors ${d.status === TaxDeadlineStatus.Terlambat ? "bg-error-muted border border-error/10" : "bg-surface hover:bg-border/50"}`}>
                                     <div className="flex items-center gap-3 min-w-0">
-                                        {d.status === "Terlambat" ? (
+                                        {d.status === TaxDeadlineStatus.Terlambat ? (
                                             <AlertTriangle className="h-4 w-4 text-error shrink-0" />
                                         ) : (
                                             <Clock className="h-4 w-4 text-accent shrink-0" />
@@ -205,7 +206,7 @@ export function AdminDashboard({ clients, invoices, deadlines }: AdminDashboardP
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
                                         <p className="text-sm font-semibold text-foreground">{formatIDR(inv.total)}</p>
-                                        <Badge variant={inv.status === "Jatuh Tempo" ? "danger" : "info"} className="mt-1">{inv.status}</Badge>
+                                        <Badge variant={inv.status === InvoiceStatus.JatuhTempo ? "danger" : "info"} className="mt-1">{inv.status === InvoiceStatus.JatuhTempo ? "Jatuh Tempo" : inv.status}</Badge>
                                     </div>
                                 </div>
                             ))

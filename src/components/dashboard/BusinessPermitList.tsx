@@ -20,6 +20,7 @@ import {
     PermitStatus,
     formatIDR
 } from "@/lib/data";
+import { PermitCaseStatus } from "@prisma/client";
 
 interface BusinessPermitListProps {
     permits: PermitCase[];
@@ -44,18 +45,13 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
 
     const getStatusVariant = (status: PermitStatus) => {
         switch (status) {
-            case "Issued":
-            case "Completed":
+            case PermitCaseStatus.Issued:
                 return "success";
-            case "Processing":
-            case "Verification":
+            case PermitCaseStatus.Processing:
                 return "info";
-            case "Waiting Document":
-            case "Revision Required":
+            case PermitCaseStatus.WaitingDocument:
                 return "warning";
-            case "Cancelled":
-                return "danger";
-            case "On Hold":
+            case PermitCaseStatus.Draft:
                 return "neutral";
             default:
                 return "default";
@@ -63,18 +59,18 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
     };
 
     const getStatusLabel = (status: PermitStatus) => {
-        const labels: Record<string, string> = {
-            "Draft": t.businessPermits.status.draft,
-            "Waiting Document": t.businessPermits.status.waitingDocument,
-            "Verification": t.businessPermits.status.verification,
-            "Revision Required": t.businessPermits.status.revisionRequired,
-            "Processing": t.businessPermits.status.processingOSS,
-            "Issued": t.businessPermits.status.issued,
-            "Completed": t.businessPermits.status.completed,
-            "Cancelled": t.businessPermits.status.cancelled,
-            "On Hold": t.businessPermits.status.onHold,
-        };
-        return labels[status] || status;
+        switch (status) {
+            case PermitCaseStatus.Draft:
+                return t.businessPermits.status.draft;
+            case PermitCaseStatus.WaitingDocument:
+                return t.businessPermits.status.waitingDocument;
+            case PermitCaseStatus.Processing:
+                return t.businessPermits.status.processingOSS;
+            case PermitCaseStatus.Issued:
+                return t.businessPermits.status.issued;
+            default:
+                return status;
+        }
     };
 
     return (
@@ -112,11 +108,10 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
                             <option value="all">Semua Status</option>
-                            <option value="Draft">Draft</option>
-                            <option value="Waiting Document">Menunggu Dokumen</option>
-                            <option value="Verification">Verifikasi</option>
-                            <option value="Processing OSS">Proses OSS</option>
-                            <option value="Issued">Terbit</option>
+                            <option value={PermitCaseStatus.Draft}>Draft</option>
+                            <option value={PermitCaseStatus.WaitingDocument}>Menunggu Dokumen</option>
+                            <option value={PermitCaseStatus.Processing}>Proses OSS</option>
+                            <option value={PermitCaseStatus.Issued}>Terbit</option>
                         </select>
                         <Button variant="soft" size="icon">
                             <Filter className="h-4 w-4" />
@@ -136,7 +131,6 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                                 </th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">{t.businessPermits.table.client}</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">{t.businessPermits.table.type}</th>
-                                <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">{t.businessPermits.table.progress}</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider">{t.businessPermits.table.status}</th>
                                 <th className="pb-4 pt-0 font-medium text-xs text-muted-foreground uppercase tracking-wider text-right">Aksi</th>
                             </tr>
@@ -147,17 +141,6 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                                     <td className="py-4 font-medium text-sm text-foreground">{p.caseId}</td>
                                     <td className="py-4 text-sm text-foreground">{p.clientName}</td>
                                     <td className="py-4 text-sm text-muted-foreground">{p.serviceType}</td>
-                                    <td className="py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-24 h-1.5 bg-surface rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-accent transition-all duration-500"
-                                                    style={{ width: `${p.progress}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs font-medium text-muted">{p.progress}%</span>
-                                        </div>
-                                    </td>
                                     <td className="py-4">
                                         <Badge variant={getStatusVariant(p.status)} className="capitalize">
                                             {getStatusLabel(p.status)}
@@ -200,13 +183,6 @@ export function BusinessPermitList({ permits, isAdmin }: BusinessPermitListProps
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span className="text-muted-foreground">{p.serviceType}</span>
-                                    <span className="font-medium">{p.progress}%</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-card rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-accent transition-all"
-                                        style={{ width: `${p.progress}%` }}
-                                    />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-2 mt-4">

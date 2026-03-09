@@ -8,6 +8,7 @@ import { CalendarDays, AlertTriangle, CheckCircle2, Clock, Filter } from "lucide
 import { TaxDeadline } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { updateDeadlineStatus } from "@/app/actions/deadlines";
+import { TaxDeadlineStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 const months = [
@@ -17,13 +18,13 @@ const months = [
 
 const taxTypes = ["Semua", "PPh 21", "PPh 23", "PPh 25", "PPN", "SPT Tahunan OP", "SPT Tahunan Badan"];
 
-function getStatusBadge(status: TaxDeadline["status"]) {
+function getStatusBadge(status: TaxDeadlineStatus) {
     switch (status) {
-        case "Sudah Lapor":
+        case TaxDeadlineStatus.SudahLapor:
             return <Badge variant="success"><CheckCircle2 className="h-3 w-3 mr-1" />Sudah Lapor</Badge>;
-        case "Belum Lapor":
+        case TaxDeadlineStatus.BelumLapor:
             return <Badge variant="warning"><Clock className="h-3 w-3 mr-1" />Belum Lapor</Badge>;
-        case "Terlambat":
+        case TaxDeadlineStatus.Terlambat:
             return <Badge variant="danger"><AlertTriangle className="h-3 w-3 mr-1" />Terlambat</Badge>;
     }
 }
@@ -44,7 +45,7 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
     const router = useRouter();
 
 
-    const toggleStatus = async (id: string, newStatus: TaxDeadline["status"]) => {
+    const toggleStatus = async (id: string, newStatus: TaxDeadlineStatus) => {
         const res = await updateDeadlineStatus(id, newStatus);
         if (res.success) {
             setDeadlines(deadlines.map(d => d.id === id ? { ...d, status: newStatus } : d));
@@ -67,9 +68,9 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
 
     const stats = {
         total: deadlines.length,
-        sudahLapor: deadlines.filter((d) => d.status === "Sudah Lapor").length,
-        belumLapor: deadlines.filter((d) => d.status === "Belum Lapor").length,
-        terlambat: deadlines.filter((d) => d.status === "Terlambat").length,
+        sudahLapor: deadlines.filter((d) => d.status === TaxDeadlineStatus.SudahLapor).length,
+        belumLapor: deadlines.filter((d) => d.status === TaxDeadlineStatus.BelumLapor).length,
+        terlambat: deadlines.filter((d) => d.status === TaxDeadlineStatus.Terlambat).length,
     };
 
     if (!roleLoaded) {
@@ -120,9 +121,9 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
                     className="h-9 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40">
                     <option value="Semua">Semua Status</option>
-                    <option value="Sudah Lapor">Sudah Lapor</option>
-                    <option value="Belum Lapor">Belum Lapor</option>
-                    <option value="Terlambat">Terlambat</option>
+                    <option value={TaxDeadlineStatus.SudahLapor}>Sudah Lapor</option>
+                    <option value={TaxDeadlineStatus.BelumLapor}>Belum Lapor</option>
+                    <option value={TaxDeadlineStatus.Terlambat}>Terlambat</option>
                 </select>
             </div>
 
@@ -140,9 +141,9 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
                             <div
                                 key={d.id}
                                 onClick={() => setSelectedDeadline(d)}
-                                className={`bg-card rounded-[12px] border p-4 cursor-pointer hover:shadow-md transition-all ${d.status === "Terlambat"
+                                className={`bg-card rounded-[12px] border p-4 cursor-pointer hover:shadow-md transition-all ${d.status === TaxDeadlineStatus.Terlambat
                                     ? "border-error/40 bg-error-muted"
-                                    : d.status === "Sudah Lapor"
+                                    : d.status === TaxDeadlineStatus.SudahLapor
                                         ? "border-emerald-500/30 bg-emerald-500/5"
                                         : "border-border"
                                     }`}
@@ -162,7 +163,7 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
                                         <p className="text-sm font-semibold text-foreground">
                                             {new Date(d.tanggalBatas).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                                         </p>
-                                        {d.status !== "Sudah Lapor" && (
+                                        {d.status !== TaxDeadlineStatus.SudahLapor && (
                                             <p className={`text-xs mt-1 ${daysLeft < 0 ? "text-error" : daysLeft <= 7 ? "text-amber-500" : "text-muted-foreground"}`}>
                                                 {daysLeft < 0 ? `${Math.abs(daysLeft)} hari terlambat` : daysLeft === 0 ? "Hari ini!" : `${daysLeft} hari lagi`}
                                             </p>
@@ -214,15 +215,15 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
                         <div className="flex gap-2 pt-4 border-t border-border">
                             <Button
                                 size="default"
-                                variant={selectedDeadline.status === "Sudah Lapor" ? "soft" : "accent"}
-                                onClick={() => toggleStatus(selectedDeadline.id, "Sudah Lapor")}
+                                variant={selectedDeadline.status === TaxDeadlineStatus.SudahLapor ? "soft" : "accent"}
+                                onClick={() => toggleStatus(selectedDeadline.id, TaxDeadlineStatus.SudahLapor)}
                             >
                                 <CheckCircle2 className="h-4 w-4 mr-1" /> Tandai Sudah Lapor
                             </Button>
                             <Button
                                 size="default"
                                 variant="soft"
-                                onClick={() => toggleStatus(selectedDeadline.id, "Belum Lapor")}
+                                onClick={() => toggleStatus(selectedDeadline.id, TaxDeadlineStatus.BelumLapor)}
                             >
                                 <Clock className="h-4 w-4 mr-1" /> Belum Lapor
                             </Button>

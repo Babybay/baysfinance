@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Shield, User, Edit2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { JenisWP, ClientStatus } from "@prisma/client";
 
 interface ManagedUser {
     id: string;
@@ -59,8 +60,8 @@ export default function UserManagementPage() {
         if (res.success && res.data) {
             const formatted = (res.data as any[]).map(c => ({
                 ...c,
-                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
-                status: c.status as "Aktif" | "Tidak Aktif",
+                jenisWP: c.jenisWP as JenisWP,
+                status: c.status as ClientStatus,
                 createdAt: new Date(c.createdAt).toISOString().split("T")[0],
             }));
             setAllClients(formatted);

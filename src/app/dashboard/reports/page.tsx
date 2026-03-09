@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { formatIDR, Invoice, Client, TaxDeadline } from "@/lib/data";
 import { TrendingUp, TrendingDown, Users, Receipt, CalendarDays, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getDashboardData } from "@/app/actions/dashboard-data";
+import { InvoiceStatus, ClientStatus, TaxDeadlineStatus, JenisWP } from "@prisma/client";
 
 export default function ReportsPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -23,8 +24,8 @@ export default function ReportsPage() {
         if (response.success && response.data) {
             const formattedClients = response.data.clients.map(c => ({
                 ...c,
-                jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
-                status: c.status as "Aktif" | "Tidak Aktif",
+                jenisWP: c.jenisWP as JenisWP,
+                status: c.status as ClientStatus,
                 createdAt: new Date(c.createdAt).toISOString().split("T")[0]
             }));
 
@@ -32,7 +33,7 @@ export default function ReportsPage() {
                 ...i,
                 tanggal: new Date(i.tanggal).toISOString().split("T")[0],
                 jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
-                status: i.status as "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo",
+                status: i.status as InvoiceStatus,
                 items: [],
                 catatan: i.catatan || ""
             }));
@@ -40,7 +41,7 @@ export default function ReportsPage() {
             const formattedDeadlines = response.data.deadlines.map(d => ({
                 ...d,
                 tanggalBatas: new Date(d.tanggalBatas).toISOString().split("T")[0],
-                status: d.status as "Sudah Lapor" | "Belum Lapor" | "Terlambat",
+                status: d.status as TaxDeadlineStatus,
                 clientName: d.clientName || undefined
             }));
 
@@ -52,16 +53,16 @@ export default function ReportsPage() {
         setIsLoaded(true);
     };
 
-    const totalPendapatan = invoices.filter((i) => i.status === "Lunas").reduce((s, i) => s + i.total, 0);
-    const outstanding = invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").reduce((s, i) => s + i.total, 0);
-    const klienAktif = clients.filter((c) => c.status === "Aktif").length;
-    const deadlineTerlambat = deadlines.filter((d) => d.status === "Terlambat").length;
-    const deadlineSudah = deadlines.filter((d) => d.status === "Sudah Lapor").length;
+    const totalPendapatan = invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((s, i) => s + i.total, 0);
+    const outstanding = invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((s, i) => s + i.total, 0);
+    const klienAktif = clients.filter((c) => c.status === ClientStatus.Aktif).length;
+    const deadlineTerlambat = deadlines.filter((d) => d.status === TaxDeadlineStatus.Terlambat).length;
+    const deadlineSudah = deadlines.filter((d) => d.status === TaxDeadlineStatus.SudahLapor).length;
     const kepatuhanPersen = deadlines.length > 0 ? Math.round((deadlineSudah / deadlines.length) * 100) : 0;
 
     // Monthly revenue breakdown
     const monthlyRevenue: Record<string, number> = {};
-    invoices.filter((i) => i.status === "Lunas").forEach((inv) => {
+    invoices.filter((i) => i.status === InvoiceStatus.Lunas).forEach((inv) => {
         const month = new Date(inv.tanggal).toLocaleDateString("id-ID", { month: "short", year: "numeric" });
         monthlyRevenue[month] = (monthlyRevenue[month] || 0) + inv.total;
     });
@@ -69,7 +70,7 @@ export default function ReportsPage() {
     // Per-client revenue
     const clientRevenue: { name: string; total: number }[] = [];
     const clientMap: Record<string, number> = {};
-    invoices.filter((i) => i.status === "Lunas").forEach((inv) => {
+    invoices.filter((i) => i.status === InvoiceStatus.Lunas).forEach((inv) => {
         clientMap[inv.clientName] = (clientMap[inv.clientName] || 0) + inv.total;
     });
     Object.entries(clientMap)
@@ -78,10 +79,10 @@ export default function ReportsPage() {
 
     // Invoice status distribution
     const statusDist = {
-        Draft: invoices.filter((i) => i.status === "Draft").length,
-        Terkirim: invoices.filter((i) => i.status === "Terkirim").length,
-        Lunas: invoices.filter((i) => i.status === "Lunas").length,
-        "Jatuh Tempo": invoices.filter((i) => i.status === "Jatuh Tempo").length,
+        Draft: invoices.filter((i) => i.status === InvoiceStatus.Draft).length,
+        Terkirim: invoices.filter((i) => i.status === InvoiceStatus.Terkirim).length,
+        Lunas: invoices.filter((i) => i.status === InvoiceStatus.Lunas).length,
+        "Jatuh Tempo": invoices.filter((i) => i.status === InvoiceStatus.JatuhTempo).length,
     };
 
     if (!isLoaded) {
@@ -199,7 +200,7 @@ export default function ReportsPage() {
                         {Object.entries(statusDist).map(([status, count]) => (
                             <div key={status} className="flex items-center justify-between p-3 bg-surface rounded-[8px]">
                                 <Badge variant={status === "Lunas" ? "success" : status === "Jatuh Tempo" ? "danger" : status === "Terkirim" ? "info" : "default"}>
-                                    {status}
+                                    {status === "Jatuh Tempo" ? "Jatuh Tempo" : status}
                                 </Badge>
                                 <span className="text-lg font-bold text-foreground">{count}</span>
                             </div>
@@ -223,7 +224,7 @@ export default function ReportsPage() {
                                 <CalendarDays className="h-4 w-4 text-amber-500" />
                                 <span className="text-sm font-medium text-amber-500">Belum Lapor</span>
                             </div>
-                            <span className="text-lg font-bold text-amber-500">{deadlines.filter((d) => d.status === "Belum Lapor").length}</span>
+                            <span className="text-lg font-bold text-amber-500">{deadlines.filter((d) => d.status === TaxDeadlineStatus.BelumLapor).length}</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-error-muted rounded-[8px]">
                             <div className="flex items-center gap-2">
