@@ -31,16 +31,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="id" suppressHydrationWarning>
-        <body
-          className={`${dmSerif.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
-        >
+    <html lang="id" suppressHydrationWarning>
+      <body
+        className={`${dmSerif.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+      >
+        <ClerkProvider>
           <I18nProvider>
             {children}
           </I18nProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }
