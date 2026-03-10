@@ -9,12 +9,19 @@ export async function getDeadlines(clientId?: string) {
     try {
         const deadlines = await prisma.taxDeadline.findMany({
             where: clientId ? { clientId } : undefined,
+            include: { client: { select: { nama: true } } },
             orderBy: { tanggalBatas: "asc" },
         });
-        return { success: true, data: deadlines };
+
+        const mappedDeadlines = deadlines.map(d => ({
+            ...d,
+            clientName: d.client.nama
+        }));
+
+        return { success: true, data: mappedDeadlines };
     } catch (error) {
         console.error("getDeadlines error:", error);
-        return { success: false, data: [] };
+        return { success: false, data: [], error: "Gagal mengambil data deadline" };
     }
 }
 

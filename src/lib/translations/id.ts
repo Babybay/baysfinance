@@ -213,7 +213,9 @@ export const id: Translations = {
         documents: "Dokumen",
         invoices: "Invoice",
         reports: "Laporan",
+        accounting: "Akuntansi",
         permits: "Perijinan",
+
         businessPermits: "Izin Usaha (OSS)",
         userManagement: "Manajemen User",
         myAccount: "Akun Saya",

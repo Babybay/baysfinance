@@ -7,7 +7,7 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
     try {
         let clients: Client[] = [];
         let invoices: Invoice[] = [];
-        let deadlines: TaxDeadline[] = [];
+        let rawDeadlines: any[] = [];
 
         if (role === "admin") {
             // Fetch all for admin
@@ -18,7 +18,8 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                 orderBy: { tanggal: "desc" },
                 take: 20 // Limit initial load for performance
             });
-            deadlines = await prisma.taxDeadline.findMany({
+            rawDeadlines = await prisma.taxDeadline.findMany({
+                include: { client: true },
                 orderBy: { tanggalBatas: "asc" }
             });
         } else if (clientId) {
@@ -29,15 +30,21 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                 orderBy: { tanggal: "desc" },
                 take: 20
             });
-            deadlines = await prisma.taxDeadline.findMany({
+            rawDeadlines = await prisma.taxDeadline.findMany({
                 where: { clientId },
+                include: { client: true },
                 orderBy: { tanggalBatas: "asc" }
             });
         }
 
+        const deadlines = rawDeadlines.map(d => ({
+            ...d,
+            clientName: d.client?.nama || "Unknown Client"
+        }));
+
         return { success: true, data: { clients, invoices, deadlines } };
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        return { success: false, data: { clients: [], invoices: [], deadlines: [] } };
+        return { success: false, data: { clients: [], invoices: [], deadlines: [] }, error: "Gagal mengambil data dashboard" };
     }
 }

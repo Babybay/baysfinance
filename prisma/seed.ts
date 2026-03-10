@@ -53,21 +53,21 @@ async function main() {
     const lastMonth = new Date(today); lastMonth.setMonth(today.getMonth() - 1);
 
     const deadlines = [
-        { id: "d1", jenisPajak: "PPh 21", deskripsi: "Setor PPh 21 Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 10), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses" },
-        { id: "d2", jenisPajak: "PPh 21", deskripsi: "Lapor SPT Masa PPh 21 Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 20), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses" },
-        { id: "d3", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 28), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c2", clientName: "CV Kopi Kenangan Senja" },
-        { id: "d4", jenisPajak: "PPh 23", deskripsi: "Setor PPh 23 Masa Januari", tanggalBatas: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 10), masaPajak: "Januari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c4", clientName: "PT Konstruksi Baja Unggul" },
-        { id: "d5", jenisPajak: "PPh 25", deskripsi: "Setor PPh 25 Masa Maret", tanggalBatas: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 15), masaPajak: "Maret 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses" },
-        { id: "d6", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c3", clientName: "Dr. Andi Setiawan, Sp.JP" },
-        { id: "d7", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.SudahLapor, clientId: "c5", clientName: "Siti Rahayu, S.E." },
-        { id: "d8", jenisPajak: "SPT Tahunan Badan", deskripsi: "Lapor SPT Tahunan Badan 2025", tanggalBatas: new Date("2026-04-30"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses" },
-        { id: "d9", jenisPajak: "SPT Tahunan Badan", deskripsi: "Lapor SPT Tahunan Badan 2025", tanggalBatas: new Date("2026-04-30"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c2", clientName: "CV Kopi Kenangan Senja" },
-        { id: "d10", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Maret", tanggalBatas: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 30), masaPajak: "Maret 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c4", clientName: "PT Konstruksi Baja Unggul" },
-        { id: "d11", jenisPajak: "PPh 4(2)", deskripsi: "Setor PPh Final Sewa Gedung", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 15), masaPajak: "Februari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c6", clientName: "PT Logistik Samudra Mas" },
-        { id: "d12", jenisPajak: "PPh 21", deskripsi: "Lapor SPT Masa PPh 21 Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 20), masaPajak: "Februari 2026", status: TaxDeadlineStatus.Terlambat, clientId: "c7", clientName: "Klinik Estetika Pesona" },
-        { id: "d13", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c8", clientName: "Ir. Budi Gunawan, M.T." },
-        { id: "d14", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 28), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c9", clientName: "CV Pangan Makmur" },
-        { id: "d15", jenisPajak: "PPh 23", deskripsi: "Setor PPh 23 atas Jasa Konsultan", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 10), masaPajak: "Februari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c10", clientName: "PT Edukasi Bangsa" },
+        { id: "d1", jenisPajak: "PPh 21", deskripsi: "Setor PPh 21 Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 10), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1" },
+        { id: "d2", jenisPajak: "PPh 21", deskripsi: "Lapor SPT Masa PPh 21 Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 20), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1" },
+        { id: "d3", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 28), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c2" },
+        { id: "d4", jenisPajak: "PPh 23", deskripsi: "Setor PPh 23 Masa Januari", tanggalBatas: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 10), masaPajak: "Januari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c4" },
+        { id: "d5", jenisPajak: "PPh 25", deskripsi: "Setor PPh 25 Masa Maret", tanggalBatas: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 15), masaPajak: "Maret 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c1" },
+        { id: "d6", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c3" },
+        { id: "d7", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.SudahLapor, clientId: "c5" },
+        { id: "d8", jenisPajak: "SPT Tahunan Badan", deskripsi: "Lapor SPT Tahunan Badan 2025", tanggalBatas: new Date("2026-04-30"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c1" },
+        { id: "d9", jenisPajak: "SPT Tahunan Badan", deskripsi: "Lapor SPT Tahunan Badan 2025", tanggalBatas: new Date("2026-04-30"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c2" },
+        { id: "d10", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Maret", tanggalBatas: new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 30), masaPajak: "Maret 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c4" },
+        { id: "d11", jenisPajak: "PPh 4(2)", deskripsi: "Setor PPh Final Sewa Gedung", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 15), masaPajak: "Februari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c6" },
+        { id: "d12", jenisPajak: "PPh 21", deskripsi: "Lapor SPT Masa PPh 21 Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 20), masaPajak: "Februari 2026", status: TaxDeadlineStatus.Terlambat, clientId: "c7" },
+        { id: "d13", jenisPajak: "SPT Tahunan OP", deskripsi: "Lapor SPT Tahunan OP 2025", tanggalBatas: new Date("2026-03-31"), masaPajak: "2025", status: TaxDeadlineStatus.BelumLapor, clientId: "c8" },
+        { id: "d14", jenisPajak: "PPN", deskripsi: "Setor & Lapor PPN Masa Februari", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 28), masaPajak: "Februari 2026", status: TaxDeadlineStatus.BelumLapor, clientId: "c9" },
+        { id: "d15", jenisPajak: "PPh 23", deskripsi: "Setor PPh 23 atas Jasa Konsultan", tanggalBatas: new Date(today.getFullYear(), today.getMonth(), 10), masaPajak: "Februari 2026", status: TaxDeadlineStatus.SudahLapor, clientId: "c10" },
     ];
 
     for (const d of deadlines) {
@@ -77,14 +77,14 @@ async function main() {
 
     // ── Documents ─────────────────────────────────────────────────────────────
     const documents = [
-        { id: "doc1", nama: "Faktur Pajak Keluaran 010-24-00001234", kategori: DocumentKategori.FakturPajak, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses", ukuran: "245 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 15), catatan: "Transaksi ke Telkom" },
-        { id: "doc2", nama: "Bukti Potong PPh 23 - Jan 2026", kategori: DocumentKategori.BuktiPotong, clientId: "c2", clientName: "CV Kopi Kenangan Senja", ukuran: "128 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 5), catatan: "Bukti potong GrabFood" },
-        { id: "doc3", nama: "Draf SPT Tahunan 1770 S - 2025", kategori: DocumentKategori.SPT, clientId: "c3", clientName: "Dr. Andi Setiawan, Sp.JP", ukuran: "1.2 MB", tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 2), catatan: "Draf untuk direview klien" },
-        { id: "doc4", nama: "Laporan Keuangan Audit 2025", kategori: DocumentKategori.LaporanKeuangan, clientId: "c4", clientName: "PT Konstruksi Baja Unggul", ukuran: "3.4 MB", tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 10), catatan: "Audited by KAP Budi & Rekan" },
-        { id: "doc5", nama: "Rekening Koran BCA Feb 2026", kategori: DocumentKategori.Lainnya, clientId: "c6", clientName: "PT Logistik Samudra Mas", ukuran: "450 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 5), catatan: "Untuk rekonsiliasi PPN" },
-        { id: "doc6", nama: "Faktur Masukan Pembelian Alkes", kategori: DocumentKategori.FakturPajak, clientId: "c7", clientName: "Klinik Estetika Pesona", ukuran: "890 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 20), catatan: "Pembelian mesin laser" },
-        { id: "doc7", nama: "Daftar Susut Aktiva Tetap 2025", kategori: DocumentKategori.LaporanKeuangan, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses", ukuran: "155 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 1), catatan: "Lampiran SPT Tahunan" },
-        { id: "doc8", nama: "NPWP Cabang Bandung", kategori: DocumentKategori.Lainnya, clientId: "c10", clientName: "PT Edukasi Bangsa", ukuran: "300 KB", tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 2, 10), catatan: "Dokumen legalitas baru" },
+        { id: "doc1", nama: "Faktur Pajak Keluaran 010-24-00001234", kategori: DocumentKategori.FakturPajak, clientId: "c1", ukuran: 250880, tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 15), catatan: "Transaksi ke Telkom" },
+        { id: "doc2", nama: "Bukti Potong PPh 23 - Jan 2026", kategori: DocumentKategori.BuktiPotong, clientId: "c2", ukuran: 131072, tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 5), catatan: "Bukti potong GrabFood" },
+        { id: "doc3", nama: "Draf SPT Tahunan 1770 S - 2025", kategori: DocumentKategori.SPT, clientId: "c3", ukuran: 1258291, tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 2), catatan: "Draf untuk direview klien" },
+        { id: "doc4", nama: "Laporan Keuangan Audit 2025", kategori: DocumentKategori.LaporanKeuangan, clientId: "c4", ukuran: 3565158, tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 10), catatan: "Audited by KAP Budi & Rekan" },
+        { id: "doc5", nama: "Rekening Koran BCA Feb 2026", kategori: DocumentKategori.Lainnya, clientId: "c6", ukuran: 460800, tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 5), catatan: "Untuk rekonsiliasi PPN" },
+        { id: "doc6", nama: "Faktur Masukan Pembelian Alkes", kategori: DocumentKategori.FakturPajak, clientId: "c7", ukuran: 911360, tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 1, 20), catatan: "Pembelian mesin laser" },
+        { id: "doc7", nama: "Daftar Susut Aktiva Tetap 2025", kategori: DocumentKategori.LaporanKeuangan, clientId: "c1", ukuran: 158720, tanggalUpload: new Date(today.getFullYear(), today.getMonth(), 1), catatan: "Lampiran SPT Tahunan" },
+        { id: "doc8", nama: "NPWP Cabang Bandung", kategori: DocumentKategori.Lainnya, clientId: "c10", ukuran: 307200, tanggalUpload: new Date(today.getFullYear(), today.getMonth() - 2, 10), catatan: "Dokumen legalitas baru" },
     ];
 
     for (const doc of documents) {
@@ -114,7 +114,7 @@ async function main() {
         {
             id: "inv3", nomorInvoice: "INV/TAX/26/02/003", clientId: "c3", clientName: "Dr. Andi Setiawan, Sp.JP",
             tanggal: new Date(today.getFullYear(), today.getMonth(), 5), jatuhTempo: new Date(today.getFullYear(), today.getMonth(), 20),
-            subtotal: 3500000, ppn: 3850000, total: 3885000, status: InvoiceStatus.Draft, catatan: "Menunggu approval partner",
+            subtotal: 3500000, ppn: 385000, total: 3885000, status: InvoiceStatus.Draft, catatan: "Menunggu approval partner",
             items: [
                 { deskripsi: "Penyusunan & Pelaporan SPT Tahunan OP", qty: 1, harga: 3500000, jumlah: 3500000 },
             ],
@@ -231,7 +231,7 @@ async function main() {
     // ── Permit Cases ──────────────────────────────────────────────────────────
     const permitCases = [
         {
-            id: "pc1", caseId: "NIB-2602-001", permitTypeId: ptBusiness.id, clientId: "c1", clientName: "PT Nusantara Teknologi Sukses", advisorId: "admin", serviceType: "Migrasi NIB ke RBA",
+            id: "pc1", caseId: "NIB-2602-001", permitTypeId: ptBusiness.id, clientId: "c1", advisorId: "admin", serviceType: "Migrasi NIB ke RBA",
             riskCategory: "Menengah Rendah", status: PermitCaseStatus.Processing, feeAmount: 3500000, notes: "Menunggu verifikasi standar lingkungan dari DLH",
             documents: [
                 { docType: "KTP Direktur", verificationStatus: VerificationStatus.Approved, sortOrder: 0 },
@@ -244,7 +244,7 @@ async function main() {
             ]
         },
         {
-            id: "pc2", caseId: "PBG-2601-042", permitTypeId: ptBuilding.id, clientId: "c6", clientName: "PT Logistik Samudra Mas", advisorId: "admin", serviceType: "Gudang Penyimpanan",
+            id: "pc2", caseId: "PBG-2601-042", permitTypeId: ptBuilding.id, clientId: "c6", advisorId: "admin", serviceType: "Gudang Penyimpanan",
             riskCategory: "Tinggi", status: PermitCaseStatus.WaitingDocument, feeAmount: 45000000, notes: "Ditolak karena gambar struktur kurang detail, diminta perbaikan",
             documents: [
                 { docType: "Sertifikat Tanah", verificationStatus: VerificationStatus.Approved, sortOrder: 0 },
@@ -255,7 +255,7 @@ async function main() {
             ]
         },
         {
-            id: "pc3", caseId: "PT-2602-015", permitTypeId: ptCompany.id, clientId: "c9", clientName: "CV Pangan Makmur", advisorId: "admin", serviceType: "Peningkatan CV menjadi PT",
+            id: "pc3", caseId: "PT-2602-015", permitTypeId: ptCompany.id, clientId: "c9", advisorId: "admin", serviceType: "Peningkatan CV menjadi PT",
             riskCategory: "Rendah", status: PermitCaseStatus.Issued, feeAmount: 12000000, notes: "SK Kemenkumham sudah terbit, NPWP sudah aktif",
             documents: [
                 { docType: "KTP & NPWP Semua Pendiri", verificationStatus: VerificationStatus.Approved, sortOrder: 0 },
@@ -267,7 +267,7 @@ async function main() {
             ]
         },
         {
-            id: "pc4", caseId: "NIB-2602-008", permitTypeId: ptBusiness.id, clientId: "c7", clientName: "Klinik Estetika Pesona", advisorId: "admin", serviceType: "Penambahan KBLI Perdagangan Obat",
+            id: "pc4", caseId: "NIB-2602-008", permitTypeId: ptBusiness.id, clientId: "c7", advisorId: "admin", serviceType: "Penambahan KBLI Perdagangan Obat",
             riskCategory: "Menengah Tinggi", status: PermitCaseStatus.Draft, feeAmount: 5000000, notes: "Masih mendaftar antrean notaris untuk perubahan akta",
             documents: [], checklists: []
         },
@@ -278,7 +278,7 @@ async function main() {
             where: { id: pc.id },
             update: {},
             create: {
-                id: pc.id, caseId: pc.caseId, permitTypeId: pc.permitTypeId, clientId: pc.clientId, clientName: pc.clientName, advisorId: pc.advisorId, serviceType: pc.serviceType, riskCategory: pc.riskCategory, status: pc.status, feeAmount: pc.feeAmount, notes: pc.notes,
+                id: pc.id, caseId: pc.caseId, permitTypeId: pc.permitTypeId, clientId: pc.clientId, advisorId: pc.advisorId, serviceType: pc.serviceType, riskCategory: pc.riskCategory, status: pc.status, feeAmount: pc.feeAmount, notes: pc.notes,
                 documents: { create: pc.documents },
                 checklists: { create: pc.checklists }
             },

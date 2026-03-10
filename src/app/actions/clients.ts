@@ -11,11 +11,11 @@ export async function getClients() {
         return { success: true, data: clients };
     } catch (error) {
         console.error("Error fetching clients:", error);
-        return { success: false, data: [] };
+        return { success: false, data: [], error: "Gagal mengambil data klien" };
     }
 }
 
-export async function createClient(data: Omit<Client, "id" | "createdAt">) {
+export async function createClient(data: Omit<Client, "id" | "createdAt" | "updatedAt" | "deletedAt">) {
     try {
         const newClient = await prisma.client.create({ data });
         return { success: true, data: newClient };

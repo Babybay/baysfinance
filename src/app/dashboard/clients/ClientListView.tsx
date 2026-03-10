@@ -29,7 +29,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
     const [filterJenis, setFilterJenis] = useState("Semua");
     const [modalOpen, setModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [form, setForm] = useState<Omit<Client, "id" | "createdAt">>(emptyClient);
+    const [form, setForm] = useState<Omit<Client, "id" | "createdAt" | "updatedAt" | "deletedAt">>(emptyClient);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
@@ -148,8 +148,8 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                     className="h-10 px-3 rounded-[8px] border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 bg-card text-foreground"
                 >
                     <option value="Semua">Semua Jenis WP</option>
-                    <option value="Orang Pribadi">Orang Pribadi</option>
-                    <option value="Badan">Badan</option>
+                    <option value={JenisWP.OrangPribadi}>Orang Pribadi</option>
+                    <option value={JenisWP.Badan}>Badan</option>
                 </select>
             </div>
 

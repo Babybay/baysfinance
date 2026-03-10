@@ -15,7 +15,7 @@ export async function getInvoices(clientId?: string) {
         return { success: true, data: invoices };
     } catch (error) {
         console.error("getInvoices error:", error);
-        return { success: false, data: [] };
+        return { success: false, data: [], error: "Gagal mengambil data invoice" };
     }
 }
 
@@ -35,9 +35,15 @@ export async function createInvoice(data: {
         const ppn = Math.round(subtotal * 0.11);
         const total = subtotal + ppn;
 
-        // Generate invoice number
-        const count = await prisma.invoice.count();
-        const nomorInvoice = `INV-2026-${String(count + 1).padStart(3, "0")}`;
+        // Generate invoice number — use date-based prefix + count of existing for that month
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const prefix = `INV-${yyyy}${mm}`;
+        const count = await prisma.invoice.count({
+            where: { nomorInvoice: { startsWith: prefix } },
+        });
+        const nomorInvoice = `${prefix}-${String(count + 1).padStart(3, "0")}`;
 
         const invoice = await prisma.invoice.create({
             data: {
