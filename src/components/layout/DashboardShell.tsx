@@ -19,7 +19,9 @@ import {
     Menu,
     X,
     ChevronLeft,
+    BookOpen,
 } from "lucide-react";
+
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -35,7 +37,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         { href: "/dashboard/tax-calculator", label: t.sidebar.taxCalculator, icon: Calculator, roles: ["admin"] },
         { href: "/dashboard/documents", label: t.sidebar.documents, icon: FileText, roles: ["admin", "client"] },
         { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: Receipt, roles: ["admin", "client"] },
+        { href: "/dashboard/accounting", label: t.sidebar.accounting, icon: BookOpen, roles: ["admin"] },
         { href: "/dashboard/reports", label: t.sidebar.reports, icon: BarChart3, roles: ["admin"] },
+
         { href: "/dashboard/users", label: t.sidebar.userManagement, icon: Users, roles: ["admin"] },
     ].filter(link => role && link.roles.includes(role));
 

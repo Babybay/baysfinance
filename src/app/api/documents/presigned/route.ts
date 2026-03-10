@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
         const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
         return NextResponse.json({ url });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Presigned URL Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Gagal membuat presigned URL" }, { status: 500 });
     }
 }

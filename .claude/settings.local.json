@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npm install exceljs @react-pdf/renderer date-fns 2>&1 | tail -5)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npm install @types/react-pdf 2>&1 | tail -3 && echo \"done\")",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && node -e \"require\\('exceljs'\\); console.log\\('ok'\\)\" 2>&1)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -50)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | tail -30)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && node -e \"require\\('date-fns'\\); console.log\\('date-fns ok'\\)\" 2>&1)"
+    ]
+  }
+}

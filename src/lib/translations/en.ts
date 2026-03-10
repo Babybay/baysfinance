@@ -211,7 +211,9 @@ export const en = {
         documents: "Documents",
         invoices: "Invoices",
         reports: "Reports",
+        accounting: "Accounting",
         permits: "Permits",
+
         businessPermits: "Business Permits (OSS)",
         userManagement: "User Management",
         myAccount: "My Account",

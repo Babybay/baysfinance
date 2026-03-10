@@ -30,6 +30,14 @@ const kategoriColors: Record<string, "info" | "success" | "warning" | "danger" |
     [DocumentKategori.Lainnya]: "default",
 };
 
+function formatFileSize(bytes: number | string): string {
+    const b = Number(bytes);
+    if (isNaN(b)) return String(bytes);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 interface DocumentListViewProps {
     initialDocuments: DocType[];
     clients: Client[];
@@ -142,7 +150,7 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
                             <h3 className="font-medium text-foreground text-sm mb-1 line-clamp-2">{doc.nama}</h3>
                             <p className="text-xs text-muted-foreground mb-3">Klien: {doc.clientName}</p>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>{doc.ukuran}</span>
+                                <span>{formatFileSize(doc.ukuran)}</span>
                                 <span>{new Date(doc.tanggalUpload).toLocaleDateString("id-ID")}</span>
                             </div>
                             <div className="flex gap-1 mt-3 pt-3 border-t border-border">
@@ -208,7 +216,7 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
                             <div><p className="text-xs text-muted-foreground">Nama</p><p className="font-medium text-foreground">{previewDoc.nama}</p></div>
                             <div><p className="text-xs text-muted-foreground">Kategori</p><Badge variant={kategoriColors[previewDoc.kategori]}>{previewDoc.kategori}</Badge></div>
                             <div><p className="text-xs text-muted-foreground">Klien</p><p className="font-medium text-foreground">{previewDoc.clientName}</p></div>
-                            <div><p className="text-xs text-muted-foreground">Ukuran</p><p className="font-medium text-foreground">{previewDoc.ukuran}</p></div>
+                            <div><p className="text-xs text-muted-foreground">Ukuran</p><p className="font-medium text-foreground">{formatFileSize(previewDoc.ukuran)}</p></div>
                             <div><p className="text-xs text-muted-foreground">Tanggal Upload</p><p className="font-medium text-foreground">{new Date(previewDoc.tanggalUpload).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p></div>
                         </div>
                         {previewDoc.catatan && (

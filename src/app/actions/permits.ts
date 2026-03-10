@@ -66,13 +66,20 @@ export async function getPermits(clientId?: string, permitTypeId?: string) {
             },
             include: {
                 permitType: true,
+                client: { select: { nama: true } }
             },
             orderBy: { updatedAt: "desc" },
         });
-        return { success: true, data: permits };
+
+        const mappedPermits = permits.map(p => ({
+            ...p,
+            clientName: p.client?.nama ?? "Unknown",
+        }));
+
+        return { success: true, data: mappedPermits };
     } catch (error) {
         console.error("getPermits error:", error);
-        return { success: false, data: [] };
+        return { success: false, data: [], error: "Gagal mengambil data perijinan" };
     }
 }
 
@@ -82,11 +89,20 @@ export async function getPermitById(id: string) {
             where: { id },
             include: {
                 permitType: true,
+                client: { select: { nama: true } },
                 documents: { orderBy: { sortOrder: "asc" } },
                 checklists: { orderBy: { sortOrder: "asc" } },
             },
         });
-        return { success: true, data: permit };
+
+        if (!permit) return { success: false, data: null, error: "Data perijinan tidak ditemukan" };
+
+        const mappedPermit = {
+            ...permit,
+            clientName: permit.client?.nama ?? "Unknown",
+        };
+
+        return { success: true, data: mappedPermit };
     } catch (error) {
         console.error("getPermitById error:", error);
         return { success: false, data: null };
@@ -128,7 +144,6 @@ export async function createPermitCase(data: {
                 caseId,
                 permitTypeId: data.permitTypeId,
                 clientId: data.clientId,
-                clientName: data.clientName,
                 advisorId: data.advisorId || null,
                 serviceType: data.serviceType,
                 riskCategory: data.riskCategory,
@@ -168,7 +183,12 @@ export async function createPermitCase(data: {
             },
         });
 
-        return { success: true, data: permit };
+        const mappedPermit = {
+            ...permit,
+            clientName: data.clientName
+        };
+
+        return { success: true, data: mappedPermit };
     } catch (error) {
         console.error("createPermitCase error:", error);
         return { success: false, error: "Gagal membuat pengajuan perijinan" };
@@ -250,7 +270,10 @@ export async function automateNIBFlow(id: string) {
     try {
         const permit = await prisma.permitCase.findUnique({
             where: { id },
-            include: { checklists: true }
+            include: {
+                checklists: true,
+                client: { select: { nama: true } }
+            }
         });
 
         if (!permit) return { success: false, error: "Data perijinan tidak ditemukan" };
@@ -261,7 +284,7 @@ export async function automateNIBFlow(id: string) {
         const kbli = appData.kbli || "62019"; // Default: Software Dev (Low Risk)
 
         // 1. Dukcapil Verification
-        const dukcapil = await dukcapilApi.verifyNIK(nik, permit.clientName);
+        const dukcapil = await dukcapilApi.verifyNIK(nik, permit.client.nama);
         if (!dukcapil.success) return { success: false, error: `Dukcapil: ${dukcapil.message}` };
 
         // 2. DJP Verification

@@ -1,5 +1,6 @@
 // Shared types and data for the tax consulting application
-import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus } from "@prisma/client";
+import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus, AccountType, JournalStatus } from "@prisma/client";
+
 
 export interface Client {
     id: string;
@@ -56,6 +57,41 @@ export interface InvoiceItem {
     harga: number;
     jumlah: number;
 }
+
+// ─── ACCOUNTING SYSTEM ───────────────────────────────────────────────────────
+
+export interface Account {
+    id: string;
+    code: string;
+    name: string;
+    type: AccountType;
+    description?: string | null;
+    isActive: boolean;
+    balance: number;
+}
+
+export interface JournalEntry {
+    id: string;
+    reference: string;
+    date: string | Date;
+    description?: string | null;
+    status: JournalStatus;
+    clientId: string;
+    clientName?: string;
+    totalAmount: number;
+    items: JournalItem[];
+}
+
+export interface JournalItem {
+    id: string;
+    accountId: string;
+    accountName?: string;
+    accountCode?: string;
+    description?: string | null;
+    debit: number;
+    credit: number;
+}
+
 
 // ─── SCALABLE PERMITS SYSTEM ─────────────────────────────────────────────────
 
