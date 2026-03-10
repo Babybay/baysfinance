@@ -4,6 +4,7 @@ import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { getDashboardData } from "@/app/actions/dashboard-data";
 import { prisma } from "@/lib/prisma";
+import { JenisWP, ClientStatus, InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
 
 export default async function DashboardPage() {
     const user = await currentUser();
@@ -30,8 +31,8 @@ export default async function DashboardPage() {
     // Map Prisma types to local types
     const formattedClients = response.data.clients.map(c => ({
         ...c,
-        jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
-        status: c.status as "Aktif" | "Tidak Aktif",
+        jenisWP: c.jenisWP as JenisWP,
+        status: c.status as ClientStatus,
         createdAt: new Date(c.createdAt).toISOString().split("T")[0]
     }));
 
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
         ...i,
         tanggal: new Date(i.tanggal).toISOString().split("T")[0],
         jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
-        status: i.status as "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo",
+        status: i.status as InvoiceStatus,
         items: [], // Note: items are not fetched stringently yet
         catatan: i.catatan || ""
     }));
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
     const formattedDeadlines = response.data.deadlines.map(d => ({
         ...d,
         tanggalBatas: new Date(d.tanggalBatas).toISOString().split("T")[0],
-        status: d.status as "Sudah Lapor" | "Belum Lapor" | "Terlambat",
+        status: d.status as TaxDeadlineStatus,
         clientName: d.clientName || undefined
     }));
 

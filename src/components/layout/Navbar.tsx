@@ -54,7 +54,7 @@ export function Navbar() {
                             <Link href="/dashboard">
                                 <Button variant="soft" size="default" className="mr-2">{t.nav.dashboard}</Button>
                             </Link>
-                            <UserButton afterSignOutUrl="/" />
+                            <UserButton />
                         </SignedIn>
                     </nav>
 

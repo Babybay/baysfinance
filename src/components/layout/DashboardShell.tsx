@@ -71,7 +71,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <div className="border-t border-border px-4 py-3 shrink-0 space-y-3">
                     <LanguageSelector />
                     <div className="flex items-center gap-3">
-                        <UserButton afterSignOutUrl="/" />
+                        <UserButton />
                         <div className="text-sm font-medium text-foreground">{t.sidebar.myAccount}</div>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         <span className="font-serif text-foreground">Bay&apos;sConsult</span>
                     </div>
                     <div className="lg:hidden">
-                        <UserButton afterSignOutUrl="/" />
+                        <UserButton />
                     </div>
                 </header>
 

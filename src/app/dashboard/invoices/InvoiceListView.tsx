@@ -11,13 +11,14 @@ import { Plus, Search, Receipt, Eye, Trash2, Printer } from "lucide-react";
 import { Invoice, InvoiceItem, Client, formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { createInvoice, updateInvoiceStatus } from "@/app/actions/invoices";
+import { InvoiceStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 const statusColors: Record<string, "default" | "info" | "success" | "warning" | "danger"> = {
-    Draft: "default",
-    Terkirim: "info",
-    Lunas: "success",
-    "Jatuh Tempo": "danger",
+    [InvoiceStatus.Draft]: "default",
+    [InvoiceStatus.Terkirim]: "info",
+    [InvoiceStatus.Lunas]: "success",
+    [InvoiceStatus.JatuhTempo]: "danger",
 };
 
 interface InvoiceListViewProps {
@@ -97,8 +98,8 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
     });
 
     const stats = {
-        totalPendapatan: invoices.filter((i) => i.status === "Lunas").reduce((sum, i) => sum + i.total, 0),
-        belumBayar: invoices.filter((i) => i.status === "Terkirim" || i.status === "Jatuh Tempo").reduce((sum, i) => sum + i.total, 0),
+        totalPendapatan: invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((sum, i) => sum + i.total, 0),
+        belumBayar: invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((sum, i) => sum + i.total, 0),
         jumlahInvoice: invoices.length,
     };
 
@@ -148,10 +149,10 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
                     className="h-10 px-3 rounded-[8px] border border-border text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40">
                     <option value="Semua">Semua Status</option>
-                    <option value="Draft">Draft</option>
-                    <option value="Terkirim">Terkirim</option>
-                    <option value="Lunas">Lunas</option>
-                    <option value="Jatuh Tempo">Jatuh Tempo</option>
+                    <option value={InvoiceStatus.Draft}>Draft</option>
+                    <option value={InvoiceStatus.Terkirim}>Terkirim</option>
+                    <option value={InvoiceStatus.Lunas}>Lunas</option>
+                    <option value={InvoiceStatus.JatuhTempo}>Jatuh Tempo</option>
                 </select>
             </div>
 
@@ -300,8 +301,8 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                             {isAdmin && (
                                 <>
-                                    <Button size="default" variant={viewInvoice.status === "Lunas" ? "soft" : "accent"} onClick={() => handleUpdateStatus(viewInvoice.id, "Lunas")}>Tandai Lunas</Button>
-                                    <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, "Terkirim")}>Tandai Terkirim</Button>
+                                    <Button size="default" variant={viewInvoice.status === InvoiceStatus.Lunas ? "soft" : "accent"} onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Lunas)}>Tandai Lunas</Button>
+                                    <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Terkirim)}>Tandai Terkirim</Button>
                                 </>
                             )}
                             <Button size="default" variant="transparent"><Printer className="h-4 w-4 mr-1" /> Cetak</Button>

@@ -3,6 +3,7 @@ import { getClients } from "@/app/actions/clients";
 import { InvoiceListView } from "./InvoiceListView";
 import { Invoice, Client } from "@/lib/data";
 import { currentUser } from "@clerk/nextjs/server";
+import { JenisWP, ClientStatus } from "@prisma/client";
 
 export default async function InvoicesPage() {
     const user = await currentUser();
@@ -32,8 +33,8 @@ export default async function InvoicesPage() {
     if (clientsRes.success && clientsRes.data) {
         clients = (clientsRes.data as any[]).map(c => ({
             ...c,
-            jenisWP: c.jenisWP as "Orang Pribadi" | "Badan",
-            status: c.status as "Aktif" | "Tidak Aktif",
+            jenisWP: c.jenisWP as JenisWP,
+            status: c.status as ClientStatus,
             createdAt: new Date(c.createdAt).toISOString().split("T")[0],
         }));
     }

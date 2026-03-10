@@ -6,99 +6,227 @@ datasource db {
   provider = "postgresql"
 }
 
-model Client {
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  Admin
+  Staff
+}
+
+enum InvoiceStatus {
+  Draft
+  Terkirim
+  Lunas
+  JatuhTempo
+}
+
+enum TaxDeadlineStatus {
+  BelumLapor
+  SudahLapor
+  Terlambat
+}
+
+enum DocumentKategori {
+  FakturPajak
+  BuktiPotong
+  SPT
+  LaporanKeuangan
+  Lainnya
+}
+
+enum PermitCaseStatus {
+  Draft
+  WaitingDocument
+  Processing
+  Issued
+}
+
+enum VerificationStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+enum JenisWP {
+  OrangPribadi
+  Badan
+}
+
+enum ClientStatus {
+  Aktif
+  TidakAktif
+}
+
+enum RecurringInterval {
+  Monthly
+  Quarterly
+  Yearly
+}
+
+// ─── CORE MODELS ─────────────────────────────────────────────────────────────
+
+model User {
   id        String   @id @default(cuid())
+  clerkId   String   @unique
+  name      String
+  email     String   @unique
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relations
+  advisedCases     PermitCase[]      @relation("PermitAdvisor")
+  checkedItems     PermitChecklist[] @relation("PermitChecker")
+  updatedDeadlines TaxDeadline[]     @relation("DeadlineUpdater")
+
+  @@map("users")
+}
+
+model Client {
+  id        String       @id @default(cuid())
   nama      String
   npwp      String
-  jenisWP   String // "Orang Pribadi" | "Badan"
+  jenisWP   JenisWP // Used to be String "Orang Pribadi" | "Badan"
   email     String
   telepon   String
   alamat    String
-  status    String // "Aktif" | "Tidak Aktif"
-  createdAt DateTime @default(now())
+  status    ClientStatus // Used to be String "Aktif" | "Tidak Aktif"
+  createdAt DateTime     @default(now())
 
   deadlines TaxDeadline[]
   documents Document[]
   invoices  Invoice[]
   permits   PermitCase[]
+  recurring RecurringInvoice[]
 
   @@map("clients")
 }
 
 model TaxDeadline {
-  id           String   @id @default(cuid())
+  id           String            @id @default(cuid())
   jenisPajak   String
   deskripsi    String
   tanggalBatas DateTime
   masaPajak    String
-  status       String // "Sudah Lapor" | "Belum Lapor" | "Terlambat"
-  
-  clientId     String
-  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientName   String? // Store redundantly for fast queries or relations
+  status       TaxDeadlineStatus // "Sudah Lapor" | "Belum Lapor" | "Terlambat"
+
+  // Audit Trail
+  reportedAt    DateTime?
+  updatedBy     String?
+  updatedByUser User?     @relation("DeadlineUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  clientId   String
+  client     Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName String? // Store redundantly for fast queries or relations
+
+  documents Document[]
 
   @@map("tax_deadlines")
 }
 
 model Document {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   nama          String
-  kategori      String // "Faktur Pajak" | "Bukti Potong" | "SPT" | "Laporan Keuangan" | "Lainnya"
+  kategori      DocumentKategori // "Faktur Pajak" | "Bukti Potong" | "SPT" | "Laporan Keuangan" | "Lainnya"
   ukuran        String
-  tanggalUpload DateTime @default(now())
+  tanggalUpload DateTime         @default(now())
   catatan       String?
   fileUrl       String?
 
-  clientId      String
-  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientName    String
+  clientId   String
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName String
+
+  // Optional relations to attach to other modules
+  permitCaseId String?
+  permitCase   PermitCase? @relation("PermitCaseToDocument", fields: [permitCaseId], references: [id], onDelete: Cascade)
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  deadlineId String?
+  deadline   TaxDeadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
 
   @@map("documents")
 }
 
 model Invoice {
-  id           String   @id @default(cuid())
-  nomorInvoice String   @unique
-  tanggal      DateTime @default(now())
+  id           String        @id @default(cuid())
+  nomorInvoice String        @unique
+  tanggal      DateTime      @default(now())
   jatuhTempo   DateTime
   subtotal     Float
   ppn          Float
   total        Float
-  status       String // "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo"
+  status       InvoiceStatus // "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo"
   catatan      String?
 
-  clientId     String
-  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientName   String
+  recurringInvoiceId String?
+  recurringInvoice   RecurringInvoice? @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
 
-  items        InvoiceItem[]
+  clientId   String
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName String
+
+  items     InvoiceItem[]
+  documents Document[]
 
   @@map("invoices")
 }
 
 model InvoiceItem {
-  id          String  @id @default(cuid())
-  deskripsi   String
-  qty         Int
-  harga       Float
-  jumlah      Float
+  id        String @id @default(cuid())
+  deskripsi String
+  qty       Int
+  harga     Float
+  jumlah    Float
 
-  invoiceId   String
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_items")
+}
+
+model RecurringInvoice {
+  id          String            @id @default(cuid())
+  interval    RecurringInterval
+  nextRunDate DateTime
+  isActive    Boolean           @default(true)
+  catatan     String?
+  createdAt   DateTime          @default(now())
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  items    RecurringInvoiceItem[]
+  invoices Invoice[]
+
+  @@map("recurring_invoices")
+}
+
+model RecurringInvoiceItem {
+  id        String @id @default(cuid())
+  deskripsi String
+  qty       Int
+  harga     Float
+  jumlah    Float
+
+  recurringInvoiceId String
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_invoice_items")
 }
 
 // ─── PERMIT SYSTEM (Scalable) ────────────────────────────────────────────────
 
 // Config: defines available permit types and their templates
 model PermitType {
-  id             String   @id @default(cuid())
-  slug           String   @unique  // "business", "building", "kitas"
-  name           String             // "Perijinan Usaha"
-  caseIdPrefix   String             // "NIB", "PBG", "KITAS"
-  description    String?
-  icon           String?            // lucide icon name e.g. "Briefcase"
+  id           String  @id @default(cuid())
+  slug         String  @unique // "business", "building", "kitas"
+  name         String // "Perijinan Usaha"
+  caseIdPrefix String // "NIB", "PBG", "KITAS"
+  description  String?
+  icon         String? // lucide icon name e.g. "Briefcase"
 
   requiredDocs   PermitTypeDocument[]
   checklistItems PermitTypeChecklist[]
@@ -112,7 +240,7 @@ model PermitTypeDocument {
   id           String     @id @default(cuid())
   permitTypeId String
   permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
-  docType      String     // "KTP Direktur"
+  docType      String // "KTP Direktur"
   isRequired   Boolean    @default(true)
   sortOrder    Int        @default(0)
 
@@ -124,7 +252,7 @@ model PermitTypeChecklist {
   id           String     @id @default(cuid())
   permitTypeId String
   permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
-  label        String     // "Saya menyetujui syarat & ketentuan OSS"
+  label        String // "Saya menyetujui syarat & ketentuan OSS"
   description  String?
   sortOrder    Int        @default(0)
 
@@ -133,7 +261,7 @@ model PermitTypeChecklist {
 
 // Sequential counter for auto-generated case IDs
 model PermitCounter {
-  id      String @id  // format: "NIB-2026-02"
+  id      String @id // format: "NIB-2026-02"
   counter Int    @default(0)
 
   @@map("permit_counters")
@@ -141,26 +269,30 @@ model PermitCounter {
 
 // Data: individual permit case
 model PermitCase {
-  id           String   @id @default(cuid())
-  caseId       String   @unique    // auto-generated: "NIB-2026-02-0001"
+  id     String @id @default(cuid())
+  caseId String @unique // auto-generated: "NIB-2026-02-0001"
 
   permitTypeId String
   permitType   PermitType @relation(fields: [permitTypeId], references: [id])
 
-  clientId     String
-  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientName   String
-  advisorId    String?
-  serviceType  String              // specific service within the type
-  riskCategory String
-  status       String              // "Draft" | "Waiting Document" | etc.
-  progress     Int
-  feeAmount    Float
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  clientId   String
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientName String
+
+  advisorId String?
+  advisor   User?   @relation("PermitAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
+
+  serviceType     String // specific service within the type
+  riskCategory    String
+  status          PermitCaseStatus // "Draft" | "Waiting Document" | etc.
+  feeAmount       Float
+  notes           String?
+  applicationData Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   documents    PermitDocument[]
+  attachedDocs Document[]        @relation("PermitCaseToDocument")
   checklists   PermitChecklist[]
 
   @@map("permit_cases")
@@ -168,14 +300,14 @@ model PermitCase {
 
 // Data: documents for a specific permit case
 model PermitDocument {
-  id                 String     @id @default(cuid())
+  id                 String             @id @default(cuid())
   caseId             String
-  permitCase         PermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  permitCase         PermitCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   docType            String
   fileUrl            String?
-  verificationStatus String     // "Pending" | "Approved" | "Rejected"
+  verificationStatus VerificationStatus // "Pending" | "Approved" | "Rejected"
   comments           String?
-  sortOrder          Int        @default(0)
+  sortOrder          Int                @default(0)
 
   @@map("permit_documents")
 }
@@ -189,8 +321,11 @@ model PermitChecklist {
   description String?
   isChecked   Boolean    @default(false)
   checkedAt   DateTime?
-  checkedBy   String?    // userId who checked
-  sortOrder   Int        @default(0)
+
+  checkedBy     String?
+  checkedByUser User?   @relation("PermitChecker", fields: [checkedBy], references: [id], onDelete: SetNull)
+
+  sortOrder Int @default(0)
 
   @@map("permit_checklists")
 }

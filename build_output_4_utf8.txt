@@ -1,0 +1,48 @@
+﻿
+> saas-consulting@0.1.0 build
+> next build
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 23.4s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/7) ...
+  Generating static pages using 7 workers (1/7) 
+  Generating static pages using 7 workers (3/7) 
+  Generating static pages using 7 workers (5/7) 
+Ô£ô Generating static pages using 7 workers (7/7) in 493.1ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî ãÆ /
+Ôö£ ãÆ /_not-found
+Ôö£ ãÆ /api/admin/users
+Ôö£ ãÆ /api/documents/presigned
+Ôö£ ãÆ /api/upload
+Ôö£ ãÆ /api/webhooks/clerk
+Ôö£ ãÆ /dashboard
+Ôö£ ãÆ /dashboard/business-permits
+Ôö£ ãÆ /dashboard/business-permits/[id]
+Ôö£ ãÆ /dashboard/clients
+Ôö£ ãÆ /dashboard/documents
+Ôö£ ãÆ /dashboard/invoices
+Ôö£ ãÆ /dashboard/permits
+Ôö£ ãÆ /dashboard/permits/[id]
+Ôö£ ãÆ /dashboard/permits/new
+Ôö£ ãÆ /dashboard/reports
+Ôö£ ãÆ /dashboard/tax-calculator
+Ôö£ ãÆ /dashboard/tax-calendar
+Ôö£ ãÆ /dashboard/users
+Ôö£ Ôùï /procedures
+Ôö£ ãÆ /sign-in/[[...sign-in]]
+Ôöö ãÆ /sign-up/[[...sign-up]]
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

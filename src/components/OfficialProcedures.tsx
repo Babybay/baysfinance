@@ -257,7 +257,7 @@ export function OfficialProcedures() {
                                 <div className="bg-surface border border-border rounded-2xl p-6 text-center">
                                     <p className="text-sm text-foreground font-medium mb-4">{t.procedures.processCta}</p>
                                     <Link href="/contact">
-                                        <Button variant="outline" size="small">
+                                        <Button variant="soft" size="default">
                                             {t.procedures.processCtaButton}
                                         </Button>
                                     </Link>
@@ -413,7 +413,7 @@ export function OfficialProcedures() {
                             </Button>
                         </Link>
                         <Link href="/contact">
-                            <Button variant="outline" size="large" className="w-full sm:w-auto bg-surface">
+                            <Button variant="soft" size="large" className="w-full sm:w-auto bg-surface">
                                 {t.procedures.ctaSecondary}
                             </Button>
                         </Link>

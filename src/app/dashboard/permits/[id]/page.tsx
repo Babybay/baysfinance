@@ -10,12 +10,13 @@ import { Modal } from "@/components/ui/Modal";
 import {
     ChevronLeft, Clock, CheckCircle2, AlertCircle,
     FileText, Upload, Download, ShieldCheck,
-    MessageSquare, ClipboardCheck, Check, X,
+    MessageSquare, ClipboardCheck, Check, X, Zap
 } from "lucide-react";
-import { PermitCase, PermitStatus, formatIDR } from "@/lib/data";
+import { PermitCase, formatIDR } from "@/lib/data";
 import {
-    getPermitById, verifyDocument, updatePermitDocument, updateChecklistItem, updatePermitStatus
+    getPermitById, verifyDocument, updatePermitDocument, updateChecklistItem, updatePermitStatus, automateNIBFlow
 } from "@/app/actions/permits";
+import { PermitCaseStatus, VerificationStatus } from "@prisma/client";
 
 export default function PermitDetailPage() {
     const { id } = useParams();
@@ -32,22 +33,20 @@ export default function PermitDetailPage() {
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [newStatus, setNewStatus] = useState("");
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [isAutomating, setIsAutomating] = useState(false);
 
     const statusProgressMap: Record<string, number> = {
-        "Draft": 0,
-        "Waiting Document": 10,
-        "Verification": 25,
-        "Revision Required": 25,
-        "Processing": 50,
-        "Issued": 75,
-        "Completed": 100,
-        "Cancelled": 0,
-        "On Hold": 0,
+        [PermitCaseStatus.Draft]: 0,
+        [PermitCaseStatus.WaitingDocument]: 25,
+        [PermitCaseStatus.Processing]: 50,
+        [PermitCaseStatus.Issued]: 100,
     };
 
     const workflowStatuses = [
-        "Draft", "Waiting Document", "Verification", "Revision Required",
-        "Processing", "Issued", "Completed", "Cancelled", "On Hold",
+        PermitCaseStatus.Draft,
+        PermitCaseStatus.WaitingDocument,
+        PermitCaseStatus.Processing,
+        PermitCaseStatus.Issued,
     ];
 
     // Reject modal
@@ -71,6 +70,7 @@ export default function PermitDetailPage() {
                 ...p,
                 createdAt: new Date(p.createdAt).toISOString().split("T")[0],
                 updatedAt: new Date(p.updatedAt).toISOString().split("T")[0],
+                uiProgress: statusProgressMap[p.status as string] || 0,
             });
             setDocuments(p.documents || []);
             setChecklists(p.checklists || []);
@@ -96,7 +96,7 @@ export default function PermitDetailPage() {
                 const dbRes = await updatePermitDocument(activeDocId, data.key);
                 if (dbRes.success) {
                     setDocuments(docs => docs.map(d =>
-                        d.id === activeDocId ? { ...d, verificationStatus: "Pending", fileUrl: data.key, comments: null } : d
+                        d.id === activeDocId ? { ...d, verificationStatus: VerificationStatus.Pending, fileUrl: data.key, comments: null } : d
                     ));
                 }
             }
@@ -109,7 +109,7 @@ export default function PermitDetailPage() {
         }
     };
 
-    const handleVerify = async (docId: string, status: string, comments: string | null = null) => {
+    const handleVerify = async (docId: string, status: VerificationStatus, comments: string | null = null) => {
         const res = await verifyDocument(docId, status, comments);
         if (res.success) {
             setDocuments(docs => docs.map(d =>
@@ -137,10 +137,14 @@ export default function PermitDetailPage() {
     const handleStatusUpdate = async () => {
         if (!newStatus || !permit) return;
         setIsUpdatingStatus(true);
-        const progress = statusProgressMap[newStatus] ?? permit.progress;
-        const res = await updatePermitStatus(permit.id, newStatus, progress);
+        const progress = statusProgressMap[newStatus] ?? 0;
+        const res = await updatePermitStatus(permit.id, newStatus as PermitCaseStatus);
         if (res.success) {
-            setPermit((prev: any) => ({ ...prev, status: newStatus, progress }));
+            setPermit((prev: any) => ({
+                ...prev,
+                status: newStatus,
+                uiProgress: statusProgressMap[newStatus] ?? 0
+            }));
             setStatusModalOpen(false);
         }
         setIsUpdatingStatus(false);
@@ -168,18 +172,39 @@ export default function PermitDetailPage() {
 
     const steps = [
         { key: "Draft", label: "Pengajuan", progress: 0 },
-        { key: "Verification", label: "Verifikasi", progress: 25 },
+        { key: "WaitingDocument", label: "Menunggu Data", progress: 25 },
         { key: "Processing", label: "Proses", progress: 50 },
-        { key: "Issued", label: "Terbit", progress: 75 },
-        { key: "Completed", label: "Selesai", progress: 100 },
+        { key: "Issued", label: "Terbit", progress: 100 },
     ];
+
+    const handleAutomateNIB = async () => {
+        setIsAutomating(true);
+        const res = await automateNIBFlow(permit.id);
+        if (res.success) {
+            // Reload permit data
+            const newRes = await getPermitById(permit.id);
+            if (newRes.success && newRes.data) {
+                const p = newRes.data as any;
+                setPermit({
+                    ...p,
+                    createdAt: new Date(p.createdAt).toISOString().split("T")[0],
+                    updatedAt: new Date(p.updatedAt).toISOString().split("T")[0],
+                    uiProgress: statusProgressMap[p.status as string] || 0,
+                });
+                alert(res.message);
+            }
+        } else {
+            alert(res.error || "Gagal menjalankan otomasi");
+        }
+        setIsAutomating(false);
+    };
 
     const getStatusVariant = (status: string) => {
         switch (status) {
-            case "Issued": case "Completed": return "success";
-            case "Processing": case "Verification": return "info";
-            case "Waiting Document": case "Revision Required": return "warning";
-            case "Cancelled": return "danger";
+            case PermitCaseStatus.Issued: return "success";
+            case PermitCaseStatus.Processing: return "info";
+            case PermitCaseStatus.WaitingDocument: return "warning";
+            case PermitCaseStatus.Draft: return "neutral";
             default: return "default";
         }
     };
@@ -222,10 +247,10 @@ export default function PermitDetailPage() {
                         <h2 className="font-serif text-lg mb-6">Alur Pengurusan</h2>
                         <div className="relative flex justify-between">
                             <div className="absolute top-4 left-0 right-0 h-0.5 bg-surface z-0" />
-                            <div className="absolute top-4 left-0 h-0.5 bg-accent z-0 transition-all duration-500" style={{ width: `${permit.progress}%` }} />
+                            <div className="absolute top-4 left-0 h-0.5 bg-accent z-0 transition-all duration-500" style={{ width: `${permit.uiProgress}%` }} />
                             {steps.map((step, idx) => {
-                                const isCompleted = permit.progress > step.progress;
-                                const isCurrent = permit.progress === step.progress;
+                                const isCompleted = permit.uiProgress > step.progress;
+                                const isCurrent = permit.uiProgress === step.progress;
                                 return (
                                     <div key={idx} className="relative z-10 flex flex-col items-center">
                                         <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-colors ${isCompleted ? "bg-accent border-accent text-accent-foreground" :
@@ -306,9 +331,9 @@ export default function PermitDetailPage() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                {isAdmin && doc.fileUrl && doc.verificationStatus === "Pending" && (
+                                                {isAdmin && doc.fileUrl && doc.verificationStatus === VerificationStatus.Pending && (
                                                     <div className="flex gap-2 mt-2 pt-2 border-t border-border/50">
-                                                        <Button size="default" variant="accent" className="h-8 text-xs px-3" onClick={() => handleVerify(doc.id, "Approved")}>Approve</Button>
+                                                        <Button size="default" variant="accent" className="h-8 text-xs px-3" onClick={() => handleVerify(doc.id, VerificationStatus.Approved)}>Approve</Button>
                                                         <Button size="default" variant="soft" className="h-8 text-xs px-3 text-error hover:bg-error-muted" onClick={() => { setProcessingDocId(doc.id); setRejectModalOpen(true); }}>Reject</Button>
                                                     </div>
                                                 )}
@@ -404,6 +429,50 @@ export default function PermitDetailPage() {
                                     {new Date(permit.updatedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                                 </p>
                             </div>
+
+                            {permit.applicationData && (
+                                <div className="pt-4 border-t border-border">
+                                    <h3 className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-2">Data Kuesioner</h3>
+                                    <div className="space-y-2">
+                                        {permit.applicationData.hasBuilding && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Fisik Bangunan</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.hasBuilding}</span>
+                                            </div>
+                                        )}
+                                        {permit.applicationData.ownership && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Kepemilikan</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.ownership}</span>
+                                            </div>
+                                        )}
+                                        {permit.applicationData.hasDrawing && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Gambar Tersedia</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.hasDrawing}</span>
+                                            </div>
+                                        )}
+                                        {permit.applicationData.buildingArea && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Luas (m²)</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.buildingArea}</span>
+                                            </div>
+                                        )}
+                                        {permit.applicationData.floorCount && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Jml Lantai</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.floorCount}</span>
+                                            </div>
+                                        )}
+                                        {permit.applicationData.usage && (
+                                            <div className="flex justify-between">
+                                                <span className="text-xs text-muted-foreground">Peruntukan</span>
+                                                <span className="text-sm font-medium">{permit.applicationData.usage}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -455,7 +524,7 @@ export default function PermitDetailPage() {
                         <Button
                             variant="accent"
                             className="bg-error hover:bg-error-hover text-white"
-                            onClick={() => processingDocId && handleVerify(processingDocId, "Rejected", rejectComment)}
+                            onClick={() => processingDocId && handleVerify(processingDocId, VerificationStatus.Rejected, rejectComment)}
                             disabled={!rejectComment}
                         >
                             Konfirmasi Tolak

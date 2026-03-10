@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { PermitCaseStatus, VerificationStatus } from "@prisma/client";
 
 // ─── PERMIT TYPES ────────────────────────────────────────────────────────────
 
@@ -101,6 +102,8 @@ export async function createPermitCase(data: {
     riskCategory: string;
     feeAmount: number;
     notes?: string;
+    applicationData?: any;
+    customDocs?: string[];
 }) {
     try {
         // Fetch the permit type with its templates
@@ -126,20 +129,27 @@ export async function createPermitCase(data: {
                 permitTypeId: data.permitTypeId,
                 clientId: data.clientId,
                 clientName: data.clientName,
-                advisorId: data.advisorId || "",
+                advisorId: data.advisorId || null,
                 serviceType: data.serviceType,
                 riskCategory: data.riskCategory,
-                status: "Draft",
-                progress: 0,
+                status: PermitCaseStatus.Draft,
                 feeAmount: data.feeAmount,
                 notes: data.notes,
-                // Auto-generate required documents from template
+                applicationData: data.applicationData || null,
+                // Combine template required docs and custom docs from UI
                 documents: {
-                    create: permitType.requiredDocs.map((doc, idx) => ({
-                        docType: doc.docType,
-                        verificationStatus: "Pending",
-                        sortOrder: idx,
-                    })),
+                    create: [
+                        ...permitType.requiredDocs.map((doc, idx) => ({
+                            docType: doc.docType,
+                            verificationStatus: VerificationStatus.Pending,
+                            sortOrder: idx,
+                        })),
+                        ...(data.customDocs || []).map((docType, idx) => ({
+                            docType,
+                            verificationStatus: VerificationStatus.Pending,
+                            sortOrder: permitType.requiredDocs.length + idx,
+                        }))
+                    ],
                 },
                 // Auto-generate checklist items from template
                 checklists: {
@@ -167,11 +177,11 @@ export async function createPermitCase(data: {
 
 // ─── UPDATE STATUS ───────────────────────────────────────────────────────────
 
-export async function updatePermitStatus(id: string, status: string, progress: number) {
+export async function updatePermitStatus(id: string, status: PermitCaseStatus) {
     try {
         const permit = await prisma.permitCase.update({
             where: { id },
-            data: { status, progress },
+            data: { status },
         });
         return { success: true, data: permit };
     } catch (error) {
@@ -182,7 +192,7 @@ export async function updatePermitStatus(id: string, status: string, progress: n
 
 // ─── DOCUMENT VERIFICATION ──────────────────────────────────────────────────
 
-export async function verifyDocument(id: string, status: string, comments: string | null) {
+export async function verifyDocument(id: string, status: VerificationStatus, comments: string | null) {
     try {
         const document = await prisma.permitDocument.update({
             where: { id },
@@ -204,7 +214,7 @@ export async function updatePermitDocument(id: string, fileUrl: string) {
             where: { id },
             data: {
                 fileUrl,
-                verificationStatus: "Pending",
+                verificationStatus: VerificationStatus.Pending,
                 comments: null,
             },
         });
@@ -231,5 +241,77 @@ export async function updateChecklistItem(id: string, isChecked: boolean, userId
     } catch (error) {
         console.error("updateChecklistItem error:", error);
         return { success: false, error: "Gagal mengupdate checklist" };
+    }
+}
+// ─── NIB AUTOMATION (INTEGRATED) ─────────────────────────────────────────────
+import { ossApi, djpApi, dukcapilApi, paymentApi, bsreApi } from "@/lib/nib-api";
+
+export async function automateNIBFlow(id: string) {
+    try {
+        const permit = await prisma.permitCase.findUnique({
+            where: { id },
+            include: { checklists: true }
+        });
+
+        if (!permit) return { success: false, error: "Data perijinan tidak ditemukan" };
+
+        const appData = (permit.applicationData as any) || {};
+        const nik = appData.nik || "3273010101700001";
+        const npwp = appData.npwp || "012345678912345";
+        const kbli = appData.kbli || "62019"; // Default: Software Dev (Low Risk)
+
+        // 1. Dukcapil Verification
+        const dukcapil = await dukcapilApi.verifyNIK(nik, permit.clientName);
+        if (!dukcapil.success) return { success: false, error: `Dukcapil: ${dukcapil.message}` };
+
+        // 2. DJP Verification
+        const djp = await djpApi.verifyNPWP(npwp);
+        if (!djp.success) return { success: false, error: `DJP: ${djp.message}` };
+
+        // 3. OSS KBLI Analysis
+        const ossKbli = await ossApi.getKBLI(kbli);
+        if (!ossKbli.success) return { success: false, error: "Gagal mengambil data KBLI" };
+
+        const isLowRisk = ossKbli.risk === "RENDAH";
+
+        // Logic check: Only auto-issue if LOW RISK
+        if (!isLowRisk) {
+            await prisma.permitCase.update({
+                where: { id },
+                data: {
+                    status: PermitCaseStatus.Processing,
+                    riskCategory: ossKbli.risk,
+                    notes: `Risiko ${ossKbli.risk}. Memerlukan verifikasi manual.`
+                }
+            });
+            return { success: true, message: `Risiko ${ossKbli.risk}. Dialihkan ke jalur verifikasi manual.`, manual: true };
+        }
+
+        // 4. Payment (Mock) - for NIB usually free, but let's simulate
+        await paymentApi.createCharge(0);
+
+        // 5. OSS Sync
+        const ossSync = await ossApi.syncNIB({ id: permit.id, kbli });
+        if (!ossSync.success) return { success: false, error: "Gagal sinkronisasi OSS" };
+
+        // 6. Digital Signing
+        const signing = await bsreApi.signDocument(`NIB_${ossSync.nib}.pdf`);
+
+        // 7. Update Permit Status to ISSUED
+        await prisma.permitCase.update({
+            where: { id },
+            data: {
+                status: PermitCaseStatus.Issued,
+                riskCategory: "RENDAH",
+                notes: `NIB Berhasil Terbit Otomatis. No NIB: ${ossSync.nib}. TTE oleh BSrE.`,
+                applicationData: { ...appData, nib: ossSync.nib, signedUrl: signing.signedUrl }
+            }
+        });
+
+        return { success: true, message: "NIB berhasil diterbitkan secara otomatis!" };
+
+    } catch (error) {
+        console.error("automateNIBFlow error:", error);
+        return { success: false, error: "Gagal menjalankan otomasi NIB" };
     }
 }

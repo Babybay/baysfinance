@@ -3,6 +3,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { DocumentKategori } from "@prisma/client";
 
 const R2 = new S3Client({
     region: "auto",
@@ -71,7 +72,7 @@ export async function uploadDocument(formData: FormData) {
         const document = await prisma.document.create({
             data: {
                 nama,
-                kategori,
+                kategori: kategori as DocumentKategori,
                 clientId,
                 clientName: client.nama,
                 ukuran,

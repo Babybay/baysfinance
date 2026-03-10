@@ -10,16 +10,17 @@ import { Plus, Search, Edit2, Trash2, Users, ShieldAlert } from "lucide-react";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { createClient, updateClient, deleteClient } from "@/app/actions/clients";
 import type { Client } from "@prisma/client";
+import { JenisWP, ClientStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 const emptyClient = {
     nama: "",
     npwp: "",
-    jenisWP: "Orang Pribadi",
+    jenisWP: JenisWP.OrangPribadi,
     email: "",
     telepon: "",
     alamat: "",
-    status: "Aktif",
+    status: ClientStatus.Aktif,
 };
 
 export function ClientListView({ initialClients }: { initialClients: Client[] }) {
@@ -222,8 +223,8 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input label="Nama Lengkap / Badan Usaha" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} required placeholder="PT Contoh Indonesia" />
                         <Input label="NPWP" value={form.npwp} onChange={(e) => setForm({ ...form, npwp: e.target.value })} required placeholder="XX.XXX.XXX.X-XXX.XXX" />
-                        <Select label="Jenis Wajib Pajak" value={form.jenisWP} onChange={(e) => setForm({ ...form, jenisWP: e.target.value as Client["jenisWP"] })} options={[{ value: "Orang Pribadi", label: "Orang Pribadi" }, { value: "Badan", label: "Badan" }]} />
-                        <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Client["status"] })} options={[{ value: "Aktif", label: "Aktif" }, { value: "Tidak Aktif", label: "Tidak Aktif" }]} />
+                        <Select label="Jenis Wajib Pajak" value={form.jenisWP} onChange={(e) => setForm({ ...form, jenisWP: e.target.value as Client["jenisWP"] })} options={[{ value: JenisWP.OrangPribadi, label: "Orang Pribadi" }, { value: JenisWP.Badan, label: "Badan" }]} />
+                        <Select label="Status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Client["status"] })} options={[{ value: ClientStatus.Aktif, label: "Aktif" }, { value: ClientStatus.TidakAktif, label: "Tidak Aktif" }]} />
                         <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@contoh.com" />
                         <Input label="Telepon" value={form.telepon} onChange={(e) => setForm({ ...form, telepon: e.target.value })} placeholder="021-XXXXXXX" />
                     </div>

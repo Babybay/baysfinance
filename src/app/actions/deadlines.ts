@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { TaxDeadlineStatus } from "@prisma/client";
 
 // ─── GET DEADLINES ───────────────────────────────────────────────────────────
 
@@ -19,11 +20,15 @@ export async function getDeadlines(clientId?: string) {
 
 // ─── UPDATE DEADLINE STATUS ──────────────────────────────────────────────────
 
-export async function updateDeadlineStatus(id: string, status: string) {
+export async function updateDeadlineStatus(id: string, status: TaxDeadlineStatus, userId?: string) {
     try {
         const deadline = await prisma.taxDeadline.update({
             where: { id },
-            data: { status },
+            data: {
+                status,
+                reportedAt: status === TaxDeadlineStatus.SudahLapor ? new Date() : undefined,
+                updatedBy: userId || null,
+            },
         });
         return { success: true, data: deadline };
     } catch (error) {

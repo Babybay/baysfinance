@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { InvoiceStatus } from "@prisma/client";
 
 // ─── GET INVOICES ────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ export async function createInvoice(data: {
                 subtotal,
                 ppn,
                 total,
-                status: "Draft",
+                status: InvoiceStatus.Draft,
                 catatan: data.catatan || null,
                 items: {
                     create: data.items.map((item) => ({
@@ -71,7 +72,7 @@ export async function createInvoice(data: {
 
 // ─── UPDATE INVOICE STATUS ───────────────────────────────────────────────────
 
-export async function updateInvoiceStatus(id: string, status: string) {
+export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
     try {
         const invoice = await prisma.invoice.update({
             where: { id },

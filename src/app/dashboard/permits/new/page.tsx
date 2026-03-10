@@ -38,6 +38,17 @@ export default function NewPermitPage() {
     const [notes, setNotes] = useState("");
     const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
+    // IMB/PBG specific state
+    const [imbHasBuilding, setImbHasBuilding] = useState<"Sudah" | "Belum" | null>(null);
+    const [imbHasDrawing, setImbHasDrawing] = useState<"Sudah" | "Belum" | null>(null);
+    const [imbBuildingArea, setImbBuildingArea] = useState("");
+    const [imbFloorCount, setImbFloorCount] = useState("");
+    const [imbUsage, setImbUsage] = useState("");
+    const [imbOwnership, setImbOwnership] = useState<"Sewa" | "Milik Sendiri" | null>(null);
+
+    // Derived states
+    const isBuildingPermit = selectedType?.slug === "building";
+
     useEffect(() => {
         loadData();
     }, []);
@@ -62,19 +73,65 @@ export default function NewPermitPage() {
         });
     };
 
+    // Recalculate dynamic values based on questionnaire
+    const getDynamicServiceType = () => {
+        if (!isBuildingPermit) return serviceType || selectedType?.name || "";
+        if (imbHasBuilding === "Sudah") return "Sertifikat Laik Fungsi (SLF)";
+        if (imbHasBuilding === "Belum") return "Persetujuan Bangunan Gedung (PBG) & SLF";
+        return serviceType || selectedType?.name || "";
+    };
+
+    const getDynamicFee = () => {
+        // Just an example placeholder logic for dynamic pricing
+        if (!isBuildingPermit) return feeAmount;
+        if (imbHasBuilding === "Sudah") return 15000000;
+        if (imbHasBuilding === "Belum") return 35000000;
+        return feeAmount;
+    };
+
+    const getCustomDocs = () => {
+        if (!isBuildingPermit) return [];
+        const docs = [];
+        if (imbOwnership === "Sewa") {
+            docs.push("Akte Perjanjian Sewa Menyewa");
+        }
+        if (imbHasDrawing === "Sudah") {
+            docs.push("Gambar Rencana Teknis Terverifikasi");
+        }
+        return docs;
+    };
+
     const handleSubmit = async () => {
         if (!selectedType || !selectedClientId) return;
         setIsSubmitting(true);
 
         const client = clients.find(c => c.id === selectedClientId);
+
+        let applicationData = undefined;
+        let customDocs: string[] = [];
+
+        if (isBuildingPermit) {
+            applicationData = {
+                hasBuilding: imbHasBuilding,
+                hasDrawing: imbHasDrawing,
+                buildingArea: imbHasBuilding === "Belum" && imbHasDrawing === "Belum" ? imbBuildingArea : undefined,
+                floorCount: imbHasBuilding === "Belum" && imbHasDrawing === "Belum" ? imbFloorCount : undefined,
+                usage: imbHasBuilding === "Belum" && imbHasDrawing === "Belum" ? imbUsage : undefined,
+                ownership: imbOwnership,
+            };
+            customDocs = getCustomDocs();
+        }
+
         const res = await createPermitCase({
             permitTypeId: selectedType.id,
             clientId: selectedClientId,
             clientName: client?.nama || "",
-            serviceType: serviceType || selectedType.name,
+            serviceType: getDynamicServiceType(),
             riskCategory,
-            feeAmount,
+            feeAmount: getDynamicFee(),
             notes: notes || undefined,
+            applicationData,
+            customDocs,
         });
 
         if (res.success) {
@@ -92,7 +149,15 @@ export default function NewPermitPage() {
     const canProceedStep = () => {
         switch (step) {
             case 0: return !!selectedType;
-            case 1: return !!selectedClientId && !!serviceType;
+            case 1:
+                if (isBuildingPermit) {
+                    if (!imbHasBuilding || !imbOwnership || !imbHasDrawing) return false;
+                    if (imbHasDrawing === "Belum") {
+                        if (!imbBuildingArea || !imbFloorCount || !imbUsage) return false;
+                    }
+                    return !!selectedClientId;
+                }
+                return !!selectedClientId && !!serviceType;
             case 2: return allChecklistChecked;
             case 3: return true;
             default: return false;
@@ -107,7 +172,9 @@ export default function NewPermitPage() {
         );
     }
 
-    const stepLabels = ["Pilih Jenis", "Data Klien", "Persetujuan", "Konfirmasi"];
+    const stepLabels = isBuildingPermit
+        ? ["Pilih Jenis", "Kuesioner", "Persetujuan", "Konfirmasi"]
+        : ["Pilih Jenis", "Data Klien", "Persetujuan", "Konfirmasi"];
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -128,8 +195,8 @@ export default function NewPermitPage() {
                     {stepLabels.map((label, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors ${idx < step ? "bg-accent border-accent text-white" :
-                                    idx === step ? "bg-card border-accent text-accent" :
-                                        "bg-card border-border text-muted"
+                                idx === step ? "bg-card border-accent text-accent" :
+                                    "bg-card border-border text-muted"
                                 }`}>
                                 {idx < step ? <Check className="h-4 w-4" /> : idx + 1}
                             </div>
@@ -160,10 +227,18 @@ export default function NewPermitPage() {
                                             setSelectedType(pt);
                                             setServiceType(pt.name);
                                             setCheckedItems(new Set());
+
+                                            // Reset custom form if changing type
+                                            setImbHasBuilding(null);
+                                            setImbHasDrawing(null);
+                                            setImbBuildingArea("");
+                                            setImbFloorCount("");
+                                            setImbUsage("");
+                                            setImbOwnership(null);
                                         }}
                                         className={`group flex flex-col items-center gap-3 p-5 rounded-[12px] border-2 transition-all duration-200 text-center ${isSelected
-                                                ? "border-accent bg-accent-muted"
-                                                : "border-border bg-surface hover:border-accent/30 hover:bg-accent-muted/50"
+                                            ? "border-accent bg-accent-muted"
+                                            : "border-border bg-surface hover:border-accent/30 hover:bg-accent-muted/50"
                                             }`}
                                     >
                                         <div className={`h-12 w-12 rounded-[10px] flex items-center justify-center transition-colors ${isSelected ? "bg-accent text-white" : "bg-card border border-border text-muted group-hover:text-accent"
@@ -195,10 +270,11 @@ export default function NewPermitPage() {
                     </div>
                 )}
 
-                {/* STEP 1: Client & Details */}
+                {/* STEP 1: Client & Details / Questionnaire */}
                 {step === 1 && (
                     <div className="space-y-5">
-                        <h2 className="font-serif text-lg">Data Klien & Layanan</h2>
+                        <h2 className="font-serif text-lg">{isBuildingPermit ? "Kuesioner Bangunan & Data Klien" : "Data Klien & Layanan"}</h2>
+
                         <div>
                             <label className="text-sm font-medium text-foreground block mb-1.5">Klien</label>
                             <select
@@ -212,12 +288,86 @@ export default function NewPermitPage() {
                                 ))}
                             </select>
                         </div>
-                        <Input
-                            label="Jenis Layanan Spesifik"
-                            value={serviceType}
-                            onChange={(e) => setServiceType(e.target.value)}
-                            placeholder="Contoh: NIB Baru, Perpanjangan KITAS, dll."
-                        />
+
+                        {/* IMB/PBG Specialized Form */}
+                        {isBuildingPermit ? (
+                            <div className="p-4 bg-accent-muted/20 border border-border rounded-[12px] space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-foreground block mb-2">Apakah sudah ada fisik bangunan?</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbHasBuilding === "Sudah"} onChange={() => setImbHasBuilding("Sudah")} />
+                                            <span className="text-sm">Sudah (Proses SLF)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbHasBuilding === "Belum"} onChange={() => setImbHasBuilding("Belum")} />
+                                            <span className="text-sm">Belum (Proses PBG & SLF)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-foreground block mb-2">Status Kepemilikan Lahan?</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbOwnership === "Milik Sendiri"} onChange={() => setImbOwnership("Milik Sendiri")} />
+                                            <span className="text-sm">Milik Sendiri</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbOwnership === "Sewa"} onChange={() => setImbOwnership("Sewa")} />
+                                            <span className="text-sm">Sewa</span>
+                                        </label>
+                                    </div>
+                                    {imbOwnership === "Sewa" && <p className="text-xs text-muted-foreground mt-1">Catatan: Akte Perjanjian Sewa Menyewa wajib dilampirkan nanti.</p>}
+                                </div>
+
+                                <div className="pt-2 border-t border-border">
+                                    <label className="text-sm font-medium text-foreground block mb-2">Apakah gambar rencana teknis sudah tersedia?</label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbHasDrawing === "Sudah"} onChange={() => setImbHasDrawing("Sudah")} />
+                                            <span className="text-sm">Sudah</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" className="text-accent focus:ring-accent"
+                                                checked={imbHasDrawing === "Belum"} onChange={() => setImbHasDrawing("Belum")} />
+                                            <span className="text-sm">Belum</span>
+                                        </label>
+                                    </div>
+                                    {imbHasDrawing === "Belum" && (
+                                        <div className="mt-4 space-y-3 bg-card p-3 rounded-[8px] border border-border">
+                                            <p className="text-xs text-danger font-medium mb-2">Peringatan: Proses tidak dapat dilanjut tanpa gambar. Silakan isi detail berikut untuk estimasi pembuatan gambar.</p>
+                                            <Input label="Estimasi Luas Bangunan (m2)" placeholder="Misal: 150" value={imbBuildingArea} onChange={e => setImbBuildingArea(e.target.value)} />
+                                            <Input label="Jumlah Lantai" placeholder="Misal: 2" value={imbFloorCount} onChange={e => setImbFloorCount(e.target.value)} />
+                                            <Input label="Peruntukan Bangunan" placeholder="Misal: Ruko, Rumah Tinggal" value={imbUsage} onChange={e => setImbUsage(e.target.value)} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            // Standard Form
+                            <>
+                                <Input
+                                    label="Jenis Layanan Spesifik"
+                                    value={serviceType}
+                                    onChange={(e) => setServiceType(e.target.value)}
+                                    placeholder="Contoh: NIB Baru, Perpanjangan KITAS, dll."
+                                />
+                                <Input
+                                    label="Biaya Layanan (IDR)"
+                                    type="number"
+                                    value={String(feeAmount)}
+                                    onChange={(e) => setFeeAmount(Number(e.target.value))}
+                                    placeholder="0"
+                                />
+                            </>
+                        )}
+
                         <div>
                             <label className="text-sm font-medium text-foreground block mb-1.5">Kategori Risiko</label>
                             <select
@@ -231,18 +381,12 @@ export default function NewPermitPage() {
                                 <option value="High">Tinggi (High)</option>
                             </select>
                         </div>
-                        <Input
-                            label="Biaya Layanan (IDR)"
-                            type="number"
-                            value={String(feeAmount)}
-                            onChange={(e) => setFeeAmount(Number(e.target.value))}
-                            placeholder="0"
-                        />
+
                         <Textarea
-                            label="Catatan (Opsional)"
+                            label="Catatan Tambahan (Opsional)"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Catatan tambahan untuk advisor..."
+                            placeholder={isBuildingPermit ? "Contoh lokasi tanah..." : "Catatan tambahan untuk advisor..."}
                         />
                     </div>
                 )}
@@ -261,13 +405,22 @@ export default function NewPermitPage() {
                                 <FileText className="h-4 w-4 text-accent" /> Dokumen yang Akan Diperlukan
                             </h3>
                             <div className="space-y-2">
-                                {selectedType.requiredDocs?.map((doc: any, idx: number) => (
+                                {selectedType.requiredDocs?.filter((d: any) => d.docType !== "Gambar Rencana Teknis Terverifikasi").map((doc: any, idx: number) => (
                                     <div key={idx} className="flex items-center gap-3 p-2.5 rounded-[8px] bg-surface">
                                         <div className="h-8 w-8 rounded-[6px] bg-card border border-border flex items-center justify-center">
                                             <FileText className="h-4 w-4 text-muted" />
                                         </div>
                                         <span className="text-sm text-foreground">{doc.docType}</span>
                                         {doc.isRequired && <Badge variant="info" className="ml-auto text-[10px]">Wajib</Badge>}
+                                    </div>
+                                ))}
+                                {getCustomDocs().map((docName, idx) => (
+                                    <div key={`custom-${idx}`} className="flex items-center gap-3 p-2.5 rounded-[8px] bg-accent-muted/20 border border-accent/20">
+                                        <div className="h-8 w-8 rounded-[6px] bg-card border border-border flex items-center justify-center">
+                                            <FileText className="h-4 w-4 text-accent" />
+                                        </div>
+                                        <span className="text-sm text-foreground">{docName}</span>
+                                        <Badge variant="warning" className="ml-auto text-[10px]">Wajib (Kondisional)</Badge>
                                     </div>
                                 ))}
                             </div>
@@ -284,8 +437,8 @@ export default function NewPermitPage() {
                                         <label
                                             key={item.id}
                                             className={`flex items-start gap-3 p-3 rounded-[8px] border-2 cursor-pointer transition-all ${checkedItems.has(item.id)
-                                                    ? "border-accent bg-accent-muted/50"
-                                                    : "border-border bg-surface hover:border-accent/30"
+                                                ? "border-accent bg-accent-muted/50"
+                                                : "border-border bg-surface hover:border-accent/30"
                                                 }`}
                                         >
                                             <input
@@ -331,7 +484,7 @@ export default function NewPermitPage() {
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Layanan</span>
-                                <span className="text-sm font-semibold text-foreground">{serviceType}</span>
+                                <span className="text-sm font-semibold text-foreground">{getDynamicServiceType()}</span>
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Risiko</span>
@@ -341,11 +494,13 @@ export default function NewPermitPage() {
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Biaya</span>
-                                <span className="text-sm font-semibold text-foreground">{formatIDR(feeAmount)}</span>
+                                <span className="text-sm font-semibold text-foreground">{formatIDR(getDynamicFee())}</span>
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Dokumen</span>
-                                <span className="text-sm text-foreground">{selectedType.requiredDocs?.length || 0} dokumen</span>
+                                <span className="text-sm text-foreground">
+                                    {(selectedType.requiredDocs?.length || 0) + getCustomDocs().length - (isBuildingPermit && imbHasDrawing !== "Sudah" ? 1 : 0)} dokumen
+                                </span>
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Persetujuan</span>
