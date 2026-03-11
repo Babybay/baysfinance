@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { ingestTemplateFile } from "@/lib/ingestion/template-ingestion";
+import type { IngestionResult } from "@/lib/ingestion/template-ingestion";
 
 export const maxDuration = 120; // 2 minutes for large templates
 
+const PYTHON_SERVICE_URL = process.env.INGESTION_SERVICE_URL || "http://localhost:8001";
+
+/**
+ * POST /api/accounting/template-upload
+ *
+ * Strategy:
+ *   1. Try Python FastAPI ingestion service (enhanced processing with openpyxl)
+ *   2. Fallback to TypeScript XLSX-based ingestion if Python service is unavailable
+ */
 export async function POST(req: NextRequest) {
     const user = await currentUser();
     if (!user) {
@@ -49,6 +59,49 @@ export async function POST(req: NextRequest) {
         );
     }
 
+    // ── Strategy 1: Try Python FastAPI service ──────────────────────────
+    try {
+        const pyForm = new FormData();
+        pyForm.append("file", file);
+        pyForm.append("client_id", clientId);
+        pyForm.append("imported_by", importedBy);
+
+        const pyRes = await fetch(`${PYTHON_SERVICE_URL}/process`, {
+            method: "POST",
+            body: pyForm,
+            signal: AbortSignal.timeout(90_000), // 90s timeout
+        });
+
+        if (pyRes.ok) {
+            const pyData = await pyRes.json();
+
+            // Map Python response → TypeScript IngestionResult interface
+            const result: IngestionResult = {
+                success: pyData.success,
+                batchId: pyData.batch_id,
+                companyName: pyData.company_name || "",
+                period: pyData.period || "",
+                journalsCreated: pyData.total_entries || 0,
+                assetsCreated: pyData.total_assets || 0,
+                snapshotsCreated: Object.values(pyData.sheet_results || {}).filter(
+                    (s: any) => s.has_snapshot
+                ).length,
+                skipped: pyData.total_skipped || 0,
+                warnings: pyData.warnings || [],
+                errors: pyData.errors || [],
+            };
+
+            return NextResponse.json(result, { status: result.success ? 200 : 422 });
+        }
+
+        // Python service returned an error — fall through to TypeScript
+        console.warn("[template-upload] Python service error, falling back to TS:", pyRes.status);
+    } catch (err) {
+        // Python service unavailable — fall through to TypeScript
+        console.warn("[template-upload] Python service unavailable, using TS fallback:", err instanceof Error ? err.message : err);
+    }
+
+    // ── Strategy 2: Fallback to TypeScript XLSX ─────────────────────────
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
