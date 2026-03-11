@@ -12,7 +12,8 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma validate 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/auth-helpers.ts src/lib/accounting/account-ranges.ts src/app/actions/accounting.ts src/app/actions/accounting/buku-besar.ts src/app/actions/accounting/neraca-lajur.ts src/app/api/webhooks/clerk/route.ts src/app/dashboard/accounting/journal/page.tsx src/app/dashboard/accounting/journal/JournalEntriesListView.tsx 2>&1)",
-      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit 2>&1 | grep -v \"documents.ts\")"
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit 2>&1 | grep -v \"documents.ts\")",
+      "Bash(claude config:*)"
     ]
   }
 }

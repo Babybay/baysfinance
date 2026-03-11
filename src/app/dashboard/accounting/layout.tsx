@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Layers, BarChart3, Wallet, FileSpreadsheet, TableProperties } from "lucide-react";
+import { BookOpen, BarChart3, Wallet, FileSpreadsheet, TableProperties, Scale } from "lucide-react";
 
 export default function AccountingLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function AccountingLayout({ children }: { children: React.ReactNo
         { id: "journal", label: "Jurnal Umum", href: "/dashboard/accounting/journal", icon: BookOpen },
         { id: "buku-besar", label: "Buku Besar", href: "/dashboard/accounting/buku-besar", icon: FileSpreadsheet },
         { id: "neraca-lajur", label: "Neraca Lajur", href: "/dashboard/accounting/neraca-lajur", icon: TableProperties },
+        { id: "neraca", label: "Neraca", href: "/dashboard/accounting/neraca", icon: Scale },
         { id: "reports", label: "Laporan Keuangan", href: "/dashboard/accounting/reports", icon: BarChart3 },
         { id: "accounts", label: "Chart of Accounts", href: "/dashboard/accounting/accounts", icon: Wallet },
     ];
