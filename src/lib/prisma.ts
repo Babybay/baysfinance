@@ -16,7 +16,7 @@ function createPrismaClient() {
                     const softDeleteModels = [
                         'Client', 'TaxDeadline', 'Document', 'Invoice',
                         'PermitCase', 'JournalEntry', 'Payment',
-                        'RecurringInvoice', 'Account'
+                        'RecurringInvoice', 'Account', 'ImportBatch'
                     ];
 
                     if (softDeleteModels.includes(model as string)) {

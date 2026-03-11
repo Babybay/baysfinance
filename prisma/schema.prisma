@@ -76,6 +76,23 @@ enum JournalStatus {
   Posted
 }
 
+enum AccDocType {
+  SalesInvoice
+  PurchaseInvoice
+  ExpenseReceipt
+  BankStatement
+  FinancialReport
+  Other
+}
+
+enum AccDocModule {
+  Receivable
+  Payable
+  Expense
+  Cashflow
+  FinancialReport
+}
+
 // ─── CORE MODELS ─────────────────────────────────────────────────────────────
 
 model User {
@@ -110,13 +127,15 @@ model Client {
   updatedAt DateTime     @updatedAt
   deletedAt DateTime?
 
-  deadlines TaxDeadline[]
-  documents Document[]
-  invoices  Invoice[]
-  permits   PermitCase[]
-  recurring RecurringInvoice[]
-  accounts  Account[]
-  journals  JournalEntry[]
+  deadlines      TaxDeadline[]
+  documents      Document[]
+  invoices       Invoice[]
+  permits        PermitCase[]
+  recurring      RecurringInvoice[]
+  accounts       Account[]
+  journals       JournalEntry[]
+  accountingDocs AccountingDocument[]
+  importBatches  ImportBatch[]
 
   @@map("clients")
 }
@@ -429,6 +448,10 @@ model JournalEntry {
   totalDebit  Decimal @default(0) @db.Decimal(18, 2)
   totalCredit Decimal @default(0) @db.Decimal(18, 2)
 
+  source      String?       // e.g., "daily_report", "bank_statement", "invoice", etc.
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id])
+
   items JournalItem[]
 
   createdAt DateTime  @default(now())
@@ -437,6 +460,7 @@ model JournalEntry {
 
   @@index([clientId, status])
   @@index([clientId, date])   // M3: date-range queries in getBukuBesar / getNeracaLajur
+  @@index([clientId, source, date]) // duplicate detection for imports
   @@map("journal_entries")
 }
 
@@ -459,4 +483,57 @@ model JournalItem {
   @@index([accountId])
   @@index([accountId, journalEntryId])  // L4: composite for account+entry joins
   @@map("journal_items")
+}
+
+// ── ACCOUNTING DOCUMENT MANAGEMENT ──────────────────────────────────────────
+
+model AccountingDocument {
+  id           String        @id @default(cuid())
+  documentName String
+  documentType AccDocType
+  linkedModule AccDocModule?
+  documentDate DateTime
+  description  String?
+  fileUrl      String
+  fileType     String        // "pdf", "jpg", "png"
+  fileSize     Int           // bytes
+  uploadedBy   String        // Clerk user display name
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Future: OCR processing fields
+  ocrStatus String? // "pending" | "processing" | "done" | "failed"
+  ocrData   Json?   // extracted structured data
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([clientId, documentType])
+  @@index([clientId, linkedModule])
+  @@map("accounting_documents")
+}
+
+// ── IMPORT BATCH TRACKING ─────────────────────────────────────────────────
+
+model ImportBatch {
+  id           String   @id @default(cuid())
+  fileName     String
+  documentType String   // "cashier_report", "bank_statement", etc.
+  entriesCount Int      @default(0)
+  skippedCount Int      @default(0)
+  errorsCount  Int      @default(0)
+  importedBy   String   // Clerk user display name
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  entries JournalEntry[]
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([clientId, createdAt])
+  @@map("import_batches")
 }

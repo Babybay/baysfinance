@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, BarChart3, Wallet, FileSpreadsheet, TableProperties, Scale } from "lucide-react";
+import { BookOpen, BarChart3, Wallet, FileSpreadsheet, TableProperties, Scale, FileText, Upload } from "lucide-react";
 
 export default function AccountingLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -14,6 +14,8 @@ export default function AccountingLayout({ children }: { children: React.ReactNo
         { id: "neraca-lajur", label: "Neraca Lajur", href: "/dashboard/accounting/neraca-lajur", icon: TableProperties },
         { id: "neraca", label: "Neraca", href: "/dashboard/accounting/neraca", icon: Scale },
         { id: "reports", label: "Laporan Keuangan", href: "/dashboard/accounting/reports", icon: BarChart3 },
+        { id: "documents", label: "Dokumen", href: "/dashboard/accounting/documents", icon: FileText },
+        { id: "import", label: "Import", href: "/dashboard/accounting/import", icon: Upload },
         { id: "accounts", label: "Chart of Accounts", href: "/dashboard/accounting/accounts", icon: Wallet },
     ];
 

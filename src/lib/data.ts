@@ -1,5 +1,5 @@
 // Shared types and data for the tax consulting application
-import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus, AccountType, JournalStatus } from "@prisma/client";
+import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus, AccountType, JournalStatus, AccDocType, AccDocModule } from "@prisma/client";
 
 
 export interface Client {
@@ -90,6 +90,22 @@ export interface JournalItem {
     description?: string | null;
     debit: number;
     credit: number;
+}
+
+export interface AccountingDocument {
+    id: string;
+    documentName: string;
+    documentType: AccDocType;
+    linkedModule: AccDocModule | null;
+    documentDate: string;
+    description: string | null;
+    fileUrl: string;
+    fileType: string;
+    fileSize: number;
+    uploadedBy: string;
+    clientId: string;
+    clientName?: string;
+    createdAt: string;
 }
 
 

@@ -25,18 +25,22 @@
     "dotenv": "^17.3.1",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.34.3",
+    "fuse.js": "^7.1.0",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.18.0",
     "prisma": "^7.4.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "svix": "^1.86.0",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.33",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",

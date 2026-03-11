@@ -13,7 +13,17 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/auth-helpers.ts src/lib/accounting/account-ranges.ts src/app/actions/accounting.ts src/app/actions/accounting/buku-besar.ts src/app/actions/accounting/neraca-lajur.ts src/app/api/webhooks/clerk/route.ts src/app/dashboard/accounting/journal/page.tsx src/app/dashboard/accounting/journal/JournalEntriesListView.tsx 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit 2>&1 | grep -v \"documents.ts\")",
-      "Bash(claude config:*)"
+      "Bash(claude config:*)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm install xlsx 2>&1 | tail -5)",
+      "Bash(ls -la \"/d/THE PROJECT/saas-consulting/src/app/actions/\" | grep -E \"\\\\.ts$\")",
+      "Bash(find \"/d/THE PROJECT/saas-consulting/src/app/actions\" -type f -name \"*.ts\" | xargs wc -l | tail -1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm install pdf-parse fuse.js 2>&1 | tail -5)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm ls pdf-parse fuse.js xlsx 2>&1 | grep -E \"pdf-parse|fuse|xlsx\")",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm install -D @types/pdf-parse 2>&1 | tail -3)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/import-helpers.ts src/lib/document-detector.ts src/lib/column-mapper.ts src/lib/document-parser.ts src/lib/journal-generator.ts src/app/api/accounting/import/route.ts src/app/actions/import-accounting.ts src/app/dashboard/accounting/import/page.tsx src/app/dashboard/accounting/import/ImportView.tsx src/app/dashboard/accounting/import/history/page.tsx src/app/dashboard/accounting/import/history/ImportHistoryView.tsx src/app/dashboard/accounting/layout.tsx src/lib/translations/en.ts src/lib/translations/id.ts src/lib/prisma.ts 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/document-detector.ts src/lib/column-mapper.ts src/lib/document-parser.ts src/lib/journal-generator.ts src/lib/import-helpers.ts src/app/api/accounting/import/route.ts src/app/actions/import-accounting.ts src/app/dashboard/accounting/import/page.tsx src/app/dashboard/accounting/import/ImportView.tsx src/app/dashboard/accounting/import/history/page.tsx src/app/dashboard/accounting/import/history/ImportHistoryView.tsx src/lib/translations/en.ts src/lib/translations/id.ts 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma generate 2>&1 | tail -5)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)"
     ]
   }
 }
