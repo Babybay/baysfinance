@@ -1,5 +1,5 @@
 import React from "react";
-import { ImportView } from "./ImportView";
+import { ImportTabsView } from "./ImportTabsView";
 import { getClients } from "@/app/actions/clients";
 import { Client } from "@/lib/data";
 import { currentUser } from "@clerk/nextjs/server";
@@ -19,7 +19,7 @@ export default async function ImportPage() {
     const resolvedClientId = isClientRole ? (ownClientId ?? "") : "";
 
     return (
-        <ImportView
+        <ImportTabsView
             clients={clients}
             defaultClientId={resolvedClientId}
             isClientRole={isClientRole}

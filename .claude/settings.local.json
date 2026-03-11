@@ -23,7 +23,10 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/import-helpers.ts src/lib/document-detector.ts src/lib/column-mapper.ts src/lib/document-parser.ts src/lib/journal-generator.ts src/app/api/accounting/import/route.ts src/app/actions/import-accounting.ts src/app/dashboard/accounting/import/page.tsx src/app/dashboard/accounting/import/ImportView.tsx src/app/dashboard/accounting/import/history/page.tsx src/app/dashboard/accounting/import/history/ImportHistoryView.tsx src/app/dashboard/accounting/layout.tsx src/lib/translations/en.ts src/lib/translations/id.ts src/lib/prisma.ts 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/document-detector.ts src/lib/column-mapper.ts src/lib/document-parser.ts src/lib/journal-generator.ts src/lib/import-helpers.ts src/app/api/accounting/import/route.ts src/app/actions/import-accounting.ts src/app/dashboard/accounting/import/page.tsx src/app/dashboard/accounting/import/ImportView.tsx src/app/dashboard/accounting/import/history/page.tsx src/app/dashboard/accounting/import/history/ImportHistoryView.tsx src/lib/translations/en.ts src/lib/translations/id.ts 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma generate 2>&1 | tail -5)",
-      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)"
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx next lint 2>&1 | tail -30)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1 | tail -40)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1 | tail -60)"
     ]
   }
 }

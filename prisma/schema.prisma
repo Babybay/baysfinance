@@ -134,8 +134,10 @@ model Client {
   recurring      RecurringInvoice[]
   accounts       Account[]
   journals       JournalEntry[]
-  accountingDocs AccountingDocument[]
-  importBatches  ImportBatch[]
+  accountingDocs      AccountingDocument[]
+  importBatches       ImportBatch[]
+  fixedAssets         FixedAsset[]
+  financialSnapshots  FinancialReportSnapshot[]
 
   @@map("clients")
 }
@@ -520,20 +522,73 @@ model AccountingDocument {
 model ImportBatch {
   id           String   @id @default(cuid())
   fileName     String
-  documentType String   // "cashier_report", "bank_statement", etc.
+  documentType String   // "TEMPLATE_EXCEL", "cashier_report", etc.
+  period       String?  // e.g., "Januari 2024"
+  companyName  String?  // from cell B2
+  status       String   @default("COMPLETED") // "PROCESSING", "COMPLETED", "FAILED", "ROLLED_BACK"
   entriesCount Int      @default(0)
   skippedCount Int      @default(0)
   errorsCount  Int      @default(0)
+  warnings     Json?    // array of warning strings
   importedBy   String   // Clerk user display name
+  completedAt  DateTime?
 
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  entries JournalEntry[]
+  entries     JournalEntry[]
+  fixedAssets FixedAsset[]
 
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
   @@index([clientId, createdAt])
   @@map("import_batches")
+}
+
+// ── FIXED ASSET TRACKING ──────────────────────────────────────────────────
+
+model FixedAsset {
+  id                 String   @id @default(cuid())
+  clientId           String
+  client             Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  importBatchId      String
+  importBatch        ImportBatch @relation(fields: [importBatchId], references: [id])
+  source             String   // "ASET_MANAJEMEN", "ASET_OWNER", "BIAYA_PRA_OPERASI"
+  name               String
+  acquisitionDate    DateTime?
+  quantity           Int      @default(1)
+  depreciationRate   Decimal  @default(0) @db.Decimal(8, 4)
+  costPrev           Decimal  @default(0) @db.Decimal(18, 2)
+  mutasiIn           Decimal  @default(0) @db.Decimal(18, 2)
+  mutasiOut          Decimal  @default(0) @db.Decimal(18, 2)
+  costCurrent        Decimal  @default(0) @db.Decimal(18, 2)
+  accumDeprecPrev    Decimal  @default(0) @db.Decimal(18, 2)
+  deprecCurrentIn    Decimal  @default(0) @db.Decimal(18, 2)
+  deprecCurrentOut   Decimal  @default(0) @db.Decimal(18, 2)
+  accumDeprecCurrent Decimal  @default(0) @db.Decimal(18, 2)
+  bookValue          Decimal  @default(0) @db.Decimal(18, 2)
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([clientId, source])
+  @@index([importBatchId])
+  @@map("fixed_assets")
+}
+
+// ── FINANCIAL REPORT SNAPSHOTS ────────────────────────────────────────────
+
+model FinancialReportSnapshot {
+  id         String   @id @default(cuid())
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  period     String   // e.g., "2024"
+  reportType String   // "LABA_RUGI" or "ARUS_KAS"
+  data       Json     // structured line items
+
+  createdAt DateTime @default(now())
+
+  @@unique([clientId, period, reportType])
+  @@map("financial_report_snapshots")
 }
