@@ -2,6 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { JournalStatus, AccountType } from "@prisma/client";
+import { assertCanAccessClient, handleAuthError } from "@/lib/auth-helpers";
+
+/** Maximum allowed date range for ledger queries (prevents expensive full-history scans). */
+const MAX_RANGE_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
 
 export interface BukuBesarTransaction {
     date: string;
@@ -49,9 +53,17 @@ export async function getBukuBesar(
     accountCode?: string
 ): Promise<{ success: boolean; data?: BukuBesarData; error?: string }> {
     try {
+        // C1: authorise before touching any data
+        await assertCanAccessClient(clientId);
+
         // Validate date range
         if (endDate < startDate) {
             return { success: false, error: "Tanggal akhir harus setelah tanggal awal" };
+        }
+
+        // L3: cap maximum query range to 1 year
+        if (endDate.getTime() - startDate.getTime() > MAX_RANGE_MS) {
+            return { success: false, error: "Rentang tanggal maksimal 1 tahun." };
         }
 
         // 1. Get client
@@ -62,7 +74,11 @@ export async function getBukuBesar(
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
         // 2. Get accounts for this client
-        const accountWhere: any = {
+        const accountWhere: {
+            OR: { clientId: null | string }[];
+            isActive: boolean;
+            code?: string;
+        } = {
             OR: [{ clientId: null }, { clientId }],
             isActive: true,
         };
@@ -106,8 +122,9 @@ export async function getBukuBesar(
 
         const openingBalances: Record<string, number> = {};
         for (const item of openingItems) {
+            // M6: convert Decimal → number for arithmetic
             openingBalances[item.accountId] =
-                (openingBalances[item.accountId] || 0) + (item.debit - item.credit);
+                (openingBalances[item.accountId] || 0) + (Number(item.debit) - Number(item.credit));
         }
 
         // 4. Get transactions within the period
@@ -153,8 +170,9 @@ export async function getBukuBesar(
             let totalCredit = 0;
 
             const transactions: BukuBesarTransaction[] = items.map((item) => {
-                const d = item.debit;
-                const c = item.credit;
+                // M6: convert Decimal → number
+                const d = Number(item.debit);
+                const c = Number(item.credit);
                 totalDebit += d;
                 totalCredit += c;
                 running += (d - c) * dir;
@@ -195,7 +213,10 @@ export async function getBukuBesar(
             },
         };
     } catch (error) {
-        console.error("getBukuBesar error:", error);
-        return { success: false, error: "Gagal memuat data buku besar" };
+        console.error("[getBukuBesar]", error);
+        if (error instanceof Error && (error.message === "UNAUTHENTICATED" || error.message === "FORBIDDEN")) {
+            return handleAuthError(error);
+        }
+        return { success: false, error: "Gagal memuat data buku besar." };
     }
 }

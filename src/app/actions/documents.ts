@@ -85,7 +85,6 @@ export async function uploadDocument(formData: FormData) {
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
         // Build unique R2 key
-        const ext = file.name.split(".").pop();
         const key = `documents/${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
         // Upload ke R2

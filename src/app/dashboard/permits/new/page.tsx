@@ -22,7 +22,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 export default function NewPermitPage() {
     const router = useRouter();
-    const { isAdmin } = useRoles();
+    const { isAdmin, isClient, clientId: ownClientId } = useRoles();
     const [step, setStep] = useState(0);
     const [permitTypes, setPermitTypes] = useState<any[]>([]);
     const [clients, setClients] = useState<any[]>([]);
@@ -53,11 +53,18 @@ export default function NewPermitPage() {
         loadData();
     }, []);
 
+    // Auto-set clientId for client-role users
+    useEffect(() => {
+        if (isClient && ownClientId) {
+            setSelectedClientId(ownClientId);
+        }
+    }, [isClient, ownClientId]);
+
     const loadData = async () => {
         setIsLoading(true);
         const [typesRes, clientsRes] = await Promise.all([
             getPermitTypes(),
-            getClients(),
+            isClient ? Promise.resolve({ success: true, data: [] }) : getClients(),
         ]);
         if (typesRes.success) setPermitTypes(typesRes.data);
         if (clientsRes.success && clientsRes.data) setClients(clientsRes.data);
@@ -106,6 +113,7 @@ export default function NewPermitPage() {
         setIsSubmitting(true);
 
         const client = clients.find(c => c.id === selectedClientId);
+        const clientName = client?.nama || (isClient ? "Perusahaan Anda" : "");
 
         let applicationData = undefined;
         let customDocs: string[] = [];
@@ -125,7 +133,7 @@ export default function NewPermitPage() {
         const res = await createPermitCase({
             permitTypeId: selectedType.id,
             clientId: selectedClientId,
-            clientName: client?.nama || "",
+            clientName,
             serviceType: getDynamicServiceType(),
             riskCategory,
             feeAmount: getDynamicFee(),
@@ -275,19 +283,28 @@ export default function NewPermitPage() {
                     <div className="space-y-5">
                         <h2 className="font-serif text-lg">{isBuildingPermit ? "Kuesioner Bangunan & Data Klien" : "Data Klien & Layanan"}</h2>
 
-                        <div>
-                            <label className="text-sm font-medium text-foreground block mb-1.5">Klien</label>
-                            <select
-                                className="w-full bg-surface border border-border rounded-[8px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
-                                value={selectedClientId}
-                                onChange={(e) => setSelectedClientId(e.target.value)}
-                            >
-                                <option value="">Pilih klien...</option>
-                                {clients.map(c => (
-                                    <option key={c.id} value={c.id}>{c.nama} — {c.npwp}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {isClient ? (
+                            <div>
+                                <label className="text-sm font-medium text-foreground block mb-1.5">Klien</label>
+                                <div className="w-full bg-surface border border-border rounded-[8px] px-3 py-2.5 text-sm text-foreground opacity-80">
+                                    Perusahaan Anda (auto-assigned)
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="text-sm font-medium text-foreground block mb-1.5">Klien</label>
+                                <select
+                                    className="w-full bg-surface border border-border rounded-[8px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                                    value={selectedClientId}
+                                    onChange={(e) => setSelectedClientId(e.target.value)}
+                                >
+                                    <option value="">Pilih klien...</option>
+                                    {clients.map(c => (
+                                        <option key={c.id} value={c.id}>{c.nama} — {c.npwp}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {/* IMB/PBG Specialized Form */}
                         {isBuildingPermit ? (
@@ -479,7 +496,7 @@ export default function NewPermitPage() {
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">
                                 <span className="text-sm text-muted-foreground">Klien</span>
                                 <span className="text-sm font-semibold text-foreground">
-                                    {clients.find(c => c.id === selectedClientId)?.nama || "-"}
+                                    {clients.find(c => c.id === selectedClientId)?.nama || (isClient ? "Perusahaan Anda" : "-")}
                                 </span>
                             </div>
                             <div className="flex justify-between p-3 bg-surface rounded-[8px]">

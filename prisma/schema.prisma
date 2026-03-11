@@ -417,7 +417,7 @@ model Account {
 
 model JournalEntry {
   id          String        @id @default(cuid())
-  refNumber   String        @unique // e.g., "JV-2024-0001"
+  refNumber   String        @unique // e.g., "JV-202403-0001"
   date        DateTime      @default(now())
   description String?
   status      JournalStatus @default(Draft)
@@ -425,8 +425,9 @@ model JournalEntry {
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  totalDebit  Float @default(0)
-  totalCredit Float @default(0)
+  // M6: Decimal(18,2) prevents IEEE-754 floating-point rounding on currency amounts
+  totalDebit  Decimal @default(0) @db.Decimal(18, 2)
+  totalCredit Decimal @default(0) @db.Decimal(18, 2)
 
   items JournalItem[]
 
@@ -435,6 +436,7 @@ model JournalEntry {
   deletedAt DateTime?
 
   @@index([clientId, status])
+  @@index([clientId, date])   // M3: date-range queries in getBukuBesar / getNeracaLajur
   @@map("journal_entries")
 }
 
@@ -446,13 +448,15 @@ model JournalItem {
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
 
-  debit  Float @default(0)
-  credit Float @default(0)
+  // M6: Decimal(18,2) — no floating-point rounding on IDR amounts
+  debit  Decimal @default(0) @db.Decimal(18, 2)
+  credit Decimal @default(0) @db.Decimal(18, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([journalEntryId])
   @@index([accountId])
+  @@index([accountId, journalEntryId])  // L4: composite for account+entry joins
   @@map("journal_items")
 }

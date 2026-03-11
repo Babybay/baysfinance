@@ -6,7 +6,14 @@
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && node -e \"require\\('exceljs'\\); console.log\\('ok'\\)\" 2>&1)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -50)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | tail -30)",
-      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && node -e \"require\\('date-fns'\\); console.log\\('date-fns ok'\\)\" 2>&1)"
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && node -e \"require\\('date-fns'\\); console.log\\('date-fns ok'\\)\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit --project tsconfig.json 2>&1 | head -50)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit 2>&1 | grep -E \"neraca-lajur|NeracaLajur\")",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma validate 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/auth-helpers.ts src/lib/accounting/account-ranges.ts src/app/actions/accounting.ts src/app/actions/accounting/buku-besar.ts src/app/actions/accounting/neraca-lajur.ts src/app/api/webhooks/clerk/route.ts src/app/dashboard/accounting/journal/page.tsx src/app/dashboard/accounting/journal/JournalEntriesListView.tsx 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit 2>&1 | grep -v \"documents.ts\")",
+      "Bash(claude config:*)"
     ]
   }
 }

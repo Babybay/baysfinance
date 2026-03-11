@@ -1,36 +1,49 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Search, BookOpen, Trash2, Save, X, ChevronRight, Hash } from "lucide-react";
-import { JournalEntry, JournalItem, Account, Client, formatIDR } from "@/lib/data";
-import { createJournalEntry, getAccounts } from "@/app/actions/accounting";
+import { Plus, Search, BookOpen, Trash2, Save, ChevronRight, Hash, ChevronLeft } from "lucide-react";
+import { JournalEntry, Account, Client, formatIDR } from "@/lib/data";
+import { createJournalEntry } from "@/app/actions/accounting";
 import { seedAccounts } from "@/app/actions/seed-accounts";
 import { useRouter } from "next/navigation";
-
-import { JournalStatus } from "@prisma/client";
 
 interface JournalEntriesListViewProps {
     initialEntries: JournalEntry[];
     clients: Client[];
     accounts: Account[];
+    total: number;
+    page: number;
+    pageSize: number;
+    defaultClientId: string;
+    isClientRole: boolean;
 }
 
-export function JournalEntriesListView({ initialEntries, clients, accounts }: JournalEntriesListViewProps) {
-    const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
+export function JournalEntriesListView({
+    initialEntries,
+    clients,
+    accounts,
+    total,
+    page,
+    pageSize,
+    defaultClientId,
+    isClientRole,
+}: JournalEntriesListViewProps) {
+    const [entries] = useState<JournalEntry[]>(initialEntries);
     const [search, setSearch] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const router = useRouter();
 
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    // L2: reference is no longer generated client-side — the server always generates it atomically
     const [form, setForm] = useState({
-        reference: `JV-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`,
-        date: new Date().toISOString().split('T')[0],
-        clientId: "",
+        date: new Date().toISOString().split("T")[0],
+        clientId: defaultClientId,
         description: "",
         items: [
             { accountId: "", description: "", debit: 0, credit: 0 },
@@ -40,26 +53,28 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
 
     const totalDebit = form.items.reduce((sum, item) => sum + item.debit, 0);
     const totalCredit = form.items.reduce((sum, item) => sum + item.credit, 0);
-    const isValid = totalDebit === totalCredit && totalDebit > 0 && form.clientId && form.items.every(item => item.accountId);
+    const isValid =
+        totalDebit === totalCredit &&
+        totalDebit > 0 &&
+        form.clientId &&
+        form.items.every((item) => item.accountId);
 
-    const addItem = () => setForm({
-        ...form,
-        items: [...form.items, { accountId: "", description: "", debit: 0, credit: 0 }]
-    });
+    const addItem = () =>
+        setForm({
+            ...form,
+            items: [...form.items, { accountId: "", description: "", debit: 0, credit: 0 }],
+        });
 
     const removeItem = (index: number) => {
         if (form.items.length <= 2) return;
         setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
     };
 
-    const updateItem = (index: number, field: keyof any, value: any) => {
+    const updateItem = (index: number, field: string, value: string | number) => {
         const updated = [...form.items];
-        (updated[index] as any)[field] = value;
-
-        // If debit is entered, clear credit and vice versa (usually one side per row in simple JV)
-        if (field === "debit" && value > 0) updated[index].credit = 0;
-        if (field === "credit" && value > 0) updated[index].debit = 0;
-
+        (updated[index] as Record<string, unknown>)[field] = value;
+        if (field === "debit" && (value as number) > 0) updated[index].credit = 0;
+        if (field === "credit" && (value as number) > 0) updated[index].debit = 0;
         setForm({ ...form, items: updated });
     };
 
@@ -68,26 +83,23 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
         if (!isValid) return;
 
         const res = await createJournalEntry({
-            reference: form.reference,
             date: new Date(form.date),
             clientId: form.clientId,
             description: form.description,
-            items: form.items.map(item => ({
+            items: form.items.map((item) => ({
                 accountId: item.accountId,
                 description: item.description,
                 debit: item.debit,
-                credit: item.credit
-            }))
+                credit: item.credit,
+            })),
         });
 
         if (res.success) {
             setModalOpen(false);
             router.refresh();
-            // Reset form for next time
             setForm({
-                reference: `JV-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(4, '0')}`,
-                date: new Date().toISOString().split('T')[0],
-                clientId: "",
+                date: new Date().toISOString().split("T")[0],
+                clientId: defaultClientId,
                 description: "",
                 items: [
                     { accountId: "", description: "", debit: 0, credit: 0 },
@@ -99,10 +111,17 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
         }
     };
 
-    const filtered = entries.filter(entry =>
-        (entry.reference?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (entry.description?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (entry.clientName?.toLowerCase() || "").includes(search.toLowerCase())
+    const goToPage = (p: number) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("page", String(p));
+        router.push(url.toString());
+    };
+
+    const filtered = entries.filter(
+        (entry) =>
+            (entry.reference?.toLowerCase() || "").includes(search.toLowerCase()) ||
+            (entry.description?.toLowerCase() || "").includes(search.toLowerCase()) ||
+            (entry.clientName?.toLowerCase() || "").includes(search.toLowerCase())
     );
 
     return (
@@ -134,7 +153,7 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                 <th className="p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keterangan</th>
                                 <th className="p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Total</th>
                                 <th className="p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                                <th className="p-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right w-10"></th>
+                                <th className="p-4 w-10" />
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -147,34 +166,55 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                             </div>
                                             <p className="text-muted-foreground font-medium">Belum ada jurnal entri.</p>
                                             <div className="flex gap-2">
-                                                <Button variant="transparent" onClick={() => setModalOpen(true)} className="text-accent underline">Buat jurnal pertama</Button>
+                                                <Button
+                                                    variant="transparent"
+                                                    onClick={() => setModalOpen(true)}
+                                                    className="text-accent underline"
+                                                >
+                                                    Buat jurnal pertama
+                                                </Button>
                                                 {accounts.length === 0 && (
-                                                    <Button variant="transparent" onClick={async () => {
-                                                        const res = await seedAccounts();
-                                                        if (res.success) router.refresh();
-                                                        else alert(res.error);
-                                                    }} className="text-accent underline border-l border-border pl-2">Gunakan CoA Standar</Button>
+                                                    <Button
+                                                        variant="transparent"
+                                                        onClick={async () => {
+                                                            const res = await seedAccounts();
+                                                            if (res.success) router.refresh();
+                                                            else alert(res.error);
+                                                        }}
+                                                        className="text-accent underline border-l border-border pl-2"
+                                                    >
+                                                        Gunakan CoA Standar
+                                                    </Button>
                                                 )}
                                             </div>
-
                                         </div>
-
                                     </td>
                                 </tr>
                             ) : (
                                 filtered.map((entry) => (
-                                    <tr key={entry.id} className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => {/* row details */ }}>
-                                        <td className="p-4 text-sm font-medium">{new Date(entry.date).toLocaleDateString('id-ID')}</td>
+                                    <tr
+                                        key={entry.id}
+                                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                                    >
+                                        <td className="p-4 text-sm font-medium">
+                                            {new Date(entry.date).toLocaleDateString("id-ID")}
+                                        </td>
                                         <td className="p-4 text-sm font-mono text-accent">{entry.reference}</td>
                                         <td className="p-4 text-sm">{entry.clientName}</td>
-                                        <td className="p-4 text-sm text-muted-foreground lg:max-w-xs truncate">{entry.description}</td>
-                                        <td className="p-4 text-sm font-semibold text-right">{formatIDR(entry.totalAmount)}</td>
+                                        <td className="p-4 text-sm text-muted-foreground lg:max-w-xs truncate">
+                                            {entry.description}
+                                        </td>
+                                        <td className="p-4 text-sm font-semibold text-right">
+                                            {formatIDR(entry.totalAmount)}
+                                        </td>
                                         <td className="p-4 text-sm">
-                                            <Badge variant={entry.status === 'Posted' ? 'success' : 'default'} className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                                            <Badge
+                                                variant={entry.status === "Posted" ? "success" : "default"}
+                                                className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                            >
                                                 {entry.status}
                                             </Badge>
                                         </td>
-
                                         <td className="p-4 text-right">
                                             <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </td>
@@ -184,16 +224,44 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                         </tbody>
                     </table>
                 </div>
+
+                {/* M4: Pagination controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+                        <p className="text-xs text-muted-foreground">
+                            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} dari {total} entri
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="soft"
+                                size="default"
+                                onClick={() => goToPage(page - 1)}
+                                disabled={page <= 1}
+                                className="gap-1 rounded-lg px-3 h-8"
+                            >
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                                Prev
+                            </Button>
+                            <span className="text-xs font-medium px-2">
+                                {page} / {totalPages}
+                            </span>
+                            <Button
+                                variant="soft"
+                                size="default"
+                                onClick={() => goToPage(page + 1)}
+                                disabled={page >= totalPages}
+                                className="gap-1 rounded-lg px-3 h-8"
+                            >
+                                Next
+                                <ChevronRight className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Create Journal Modal */}
-            <Modal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title="Tambah Jurnal Umum"
-                size="xl"
-            >
-
+            <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Tambah Jurnal Umum" size="xl">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -205,25 +273,33 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                 required
                             />
                         </div>
+
+                        {/* L2: reference shown as read-only — always generated server-side */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Nomor Referensi</label>
+                            <label className="text-sm font-medium text-muted-foreground">
+                                Nomor Referensi
+                            </label>
                             <Input
-                                value={form.reference}
-                                onChange={(e) => setForm({ ...form, reference: e.target.value })}
-                                placeholder="Auto-generated"
-                                required
+                                value="Auto-generated"
+                                readOnly
+                                disabled
+                                className="bg-muted/30 text-muted-foreground cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Pilih Klien</label>
-                            <Select
-                                value={form.clientId}
-                                onChange={(e) => setForm({ ...form, clientId: e.target.value })}
-                                required
-                                options={clients.map(c => ({ value: c.id, label: c.nama }))}
-                                placeholder="Pilih Klien..."
-                            />
-                        </div>
+
+                        {/* Client selector — hidden for client-role users (auto-set to their own) */}
+                        {!isClientRole && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Pilih Klien</label>
+                                <Select
+                                    value={form.clientId}
+                                    onChange={(e) => setForm({ ...form, clientId: e.target.value })}
+                                    required
+                                    options={clients.map((c) => ({ value: c.id, label: c.nama }))}
+                                    placeholder="Pilih Klien..."
+                                />
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Keterangan</label>
@@ -251,7 +327,7 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                         <th className="p-3">Keterangan</th>
                                         <th className="p-3 text-right w-36">Debit</th>
                                         <th className="p-3 text-right w-36">Kredit</th>
-                                        <th className="p-3 w-10"></th>
+                                        <th className="p-3 w-10" />
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border bg-background">
@@ -263,11 +339,13 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                                     onChange={(e) => updateItem(index, "accountId", e.target.value)}
                                                     className="border-transparent bg-transparent focus:bg-background h-9 rounded-lg"
                                                     required
-                                                    options={accounts.map(a => ({ value: a.id, label: `${a.code} - ${a.name}` }))}
+                                                    options={accounts.map((a) => ({
+                                                        value: a.id,
+                                                        label: `${a.code} - ${a.name}`,
+                                                    }))}
                                                     placeholder="Pilih Akun..."
                                                 />
                                             </td>
-
                                             <td className="p-2">
                                                 <Input
                                                     value={item.description}
@@ -280,7 +358,9 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                                 <Input
                                                     type="number"
                                                     value={item.debit === 0 ? "" : item.debit}
-                                                    onChange={(e) => updateItem(index, "debit", parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) =>
+                                                        updateItem(index, "debit", parseFloat(e.target.value) || 0)
+                                                    }
                                                     className="border-transparent bg-transparent focus:bg-background h-9 rounded-lg text-right"
                                                     placeholder="0"
                                                 />
@@ -289,7 +369,9 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                                 <Input
                                                     type="number"
                                                     value={item.credit === 0 ? "" : item.credit}
-                                                    onChange={(e) => updateItem(index, "credit", parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) =>
+                                                        updateItem(index, "credit", parseFloat(e.target.value) || 0)
+                                                    }
                                                     className="border-transparent bg-transparent focus:bg-background h-9 rounded-lg text-right"
                                                     placeholder="0"
                                                 />
@@ -299,7 +381,6 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                                     type="button"
                                                     variant="transparent"
                                                     size="icon"
-
                                                     onClick={() => removeItem(index)}
                                                     className="h-8 w-8 text-muted-foreground hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-all rounded-lg"
                                                     disabled={form.items.length <= 2}
@@ -312,21 +393,31 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                                 </tbody>
                                 <tfoot>
                                     <tr className="bg-muted/30 font-semibold h-12">
-                                        <td colSpan={2} className="p-3 text-right text-xs uppercase text-muted-foreground">Total</td>
-                                        <td className="p-3 text-right text-sm border-l border-border">{formatIDR(totalDebit)}</td>
-                                        <td className="p-3 text-right text-sm border-l border-border">{formatIDR(totalCredit)}</td>
-                                        <td className="p-3"></td>
+                                        <td colSpan={2} className="p-3 text-right text-xs uppercase text-muted-foreground">
+                                            Total
+                                        </td>
+                                        <td className="p-3 text-right text-sm border-l border-border">
+                                            {formatIDR(totalDebit)}
+                                        </td>
+                                        <td className="p-3 text-right text-sm border-l border-border">
+                                            {formatIDR(totalCredit)}
+                                        </td>
+                                        <td className="p-3" />
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
 
                         <div className="flex justify-between items-center p-1">
-                            <Button type="button" variant="transparent" onClick={addItem} className="gap-2 text-accent hover:text-accent/80 hover:bg-accent/5 rounded-lg border border-transparent hover:border-accent/20">
+                            <Button
+                                type="button"
+                                variant="transparent"
+                                onClick={addItem}
+                                className="gap-2 text-accent hover:text-accent/80 hover:bg-accent/5 rounded-lg border border-transparent hover:border-accent/20"
+                            >
                                 <Plus className="h-4 w-4" />
                                 Tambah Baris
                             </Button>
-
 
                             {totalDebit !== totalCredit && totalDebit > 0 && totalCredit > 0 && (
                                 <div className="text-[10px] font-bold text-danger bg-danger/10 px-3 py-1.5 rounded-full uppercase tracking-tighter animate-pulse">
@@ -337,13 +428,24 @@ export function JournalEntriesListView({ initialEntries, clients, accounts }: Jo
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                        <Button type="button" variant="soft" onClick={() => setModalOpen(false)} className="rounded-xl px-6">Batal</Button>
-                        <Button type="submit" variant="dark" disabled={!isValid} className="gap-2 rounded-xl px-8 shadow-md">
+                        <Button
+                            type="button"
+                            variant="soft"
+                            onClick={() => setModalOpen(false)}
+                            className="rounded-xl px-6"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="dark"
+                            disabled={!isValid}
+                            className="gap-2 rounded-xl px-8 shadow-md"
+                        >
                             <Save className="h-4 w-4" />
                             Simpan Jurnal
                         </Button>
                     </div>
-
                 </form>
             </Modal>
         </div>
