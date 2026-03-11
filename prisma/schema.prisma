@@ -6,7 +6,437 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── ENUMS ───────────────────────────────────────────────────────────────────
+model User {
+  id               String            @id @default(cuid())
+  clerkId          String            @unique
+  name             String
+  email            String            @unique
+  role             Role
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  advisedCases     PermitCase[]      @relation("PermitAdvisor")
+  checkedItems     PermitChecklist[] @relation("PermitChecker")
+  updatedDeadlines TaxDeadline[]     @relation("DeadlineUpdater")
+
+  @@map("users")
+}
+
+model Client {
+  id                 String                    @id @default(cuid())
+  nama               String
+  npwp               String
+  jenisWP            JenisWP
+  email              String
+  telepon            String
+  alamat             String
+  status             ClientStatus
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  deletedAt          DateTime?
+  accountingDocs     AccountingDocument[]
+  accounts           Account[]
+  documents          Document[]
+  financialSnapshots FinancialReportSnapshot[]
+  fixedAssets        FixedAsset[]
+  importBatches      ImportBatch[]
+  invoices           Invoice[]
+  journals           JournalEntry[]
+  permits            PermitCase[]
+  recurring          RecurringInvoice[]
+  deadlines          TaxDeadline[]
+
+  @@map("clients")
+}
+
+model TaxDeadline {
+  id            String            @id @default(cuid())
+  jenisPajak    String
+  deskripsi     String
+  tanggalBatas  DateTime
+  masaPajak     String
+  status        TaxDeadlineStatus
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+  reportedAt    DateTime?
+  updatedBy     String?
+  clientId      String
+  documents     Document[]
+  client        Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  updatedByUser User?             @relation("DeadlineUpdater", fields: [updatedBy], references: [id])
+
+  @@index([clientId, status])
+  @@map("tax_deadlines")
+}
+
+model Document {
+  id            String           @id @default(cuid())
+  nama          String
+  kategori      DocumentKategori
+  ukuran        Int
+  tanggalUpload DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  catatan       String?
+  fileUrl       String?
+  clientId      String
+  permitCaseId  String?
+  invoiceId     String?
+  deadlineId    String?
+  client        Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deadline      TaxDeadline?     @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
+  invoice       Invoice?         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  permitCase    PermitCase?      @relation("PermitCaseToDocument", fields: [permitCaseId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("documents")
+}
+
+model Invoice {
+  id                 String            @id @default(cuid())
+  nomorInvoice       String            @unique
+  tanggal            DateTime          @default(now())
+  jatuhTempo         DateTime
+  subtotal           Float
+  ppn                Float
+  total              Float
+  status             InvoiceStatus
+  catatan            String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
+  recurringInvoiceId String?
+  clientId           String
+  clientName         String
+  clientNpwp         String?
+  clientAlamat       String?
+  documents          Document[]
+  items              InvoiceItem[]
+  client             Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  recurringInvoice   RecurringInvoice? @relation(fields: [recurringInvoiceId], references: [id])
+  payments           Payment[]
+
+  @@index([clientId, status])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id        String   @id @default(cuid())
+  deskripsi String
+  qty       Int
+  harga     Float
+  jumlah    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model Payment {
+  id               String    @id @default(cuid())
+  invoiceId        String
+  jumlah           Float
+  tanggalBayar     DateTime  @default(now())
+  metodePembayaran String?
+  buktiUrl         String?
+  catatan          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  invoice          Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model RecurringInvoice {
+  id          String                 @id @default(cuid())
+  interval    RecurringInterval
+  nextRunDate DateTime
+  isActive    Boolean                @default(true)
+  catatan     String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  deletedAt   DateTime?
+  clientId    String
+  invoices    Invoice[]
+  items       RecurringInvoiceItem[]
+  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("recurring_invoices")
+}
+
+model RecurringInvoiceItem {
+  id                 String           @id @default(cuid())
+  deskripsi          String
+  qty                Int
+  harga              Float
+  jumlah             Float
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  recurringInvoiceId String
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([recurringInvoiceId])
+  @@map("recurring_invoice_items")
+}
+
+model PermitType {
+  id             String                @id @default(cuid())
+  slug           String                @unique
+  name           String
+  caseIdPrefix   String
+  description    String?
+  icon           String?
+  cases          PermitCase[]
+  checklistItems PermitTypeChecklist[]
+  requiredDocs   PermitTypeDocument[]
+
+  @@map("permit_types")
+}
+
+model PermitTypeDocument {
+  id           String     @id @default(cuid())
+  permitTypeId String
+  docType      String
+  isRequired   Boolean    @default(true)
+  sortOrder    Int        @default(0)
+  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
+
+  @@map("permit_type_documents")
+}
+
+model PermitTypeChecklist {
+  id           String     @id @default(cuid())
+  permitTypeId String
+  label        String
+  description  String?
+  sortOrder    Int        @default(0)
+  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
+
+  @@map("permit_type_checklists")
+}
+
+model PermitCounter {
+  id      String @id
+  counter Int    @default(0)
+
+  @@map("permit_counters")
+}
+
+model PermitCase {
+  id              String            @id @default(cuid())
+  caseId          String            @unique
+  permitTypeId    String
+  clientId        String
+  advisorId       String?
+  serviceType     String
+  riskCategory    String
+  status          PermitCaseStatus
+  feeAmount       Float
+  notes           String?
+  applicationData Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  attachedDocs    Document[]        @relation("PermitCaseToDocument")
+  advisor         User?             @relation("PermitAdvisor", fields: [advisorId], references: [id])
+  client          Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  permitType      PermitType        @relation(fields: [permitTypeId], references: [id])
+  checklists      PermitChecklist[]
+  documents       PermitDocument[]
+
+  @@index([clientId, status])
+  @@index([permitTypeId])
+  @@map("permit_cases")
+}
+
+model PermitDocument {
+  id                 String             @id @default(cuid())
+  caseId             String
+  docType            String
+  fileUrl            String?
+  verificationStatus VerificationStatus
+  comments           String?
+  sortOrder          Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  permitCase         PermitCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@map("permit_documents")
+}
+
+model PermitChecklist {
+  id            String     @id @default(cuid())
+  caseId        String
+  label         String
+  description   String?
+  isChecked     Boolean    @default(false)
+  checkedAt     DateTime?
+  checkedBy     String?
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  permitCase    PermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  checkedByUser User?      @relation("PermitChecker", fields: [checkedBy], references: [id])
+
+  @@index([caseId])
+  @@map("permit_checklists")
+}
+
+model Account {
+  id           String        @id @default(cuid())
+  code         String
+  name         String
+  type         AccountType
+  isActive     Boolean       @default(true)
+  clientId     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  journalItems JournalItem[]
+
+  @@unique([code, clientId])
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id            String        @id @default(cuid())
+  refNumber     String        @unique
+  date          DateTime      @default(now())
+  description   String?
+  status        JournalStatus @default(Draft)
+  clientId      String
+  totalDebit    Decimal       @default(0) @db.Decimal(18, 2)
+  totalCredit   Decimal       @default(0) @db.Decimal(18, 2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  importBatchId String?
+  source        String?
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  importBatch   ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  items         JournalItem[]
+
+  @@index([clientId, status])
+  @@index([clientId, date])
+  @@index([clientId, source, date])
+  @@map("journal_entries")
+}
+
+model JournalItem {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Decimal      @default(0) @db.Decimal(18, 2)
+  credit         Decimal      @default(0) @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  account        Account      @relation(fields: [accountId], references: [id])
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([accountId, journalEntryId])
+  @@map("journal_items")
+}
+
+model AccountingDocument {
+  id           String        @id @default(cuid())
+  documentName String
+  documentType AccDocType
+  linkedModule AccDocModule?
+  documentDate DateTime
+  description  String?
+  fileUrl      String
+  fileType     String
+  fileSize     Int
+  uploadedBy   String
+  clientId     String
+  ocrStatus    String?
+  ocrData      Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, documentType])
+  @@index([clientId, linkedModule])
+  @@map("accounting_documents")
+}
+
+model ImportBatch {
+  id           String         @id @default(cuid())
+  fileName     String
+  documentType String
+  period       String?
+  companyName  String?
+  status       String         @default("COMPLETED")
+  entriesCount Int            @default(0)
+  skippedCount Int            @default(0)
+  errorsCount  Int            @default(0)
+  warnings     Json?
+  importedBy   String
+  completedAt  DateTime?
+  clientId     String
+  createdAt    DateTime       @default(now())
+  deletedAt    DateTime?
+  fixedAssets  FixedAsset[]
+  client       Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  entries      JournalEntry[]
+
+  @@index([clientId, createdAt])
+  @@map("import_batches")
+}
+
+model FixedAsset {
+  id                 String      @id @default(cuid())
+  clientId           String
+  importBatchId      String
+  source             String
+  name               String
+  acquisitionDate    DateTime?
+  quantity           Int         @default(1)
+  depreciationRate   Decimal     @default(0) @db.Decimal(8, 4)
+  costPrev           Decimal     @default(0) @db.Decimal(18, 2)
+  mutasiIn           Decimal     @default(0) @db.Decimal(18, 2)
+  mutasiOut          Decimal     @default(0) @db.Decimal(18, 2)
+  costCurrent        Decimal     @default(0) @db.Decimal(18, 2)
+  accumDeprecPrev    Decimal     @default(0) @db.Decimal(18, 2)
+  deprecCurrentIn    Decimal     @default(0) @db.Decimal(18, 2)
+  deprecCurrentOut   Decimal     @default(0) @db.Decimal(18, 2)
+  accumDeprecCurrent Decimal     @default(0) @db.Decimal(18, 2)
+  bookValue          Decimal     @default(0) @db.Decimal(18, 2)
+  createdAt          DateTime    @default(now())
+  deletedAt          DateTime?
+  client             Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  importBatch        ImportBatch @relation(fields: [importBatchId], references: [id])
+
+  @@index([clientId, source])
+  @@index([importBatchId])
+  @@map("fixed_assets")
+}
+
+model FinancialReportSnapshot {
+  id         String   @id @default(cuid())
+  clientId   String
+  period     String
+  reportType String
+  data       Json
+  createdAt  DateTime @default(now())
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, period, reportType])
+  @@map("financial_report_snapshots")
+}
 
 enum Role {
   Admin
@@ -91,504 +521,4 @@ enum AccDocModule {
   Expense
   Cashflow
   FinancialReport
-}
-
-// ─── CORE MODELS ─────────────────────────────────────────────────────────────
-
-model User {
-  id        String    @id @default(cuid())
-  clerkId   String    @unique
-  name      String
-  email     String    @unique
-  role      Role
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-  advisedCases     PermitCase[]      @relation("PermitAdvisor")
-  checkedItems     PermitChecklist[] @relation("PermitChecker")
-  updatedDeadlines TaxDeadline[]     @relation("DeadlineUpdater")
-
-  @@map("users")
-}
-
-model Client {
-  id        String       @id @default(cuid())
-  nama      String
-  npwp      String
-  jenisWP   JenisWP // Used to be String "Orang Pribadi" | "Badan"
-  email     String
-  telepon   String
-  alamat    String
-  status    ClientStatus // Used to be String "Aktif" | "Tidak Aktif"
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  deletedAt DateTime?
-
-  deadlines      TaxDeadline[]
-  documents      Document[]
-  invoices       Invoice[]
-  permits        PermitCase[]
-  recurring      RecurringInvoice[]
-  accounts       Account[]
-  journals       JournalEntry[]
-  accountingDocs      AccountingDocument[]
-  importBatches       ImportBatch[]
-  fixedAssets         FixedAsset[]
-  financialSnapshots  FinancialReportSnapshot[]
-
-  @@map("clients")
-}
-
-model TaxDeadline {
-  id           String            @id @default(cuid())
-  jenisPajak   String
-  deskripsi    String
-  tanggalBatas DateTime
-  masaPajak    String
-  status       TaxDeadlineStatus // "Sudah Lapor" | "Belum Lapor" | "Terlambat"
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  deletedAt    DateTime?
-
-  // Audit Trail
-  reportedAt    DateTime?
-  updatedBy     String?
-  updatedByUser User?     @relation("DeadlineUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  documents Document[]
-
-  @@index([clientId, status])
-  @@map("tax_deadlines")
-}
-
-model Document {
-  id            String           @id @default(cuid())
-  nama          String
-  kategori      DocumentKategori // "Faktur Pajak" | "Bukti Potong" | "SPT" | "Laporan Keuangan" | "Lainnya"
-  ukuran        Int // in bytes
-  tanggalUpload DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  deletedAt     DateTime?
-  catatan       String?
-  fileUrl       String?
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  // Optional relations to attach to other modules
-  permitCaseId String?
-  permitCase   PermitCase? @relation("PermitCaseToDocument", fields: [permitCaseId], references: [id], onDelete: Cascade)
-
-  invoiceId String?
-  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  deadlineId String?
-  deadline   TaxDeadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
-
-  @@index([clientId])
-  @@map("documents")
-}
-
-model Invoice {
-  id           String        @id @default(cuid())
-  nomorInvoice String        @unique
-  tanggal      DateTime      @default(now())
-  jatuhTempo   DateTime
-  subtotal     Float
-  ppn          Float
-  total        Float
-  status       InvoiceStatus // "Draft" | "Terkirim" | "Lunas" | "Jatuh Tempo"
-  catatan      String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
-
-  recurringInvoiceId String?
-  recurringInvoice   RecurringInvoice? @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
-
-  clientId     String
-  client       Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientName   String
-  clientNpwp   String?
-  clientAlamat String?
-
-  items     InvoiceItem[]
-  documents Document[]
-  payments  Payment[]
-
-  @@index([clientId, status])
-  @@map("invoices")
-}
-
-model InvoiceItem {
-  id        String   @id @default(cuid())
-  deskripsi String
-  qty       Int
-  harga     Float
-  jumlah    Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  invoiceId String
-  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@index([invoiceId])
-  @@map("invoice_items")
-}
-
-model Payment {
-  id               String    @id @default(cuid())
-  invoiceId        String
-  invoice          Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  jumlah           Float
-  tanggalBayar     DateTime  @default(now())
-  metodePembayaran String?
-  buktiUrl         String?
-  catatan          String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
-
-  @@index([invoiceId])
-  @@map("payments")
-}
-
-model RecurringInvoice {
-  id          String            @id @default(cuid())
-  interval    RecurringInterval
-  nextRunDate DateTime
-  isActive    Boolean           @default(true)
-  catatan     String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  deletedAt   DateTime?
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  items    RecurringInvoiceItem[]
-  invoices Invoice[]
-
-  @@index([clientId])
-  @@map("recurring_invoices")
-}
-
-model RecurringInvoiceItem {
-  id        String   @id @default(cuid())
-  deskripsi String
-  qty       Int
-  harga     Float
-  jumlah    Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  recurringInvoiceId String
-  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
-
-  @@index([recurringInvoiceId])
-  @@map("recurring_invoice_items")
-}
-
-// ─── PERMIT SYSTEM (Scalable) ────────────────────────────────────────────────
-
-// Config: defines available permit types and their templates
-model PermitType {
-  id           String  @id @default(cuid())
-  slug         String  @unique // "business", "building", "kitas"
-  name         String // "Perijinan Usaha"
-  caseIdPrefix String // "NIB", "PBG", "KITAS"
-  description  String?
-  icon         String? // lucide icon name e.g. "Briefcase"
-
-  requiredDocs   PermitTypeDocument[]
-  checklistItems PermitTypeChecklist[]
-  cases          PermitCase[]
-
-  @@map("permit_types")
-}
-
-// Config: required documents template per permit type
-model PermitTypeDocument {
-  id           String     @id @default(cuid())
-  permitTypeId String
-  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
-  docType      String // "KTP Direktur"
-  isRequired   Boolean    @default(true)
-  sortOrder    Int        @default(0)
-
-  @@map("permit_type_documents")
-}
-
-// Config: checklist/signature template per permit type
-model PermitTypeChecklist {
-  id           String     @id @default(cuid())
-  permitTypeId String
-  permitType   PermitType @relation(fields: [permitTypeId], references: [id], onDelete: Cascade)
-  label        String // "Saya menyetujui syarat & ketentuan OSS"
-  description  String?
-  sortOrder    Int        @default(0)
-
-  @@map("permit_type_checklists")
-}
-
-// Sequential counter for auto-generated case IDs
-model PermitCounter {
-  id      String @id // format: "NIB-2026-02"
-  counter Int    @default(0)
-
-  @@map("permit_counters")
-}
-
-// Data: individual permit case
-model PermitCase {
-  id     String @id @default(cuid())
-  caseId String @unique // auto-generated: "NIB-2026-02-0001"
-
-  permitTypeId String
-  permitType   PermitType @relation(fields: [permitTypeId], references: [id])
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  advisorId String?
-  advisor   User?   @relation("PermitAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
-
-  serviceType     String // specific service within the type
-  riskCategory    String
-  status          PermitCaseStatus // "Draft" | "Waiting Document" | etc.
-  feeAmount       Float
-  notes           String?
-  applicationData Json?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-
-  documents    PermitDocument[]
-  attachedDocs Document[]        @relation("PermitCaseToDocument")
-  checklists   PermitChecklist[]
-
-  @@index([clientId, status])
-  @@index([permitTypeId])
-  @@map("permit_cases")
-}
-
-// Data: documents for a specific permit case
-model PermitDocument {
-  id                 String             @id @default(cuid())
-  caseId             String
-  permitCase         PermitCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  docType            String
-  fileUrl            String?
-  verificationStatus VerificationStatus // "Pending" | "Approved" | "Rejected"
-  comments           String?
-  sortOrder          Int                @default(0)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  @@index([caseId])
-  @@map("permit_documents")
-}
-
-// Data: checklist/signature items for a specific permit case
-model PermitChecklist {
-  id          String     @id @default(cuid())
-  caseId      String
-  permitCase  PermitCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  label       String
-  description String?
-  isChecked   Boolean    @default(false)
-  checkedAt   DateTime?
-
-  checkedBy     String?
-  checkedByUser User?   @relation("PermitChecker", fields: [checkedBy], references: [id], onDelete: SetNull)
-
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([caseId])
-  @@map("permit_checklists")
-}
-
-// ── ACCOUNTING ───────────────────────────────────────────────────────────────
-
-model Account {
-  id        String      @id @default(cuid())
-  code      String // e.g., "1101"
-  name      String // e.g., "Kas"
-  type      AccountType
-  isActive  Boolean     @default(true)
-  clientId  String? // null if shared/default CoAs
-  client    Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  deletedAt DateTime?
-
-  journalItems JournalItem[]
-
-  @@unique([code, clientId])
-  @@map("accounts")
-}
-
-model JournalEntry {
-  id          String        @id @default(cuid())
-  refNumber   String        @unique // e.g., "JV-202403-0001"
-  date        DateTime      @default(now())
-  description String?
-  status      JournalStatus @default(Draft)
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  // M6: Decimal(18,2) prevents IEEE-754 floating-point rounding on currency amounts
-  totalDebit  Decimal @default(0) @db.Decimal(18, 2)
-  totalCredit Decimal @default(0) @db.Decimal(18, 2)
-
-  source      String?       // e.g., "daily_report", "bank_statement", "invoice", etc.
-  importBatchId String?
-  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id])
-
-  items JournalItem[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@index([clientId, status])
-  @@index([clientId, date])   // M3: date-range queries in getBukuBesar / getNeracaLajur
-  @@index([clientId, source, date]) // duplicate detection for imports
-  @@map("journal_entries")
-}
-
-model JournalItem {
-  id             String       @id @default(cuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-
-  accountId String
-  account   Account @relation(fields: [accountId], references: [id])
-
-  // M6: Decimal(18,2) — no floating-point rounding on IDR amounts
-  debit  Decimal @default(0) @db.Decimal(18, 2)
-  credit Decimal @default(0) @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([journalEntryId])
-  @@index([accountId])
-  @@index([accountId, journalEntryId])  // L4: composite for account+entry joins
-  @@map("journal_items")
-}
-
-// ── ACCOUNTING DOCUMENT MANAGEMENT ──────────────────────────────────────────
-
-model AccountingDocument {
-  id           String        @id @default(cuid())
-  documentName String
-  documentType AccDocType
-  linkedModule AccDocModule?
-  documentDate DateTime
-  description  String?
-  fileUrl      String
-  fileType     String        // "pdf", "jpg", "png"
-  fileSize     Int           // bytes
-  uploadedBy   String        // Clerk user display name
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  // Future: OCR processing fields
-  ocrStatus String? // "pending" | "processing" | "done" | "failed"
-  ocrData   Json?   // extracted structured data
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  @@index([clientId, documentType])
-  @@index([clientId, linkedModule])
-  @@map("accounting_documents")
-}
-
-// ── IMPORT BATCH TRACKING ─────────────────────────────────────────────────
-
-model ImportBatch {
-  id           String   @id @default(cuid())
-  fileName     String
-  documentType String   // "TEMPLATE_EXCEL", "cashier_report", etc.
-  period       String?  // e.g., "Januari 2024"
-  companyName  String?  // from cell B2
-  status       String   @default("COMPLETED") // "PROCESSING", "COMPLETED", "FAILED", "ROLLED_BACK"
-  entriesCount Int      @default(0)
-  skippedCount Int      @default(0)
-  errorsCount  Int      @default(0)
-  warnings     Json?    // array of warning strings
-  importedBy   String   // Clerk user display name
-  completedAt  DateTime?
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  entries     JournalEntry[]
-  fixedAssets FixedAsset[]
-
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
-
-  @@index([clientId, createdAt])
-  @@map("import_batches")
-}
-
-// ── FIXED ASSET TRACKING ──────────────────────────────────────────────────
-
-model FixedAsset {
-  id                 String   @id @default(cuid())
-  clientId           String
-  client             Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  importBatchId      String
-  importBatch        ImportBatch @relation(fields: [importBatchId], references: [id])
-  source             String   // "ASET_MANAJEMEN", "ASET_OWNER", "BIAYA_PRA_OPERASI"
-  name               String
-  acquisitionDate    DateTime?
-  quantity           Int      @default(1)
-  depreciationRate   Decimal  @default(0) @db.Decimal(8, 4)
-  costPrev           Decimal  @default(0) @db.Decimal(18, 2)
-  mutasiIn           Decimal  @default(0) @db.Decimal(18, 2)
-  mutasiOut          Decimal  @default(0) @db.Decimal(18, 2)
-  costCurrent        Decimal  @default(0) @db.Decimal(18, 2)
-  accumDeprecPrev    Decimal  @default(0) @db.Decimal(18, 2)
-  deprecCurrentIn    Decimal  @default(0) @db.Decimal(18, 2)
-  deprecCurrentOut   Decimal  @default(0) @db.Decimal(18, 2)
-  accumDeprecCurrent Decimal  @default(0) @db.Decimal(18, 2)
-  bookValue          Decimal  @default(0) @db.Decimal(18, 2)
-
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
-
-  @@index([clientId, source])
-  @@index([importBatchId])
-  @@map("fixed_assets")
-}
-
-// ── FINANCIAL REPORT SNAPSHOTS ────────────────────────────────────────────
-
-model FinancialReportSnapshot {
-  id         String   @id @default(cuid())
-  clientId   String
-  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  period     String   // e.g., "2024"
-  reportType String   // "LABA_RUGI" or "ARUS_KAS"
-  data       Json     // structured line items
-
-  createdAt DateTime @default(now())
-
-  @@unique([clientId, period, reportType])
-  @@map("financial_report_snapshots")
 }
