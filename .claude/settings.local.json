@@ -57,7 +57,10 @@
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -40)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx next lint --quiet 2>&1 | tail -10)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npm run lint 2>&1 | tail -10)",
-      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -20)"
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -20)",
+      "Bash(find \"D:/THE PROJECT/saas-consulting/src\" -name \"*.ts\" -o -name \"*.tsx\" | xargs grep -l \"middleware\\\\|clerkMiddleware\\\\|auth\\\\|withClerk\" 2>/dev/null | head -10)",
+      "Bash(grep -r \"clerkMiddleware\\\\|auth\\(\\)\\\\|protectedPages\\\\|publicRoutes\" \"D:/THE PROJECT/saas-consulting\" --include=\"*.ts\" --include=\"*.js\" --include=\"*.mjs\" 2>/dev/null | grep -v node_modules | grep -v \".next\" | head -20)",
+      "Bash(grep -r \"currentUser\\\\|getAuth\\\\|protectedRoute\\\\|clerkMiddleware\" \"D:/THE PROJECT/saas-consulting/src\" --include=\"*.ts\" --include=\"*.tsx\" 2>/dev/null | head -30)"
     ]
   }
 }

@@ -22,6 +22,24 @@ import {
 } from "@/app/actions/accounting-documents";
 import { useRouter } from "next/navigation";
 
+// ─── HELPERS: Presigned URL ──────────────────────────────────────────────────
+
+/** Open a presigned URL in a new tab (the API route handles URL-to-key extraction) */
+async function openPresigned(fileUrl: string) {
+    const res = await fetch(`/api/documents/presigned?key=${encodeURIComponent(fileUrl)}`);
+    const data = await res.json();
+    if (data.url) {
+        window.open(data.url, "_blank");
+    }
+}
+
+/** Get a presigned URL string (for <img src>) */
+async function getPresignedSrc(fileUrl: string): Promise<string> {
+    const res = await fetch(`/api/documents/presigned?key=${encodeURIComponent(fileUrl)}`);
+    const data = await res.json();
+    return data.url || "";
+}
+
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
 const docTypeOptions = [
@@ -494,15 +512,13 @@ export function AccountingDocumentsView({
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </button>
-                                                            <a
-                                                                href={doc.fileUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
+                                                            <button
+                                                                onClick={() => openPresigned(doc.fileUrl)}
                                                                 className="p-2 rounded-[8px] hover:bg-surface text-muted-foreground hover:text-foreground transition-colors"
                                                                 title="Download"
                                                             >
                                                                 <Download className="h-4 w-4" />
-                                                            </a>
+                                                            </button>
                                                             <button
                                                                 onClick={() => setDeleteConfirm(doc.id)}
                                                                 className="p-2 rounded-[8px] hover:bg-error-muted text-muted-foreground hover:text-error transition-colors"
@@ -637,8 +653,8 @@ export function AccountingDocumentsView({
                         {/* File Preview */}
                         <div className="bg-surface rounded-[12px] border border-border overflow-hidden">
                             {["jpg", "jpeg", "png"].includes(detailDoc.fileType) ? (
-                                <img
-                                    src={detailDoc.fileUrl}
+                                <PresignedImage
+                                    fileUrl={detailDoc.fileUrl}
                                     alt={detailDoc.documentName}
                                     className="w-full max-h-[400px] object-contain bg-black/5"
                                 />
@@ -648,14 +664,12 @@ export function AccountingDocumentsView({
                                     <p className="text-sm text-muted-foreground mb-3">
                                         Preview tidak tersedia untuk file {detailDoc.fileType.toUpperCase()}.
                                     </p>
-                                    <a
-                                        href={detailDoc.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <button
+                                        onClick={() => openPresigned(detailDoc.fileUrl)}
                                         className="inline-flex items-center gap-1 text-sm text-accent hover:underline"
                                     >
                                         <ExternalLink className="h-3.5 w-3.5" /> Buka di tab baru
-                                    </a>
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -715,14 +729,12 @@ export function AccountingDocumentsView({
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
-                            <a
-                                href={detailDoc.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <button
+                                onClick={() => openPresigned(detailDoc.fileUrl)}
                                 className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-[8px] bg-accent text-white hover:bg-accent-hover transition-colors"
                             >
                                 <Download className="h-4 w-4 mr-1.5" /> Download
-                            </a>
+                            </button>
                             {/* Scan from detail modal */}
                             {["jpg", "jpeg", "png", "pdf"].includes(detailDoc.fileType) && (
                                 <Button
@@ -965,4 +977,34 @@ function ScanResultPanel({ doc, onClose, onRescan }: ScanResultPanelProps) {
             </div>
         </div>
     );
+}
+
+// ─── PRESIGNED IMAGE ────────────────────────────────────────────────────────
+
+function PresignedImage({ fileUrl, alt, className }: { fileUrl: string; alt: string; className?: string }) {
+    const [src, setSrc] = React.useState<string>("");
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        getPresignedSrc(fileUrl).then((url) => {
+            if (!cancelled) {
+                setSrc(url);
+                setLoading(false);
+            }
+        });
+        return () => { cancelled = true; };
+    }, [fileUrl]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <div className="h-8 w-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (!src) return null;
+
+    return <img src={src} alt={alt} className={className} />;
 }
