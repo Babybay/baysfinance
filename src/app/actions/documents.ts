@@ -1,20 +1,12 @@
 "use server";
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client, BUCKET_NAME } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { DocumentKategori } from "@prisma/client";
 
-const R2 = new S3Client({
-    region: "auto",
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-    },
-});
-
-const BUCKET = process.env.R2_BUCKET_NAME!;
+const BUCKET = BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL!; // e.g. https://pub-xxx.r2.dev
 
 // Ekstrak R2 key dari full URL
@@ -89,7 +81,7 @@ export async function uploadDocument(formData: FormData) {
 
         // Upload ke R2
         const arrayBuffer = await file.arrayBuffer();
-        await R2.send(
+        await s3Client.send(
             new PutObjectCommand({
                 Bucket: BUCKET,
                 Key: key,
@@ -156,7 +148,7 @@ export async function deleteDocument(id: string) {
         // Hapus dari R2 jika ada fileUrl
         if (document.fileUrl) {
             const key = extractR2Key(document.fileUrl);
-            await R2.send(
+            await s3Client.send(
                 new DeleteObjectCommand({
                     Bucket: BUCKET,
                     Key: key,
@@ -190,7 +182,7 @@ export async function hardDeleteDocument(id: string) {
 
         if (document.fileUrl) {
             const key = extractR2Key(document.fileUrl);
-            await R2.send(
+            await s3Client.send(
                 new DeleteObjectCommand({
                     Bucket: BUCKET,
                     Key: key,

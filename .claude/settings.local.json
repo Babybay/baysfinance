@@ -26,7 +26,22 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx next lint 2>&1 | tail -30)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1 | tail -40)",
-      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1 | tail -60)"
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1 | tail -60)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm install tesseract.js 2>&1 | tail -5)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -60)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -30)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"const p = require\\('pdf-parse'\\); console.log\\(typeof p, Object.keys\\(p\\)\\)\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"const {PDFParse} = require\\('pdf-parse'\\); console.log\\(typeof PDFParse\\)\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"const {PDFParse} = require\\('pdf-parse'\\); const p = new PDFParse\\(Buffer.from\\('test'\\)\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(p\\)\\)\\)\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"\nconst {PDFParse} = require\\('pdf-parse'\\);\n// Check static methods\nconsole.log\\('static:', Object.getOwnPropertyNames\\(PDFParse\\)\\);\n// Check constructor signature\nconsole.log\\(PDFParse.toString\\(\\).slice\\(0, 200\\)\\);\n\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -20)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx next build 2>&1 | tail -30)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx next build 2>&1 | tail -15)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -10)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"\nconst { parseInvoiceText } = require\\('./src/lib/invoice-scanner'\\);\n\n// Simulate OCR text from the Bee Accounting invoice image\nconst ocrText = \\\\`BEE\nBee Accounting\nMampang Prapatan 8/3B Jakarta\n\nTelp: 021-33335800 ; Fax : 021-33335800\n\nInvoice Pembelian\n\nTanggal No.Nota\n30-Sep-13 JL00001001\n\nOperator\nsa\n\nKepada Yth. :\nCASH\n\nTermin Jatuh Tempo\n30-Sep-13\n\nNo Item Deskripsi Qty Unit Harga Disc Subtotal\n1 1001 Processor Intel i-3 1 UNIT 1,500,000 1,500,000\n2 1002 Ati Radeon 4670 HD 1 UNIT 500,000 500,000\n3 1003 GeForce 9600GT 1 UNIT 800,000 800,000\n4 1004 Acer Aspire X130 1 UNIT 5,000,000 5,000,000\n\nKeterangan\n1. Barang yang sudah dibeli tidak dapat dikembalikan\n\nSubtotal Rp. 7,800,000\nDiskon Rp. 0\nPajak Rp. 780,000\nTotal Rp. 8,580,000\n\\\\`;\n\nconst result = parseInvoiceText\\(ocrText\\);\nconsole.log\\(JSON.stringify\\(result, null, 2\\)\\);\n\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsx -e \"\nimport { parseInvoiceText } from './src/lib/invoice-scanner';\n\nconst ocrText = \\\\`BEE\nBee Accounting\nMampang Prapatan 8/3B Jakarta\n\nTelp: 021-33335800 ; Fax : 021-33335800\n\nInvoice Pembelian\n\nTanggal No.Nota\n30-Sep-13 JL00001001\n\nOperator\nsa\n\nKepada Yth. :\nCASH\n\nTermin Jatuh Tempo\n30-Sep-13\n\nNo Item Deskripsi Qty Unit Harga Disc Subtotal\n1 1001 Processor Intel i-3 1 UNIT 1,500,000 1,500,000\n2 1002 Ati Radeon 4670 HD 1 UNIT 500,000 500,000\n3 1003 GeForce 9600GT 1 UNIT 800,000 800,000\n4 1004 Acer Aspire X130 1 UNIT 5,000,000 5,000,000\n\nKeterangan\n1. Barang yang sudah dibeli tidak dapat dikembalikan\n\nSubtotal Rp. 7,800,000\nDiskon Rp. 0\nPajak Rp. 780,000\nTotal Rp. 8,580,000\n\\\\`;\n\nconst result = parseInvoiceText\\(ocrText\\);\nconsole.log\\(JSON.stringify\\({\n    invoiceNumber: result.invoiceNumber,\n    invoiceDate: result.invoiceDate,\n    dueDate: result.dueDate,\n    vendorName: result.vendorName,\n    vendorAddress: result.vendorAddress,\n    customerName: result.customerName,\n    lineItems: result.lineItems,\n    subtotal: result.subtotal,\n    taxAmount: result.taxAmount,\n    grandTotal: result.grandTotal,\n    confidence: result.confidence,\n}, null, 2\\)\\);\n\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsx test-scanner.ts 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && rm test-scanner.ts && npx tsc --noEmit --pretty 2>&1 | head -10)"
     ]
   }
 }

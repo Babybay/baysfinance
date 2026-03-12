@@ -1,22 +1,14 @@
 "use server";
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client, BUCKET_NAME } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { AccDocType, AccDocModule } from "@prisma/client";
 import { currentUser } from "@clerk/nextjs/server";
 import { assertCanAccessClient, handleAuthError, isAdminOrStaff } from "@/lib/auth-helpers";
 
-const R2 = new S3Client({
-    region: "auto",
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-    },
-});
-
-const BUCKET = process.env.R2_BUCKET_NAME!;
+const BUCKET = BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 function extractR2Key(fileUrl: string): string {
@@ -73,6 +65,8 @@ export async function getAccountingDocuments(
         const mapped = documents.map((doc) => ({
             ...doc,
             clientName: doc.client.nama,
+            ocrStatus: doc.ocrStatus ?? null,
+            ocrData: doc.ocrData ?? null,
         }));
 
         return { success: true, data: mapped };
@@ -122,7 +116,7 @@ export async function uploadAccountingDocument(formData: FormData) {
         const key = `accounting-docs/${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const arrayBuffer = await file.arrayBuffer();
 
-        await R2.send(
+        await s3Client.send(
             new PutObjectCommand({
                 Bucket: BUCKET,
                 Key: key,
@@ -211,7 +205,7 @@ export async function deleteAccountingDocument(id: string) {
         if (document.fileUrl) {
             try {
                 const key = extractR2Key(document.fileUrl);
-                await R2.send(
+                await s3Client.send(
                     new DeleteObjectCommand({
                         Bucket: BUCKET,
                         Key: key,

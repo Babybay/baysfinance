@@ -105,6 +105,8 @@ export interface AccountingDocument {
     uploadedBy: string;
     clientId: string;
     clientName?: string;
+    ocrStatus: string | null;
+    ocrData: Record<string, unknown> | null;
     createdAt: string;
 }
 

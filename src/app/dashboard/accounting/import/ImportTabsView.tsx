@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { FileSpreadsheet, FolderUp, History, Upload } from "lucide-react";
+import { FileSpreadsheet, FolderUp, History, Upload, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { Client } from "@/lib/data";
 import { ImportView } from "./ImportView";
 import { TemplateUploadView } from "./TemplateUploadView";
+import { InvoiceScanView } from "./InvoiceScanView";
 
 interface ImportTabsViewProps {
     clients: Client[];
@@ -14,7 +15,7 @@ interface ImportTabsViewProps {
     isClientRole: boolean;
 }
 
-type Tab = "template" | "batch" | "document";
+type Tab = "template" | "batch" | "document" | "scan";
 
 export function ImportTabsView({ clients, defaultClientId, isClientRole }: ImportTabsViewProps) {
     const { t } = useI18n();
@@ -40,6 +41,12 @@ export function ImportTabsView({ clients, defaultClientId, isClientRole }: Impor
             label: ti?.autoDetected ?? "Auto-Detect",
             icon: <Upload className="h-4 w-4" />,
             description: "Upload dokumen & deteksi otomatis",
+        },
+        {
+            key: "scan",
+            label: "Scan Faktur",
+            icon: <ScanLine className="h-4 w-4" />,
+            description: "Scan faktur/invoice dari gambar atau PDF menggunakan OCR",
         },
     ];
 
@@ -101,6 +108,14 @@ export function ImportTabsView({ clients, defaultClientId, isClientRole }: Impor
 
             {activeTab === "document" && (
                 <ImportView
+                    clients={clients}
+                    defaultClientId={defaultClientId}
+                    isClientRole={isClientRole}
+                />
+            )}
+
+            {activeTab === "scan" && (
+                <InvoiceScanView
                     clients={clients}
                     defaultClientId={defaultClientId}
                     isClientRole={isClientRole}

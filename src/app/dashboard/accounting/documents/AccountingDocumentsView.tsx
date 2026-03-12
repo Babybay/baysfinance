@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/Textarea";
 import {
     Search, FileText, Download, Eye, Trash2, Upload, FolderOpen,
     Plus, Filter, Calendar, Link2, X, FileImage, File, ExternalLink,
+    ScanLine, Loader2, CheckCircle2, AlertTriangle, Receipt,
+    ArrowRight, CircleDot,
 } from "lucide-react";
-import { AccountingDocument, Client } from "@/lib/data";
+import { AccountingDocument, Client, formatIDR } from "@/lib/data";
 import { AccDocType, AccDocModule } from "@prisma/client";
 import {
     getAccountingDocuments,
@@ -74,6 +76,20 @@ function getFileIcon(fileType: string) {
     return File;
 }
 
+function getOcrStatusBadge(status: string | null) {
+    if (!status) return null;
+    switch (status) {
+        case "processing":
+            return <Badge variant="warning">Scanning...</Badge>;
+        case "done":
+            return <Badge variant="success">Scanned</Badge>;
+        case "failed":
+            return <Badge variant="danger">Gagal</Badge>;
+        default:
+            return <Badge variant="default">{status}</Badge>;
+    }
+}
+
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
 
 interface AccountingDocumentsViewProps {
@@ -100,6 +116,10 @@ export function AccountingDocumentsView({
     const [uploadOpen, setUploadOpen] = useState(false);
     const [detailDoc, setDetailDoc] = useState<AccountingDocument | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+    const [scanResultDoc, setScanResultDoc] = useState<AccountingDocument | null>(null);
+
+    // Scanning state
+    const [scanningIds, setScanningIds] = useState<Set<string>>(new Set());
 
     // Upload form
     const [uploadForm, setUploadForm] = useState({
@@ -206,10 +226,69 @@ export function AccountingDocumentsView({
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
+    // ── Scan Invoice ─────────────────────────────────────────────────────────
+
+    const handleScan = async (doc: AccountingDocument) => {
+        setScanningIds((prev) => new Set(prev).add(doc.id));
+
+        // Optimistic update
+        setDocuments((prev) =>
+            prev.map((d) => d.id === doc.id ? { ...d, ocrStatus: "processing" } : d)
+        );
+
+        try {
+            const response = await fetch("/api/accounting/ocr", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ documentId: doc.id }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update document in state
+                setDocuments((prev) =>
+                    prev.map((d) =>
+                        d.id === doc.id
+                            ? { ...d, ocrStatus: "done", ocrData: result.data }
+                            : d
+                    )
+                );
+                // Show result modal
+                setScanResultDoc({ ...doc, ocrStatus: "done", ocrData: result.data });
+            } else {
+                setDocuments((prev) =>
+                    prev.map((d) =>
+                        d.id === doc.id
+                            ? { ...d, ocrStatus: "failed", ocrData: { error: result.error } }
+                            : d
+                    )
+                );
+                alert(`Scan gagal: ${result.error || "Unknown error"}`);
+            }
+        } catch (err) {
+            setDocuments((prev) =>
+                prev.map((d) =>
+                    d.id === doc.id
+                        ? { ...d, ocrStatus: "failed", ocrData: { error: String(err) } }
+                        : d
+                )
+            );
+            alert("Scan gagal. Silakan coba lagi.");
+        } finally {
+            setScanningIds((prev) => {
+                const next = new Set(prev);
+                next.delete(doc.id);
+                return next;
+            });
+        }
+    };
+
     // ── Stats ────────────────────────────────────────────────────────────────
 
     const stats = {
         total: documents.length,
+        scanned: documents.filter((d) => d.ocrStatus === "done").length,
         byType: docTypeOptions.map((t) => ({
             label: t.label,
             count: documents.filter((d) => d.documentType === t.value).length,
@@ -267,7 +346,11 @@ export function AccountingDocumentsView({
                             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Dokumen</p>
                             <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
                         </div>
-                        {stats.byType.slice(0, 3).map((s) => (
+                        <div className="bg-card rounded-[12px] border border-border p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sudah Di-scan</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.scanned}</p>
+                        </div>
+                        {stats.byType.slice(0, 2).map((s) => (
                             <div key={s.label} className="bg-card rounded-[12px] border border-border p-4">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">{s.label}</p>
                                 <p className="text-2xl font-bold text-foreground mt-1">{s.count}</p>
@@ -319,7 +402,7 @@ export function AccountingDocumentsView({
                                         <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Tipe</th>
                                         <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Modul</th>
                                         <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Tanggal</th>
-                                        <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Diupload Oleh</th>
+                                        <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Scan</th>
                                         <th className="text-left px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Ukuran</th>
                                         <th className="text-right px-4 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Aksi</th>
                                     </tr>
@@ -335,6 +418,12 @@ export function AccountingDocumentsView({
                                     ) : (
                                         filtered.map((doc) => {
                                             const Icon = getFileIcon(doc.fileType);
+                                            const isScanning = scanningIds.has(doc.id);
+                                            const canScan = ["jpg", "jpeg", "png", "pdf"].includes(doc.fileType) &&
+                                                (doc.documentType === AccDocType.SalesInvoice ||
+                                                 doc.documentType === AccDocType.PurchaseInvoice ||
+                                                 doc.documentType === AccDocType.ExpenseReceipt);
+
                                             return (
                                                 <tr key={doc.id} className="hover:bg-surface/60 transition-colors">
                                                     <td className="px-4 py-3">
@@ -359,20 +448,45 @@ export function AccountingDocumentsView({
                                                                 {getModuleLabel(doc.linkedModule)}
                                                             </Badge>
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground">—</span>
+                                                            <span className="text-xs text-muted-foreground">-</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                                                         {new Date(doc.documentDate).toLocaleDateString("id-ID")}
                                                     </td>
-                                                    <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-xs">
-                                                        {doc.uploadedBy}
+                                                    <td className="px-4 py-3 hidden lg:table-cell">
+                                                        {doc.ocrStatus ? (
+                                                            getOcrStatusBadge(doc.ocrStatus)
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">-</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-xs">
                                                         {formatFileSize(doc.fileSize)}
                                                     </td>
                                                     <td className="px-4 py-3 text-right">
                                                         <div className="flex items-center justify-end gap-1">
+                                                            {/* Scan Button */}
+                                                            {canScan && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (doc.ocrStatus === "done" && doc.ocrData) {
+                                                                            setScanResultDoc(doc);
+                                                                        } else {
+                                                                            handleScan(doc);
+                                                                        }
+                                                                    }}
+                                                                    disabled={isScanning}
+                                                                    className="p-2 rounded-[8px] hover:bg-accent-muted text-muted-foreground hover:text-accent transition-colors disabled:opacity-50"
+                                                                    title={doc.ocrStatus === "done" ? "Lihat Hasil Scan" : "Scan Invoice"}
+                                                                >
+                                                                    {isScanning ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <ScanLine className="h-4 w-4" />
+                                                                    )}
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={() => setDetailDoc(doc)}
                                                                 className="p-2 rounded-[8px] hover:bg-accent-muted text-muted-foreground hover:text-accent transition-colors"
@@ -417,7 +531,7 @@ export function AccountingDocumentsView({
                         value={uploadForm.documentName}
                         onChange={(e) => setUploadForm({ ...uploadForm, documentName: e.target.value })}
                         required
-                        placeholder="Faktur Pembelian PT ABC — Jan 2026"
+                        placeholder="Faktur Pembelian PT ABC - Jan 2026"
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select
@@ -561,7 +675,7 @@ export function AccountingDocumentsView({
                                 {detailDoc.linkedModule ? (
                                     <Badge variant={moduleColors[detailDoc.linkedModule]}>{getModuleLabel(detailDoc.linkedModule)}</Badge>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground">—</p>
+                                    <p className="text-sm text-muted-foreground">-</p>
                                 )}
                             </div>
                             <div>
@@ -585,10 +699,10 @@ export function AccountingDocumentsView({
                                 </div>
                             )}
                             <div>
-                                <p className="text-xs text-muted-foreground">Tanggal Upload</p>
-                                <p className="font-medium text-sm text-foreground">
-                                    {new Date(detailDoc.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-                                </p>
+                                <p className="text-xs text-muted-foreground">Status Scan</p>
+                                {detailDoc.ocrStatus ? getOcrStatusBadge(detailDoc.ocrStatus) : (
+                                    <p className="text-sm text-muted-foreground">Belum di-scan</p>
+                                )}
                             </div>
                         </div>
 
@@ -609,6 +723,29 @@ export function AccountingDocumentsView({
                             >
                                 <Download className="h-4 w-4 mr-1.5" /> Download
                             </a>
+                            {/* Scan from detail modal */}
+                            {["jpg", "jpeg", "png", "pdf"].includes(detailDoc.fileType) && (
+                                <Button
+                                    variant="soft"
+                                    size="default"
+                                    onClick={() => {
+                                        if (detailDoc.ocrStatus === "done" && detailDoc.ocrData) {
+                                            setDetailDoc(null);
+                                            setScanResultDoc(detailDoc);
+                                        } else {
+                                            handleScan(detailDoc);
+                                        }
+                                    }}
+                                    disabled={scanningIds.has(detailDoc.id)}
+                                >
+                                    {scanningIds.has(detailDoc.id) ? (
+                                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                    ) : (
+                                        <ScanLine className="h-4 w-4 mr-1.5" />
+                                    )}
+                                    {detailDoc.ocrStatus === "done" ? "Lihat Hasil Scan" : "Scan Invoice"}
+                                </Button>
+                            )}
                             <Button
                                 variant="soft"
                                 size="default"
@@ -620,6 +757,25 @@ export function AccountingDocumentsView({
                             </Button>
                         </div>
                     </div>
+                )}
+            </Modal>
+
+            {/* ── Scan Result Modal ──────────────────────────────────────────── */}
+            <Modal
+                isOpen={!!scanResultDoc}
+                onClose={() => setScanResultDoc(null)}
+                title="Hasil Scan Invoice"
+                size="lg"
+            >
+                {scanResultDoc?.ocrData && (
+                    <ScanResultPanel
+                        doc={scanResultDoc}
+                        onClose={() => setScanResultDoc(null)}
+                        onRescan={() => {
+                            setScanResultDoc(null);
+                            handleScan(scanResultDoc);
+                        }}
+                    />
                 )}
             </Modal>
 
@@ -641,6 +797,172 @@ export function AccountingDocumentsView({
                     </div>
                 </div>
             </Modal>
+        </div>
+    );
+}
+
+// ─── SCAN RESULT PANEL ───────────────────────────────────────────────────────
+
+interface ScanResultPanelProps {
+    doc: AccountingDocument;
+    onClose: () => void;
+    onRescan: () => void;
+}
+
+function ScanResultPanel({ doc, onClose, onRescan }: ScanResultPanelProps) {
+    const data = doc.ocrData as Record<string, any>;
+
+    const confidence = data?.confidence ?? 0;
+    const invoiceNumber = data?.invoiceNumber ?? null;
+    const invoiceDate = data?.invoiceDate ?? null;
+    const dueDate = data?.dueDate ?? null;
+    const vendorName = data?.vendorName ?? null;
+    const vendorAddress = data?.vendorAddress ?? null;
+    const customerName = data?.customerName ?? null;
+    const lineItems = (data?.lineItems ?? []) as Array<{
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        amount: number;
+    }>;
+    const subtotal = data?.subtotal ?? null;
+    const taxAmount = data?.taxAmount ?? null;
+    const taxRate = data?.taxRate ?? null;
+    const grandTotal = data?.grandTotal ?? null;
+    const currency = data?.currency ?? "IDR";
+
+    const fmt = (n: number | null) => {
+        if (n === null) return "-";
+        if (currency === "IDR") return formatIDR(n);
+        return `$ ${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    };
+
+    return (
+        <div className="space-y-5">
+            {/* Confidence bar */}
+            <div className="bg-surface rounded-[12px] border border-border p-4">
+                <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Akurasi Scan</p>
+                    <span className={`text-sm font-bold ${
+                        confidence >= 70 ? "text-success" : confidence >= 40 ? "text-warning" : "text-error"
+                    }`}>
+                        {confidence}%
+                    </span>
+                </div>
+                <div className="w-full h-2 bg-border rounded-full overflow-hidden">
+                    <div
+                        className={`h-full rounded-full transition-all ${
+                            confidence >= 70 ? "bg-success" : confidence >= 40 ? "bg-warning" : "bg-error"
+                        }`}
+                        style={{ width: `${confidence}%` }}
+                    />
+                </div>
+                {confidence < 50 && (
+                    <p className="text-xs text-warning mt-2 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Akurasi rendah. Periksa dan koreksi data secara manual.
+                    </p>
+                )}
+            </div>
+
+            {/* Invoice Header */}
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <p className="text-xs text-muted-foreground">No. Faktur</p>
+                    <p className="font-medium text-sm text-foreground">{invoiceNumber || "-"}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground">Tanggal Faktur</p>
+                    <p className="font-medium text-sm text-foreground">
+                        {invoiceDate ? new Date(invoiceDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground">Vendor / Pengirim</p>
+                    <p className="font-medium text-sm text-foreground">{vendorName || "-"}</p>
+                    {vendorAddress && <p className="text-xs text-muted-foreground mt-0.5">{vendorAddress}</p>}
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground">Customer / Penerima</p>
+                    <p className="font-medium text-sm text-foreground">{customerName || "-"}</p>
+                </div>
+                {dueDate && (
+                    <div>
+                        <p className="text-xs text-muted-foreground">Jatuh Tempo</p>
+                        <p className="font-medium text-sm text-foreground">
+                            {new Date(dueDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* Line Items */}
+            {lineItems.length > 0 && (
+                <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Item Faktur</p>
+                    <div className="bg-surface rounded-[12px] border border-border overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border">
+                                    <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">Deskripsi</th>
+                                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">Qty</th>
+                                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">Harga Satuan</th>
+                                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {lineItems.map((item, i) => (
+                                    <tr key={i}>
+                                        <td className="px-3 py-2 text-foreground">{item.description}</td>
+                                        <td className="px-3 py-2 text-right text-muted-foreground">{item.quantity}</td>
+                                        <td className="px-3 py-2 text-right text-muted-foreground">{fmt(item.unitPrice)}</td>
+                                        <td className="px-3 py-2 text-right font-medium text-foreground">{fmt(item.amount)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Totals */}
+            <div className="bg-surface rounded-[12px] border border-border p-4 space-y-2">
+                {subtotal !== null && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal (DPP)</span>
+                        <span className="font-medium text-foreground">{fmt(subtotal)}</span>
+                    </div>
+                )}
+                {taxAmount !== null && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                            PPN{taxRate ? ` (${taxRate}%)` : ""}
+                        </span>
+                        <span className="font-medium text-foreground">{fmt(taxAmount)}</span>
+                    </div>
+                )}
+                {grandTotal !== null && (
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-border">
+                        <span className="font-bold text-foreground">Grand Total</span>
+                        <span className="font-bold text-lg text-accent">{fmt(grandTotal)}</span>
+                    </div>
+                )}
+                {grandTotal === null && subtotal === null && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                        Tidak dapat mendeteksi total. Periksa dokumen secara manual.
+                    </p>
+                )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
+                <Button variant="soft" size="default" onClick={onRescan}>
+                    <ScanLine className="h-4 w-4 mr-1.5" /> Scan Ulang
+                </Button>
+                <Button variant="soft" size="default" onClick={onClose}>
+                    Tutup
+                </Button>
+            </div>
         </div>
     );
 }
