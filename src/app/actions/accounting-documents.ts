@@ -7,6 +7,9 @@ import { revalidatePath } from "next/cache";
 import { AccDocType, AccDocModule } from "@prisma/client";
 import { currentUser } from "@clerk/nextjs/server";
 import { assertCanAccessClient, handleAuthError, isAdminOrStaff } from "@/lib/auth-helpers";
+import { importDocumentEntries } from "@/app/actions/import-accounting";
+import type { GeneratedEntry } from "@/lib/journal-generator";
+import type { DocumentType } from "@/lib/document-detector";
 
 const BUCKET = BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
@@ -227,5 +230,57 @@ export async function deleteAccountingDocument(id: string) {
     } catch (error) {
         console.error("[deleteAccountingDocument]", error);
         return handleAuthError(error);
+    }
+}
+
+// ─── POST SCANNED ENTRIES TO JOURNAL ─────────────────────────────────────────
+
+export async function postScannedEntries(
+    documentId: string,
+    entries: GeneratedEntry[],
+    clientId: string,
+    docType: DocumentType = "invoice",
+) {
+    try {
+        await assertCanAccessClient(clientId);
+
+        const doc = await prisma.accountingDocument.findUnique({
+            where: { id: documentId },
+            select: { documentName: true, clientId: true },
+        });
+
+        if (!doc) return { success: false, error: "Dokumen tidak ditemukan." };
+        if (doc.clientId !== clientId) return { success: false, error: "Akses ditolak." };
+
+        const fileName = `OCR: ${doc.documentName}`;
+
+        const result = await importDocumentEntries(entries, clientId, docType, fileName);
+
+        if (result.success && result.imported > 0) {
+            // Update the document's ocrStatus to "posted"
+            const existingData = await prisma.accountingDocument.findUnique({
+                where: { id: documentId },
+                select: { ocrData: true },
+            });
+
+            await prisma.accountingDocument.update({
+                where: { id: documentId },
+                data: {
+                    ocrStatus: "posted",
+                    ocrData: {
+                        ...(existingData?.ocrData as Record<string, unknown> || {}),
+                        postedBatchId: result.batchId,
+                        postedAt: new Date().toISOString(),
+                    } as any,
+                },
+            });
+        }
+
+        revalidatePath("/dashboard/accounting/import");
+        revalidatePath("/dashboard/accounting/journal");
+        return result;
+    } catch (error) {
+        console.error("[postScannedEntries]", error);
+        return { ...handleAuthError(error), imported: 0, skipped: 0, errors: [] };
     }
 }

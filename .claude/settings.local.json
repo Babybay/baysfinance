@@ -41,7 +41,23 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && node -e \"\nconst { parseInvoiceText } = require\\('./src/lib/invoice-scanner'\\);\n\n// Simulate OCR text from the Bee Accounting invoice image\nconst ocrText = \\\\`BEE\nBee Accounting\nMampang Prapatan 8/3B Jakarta\n\nTelp: 021-33335800 ; Fax : 021-33335800\n\nInvoice Pembelian\n\nTanggal No.Nota\n30-Sep-13 JL00001001\n\nOperator\nsa\n\nKepada Yth. :\nCASH\n\nTermin Jatuh Tempo\n30-Sep-13\n\nNo Item Deskripsi Qty Unit Harga Disc Subtotal\n1 1001 Processor Intel i-3 1 UNIT 1,500,000 1,500,000\n2 1002 Ati Radeon 4670 HD 1 UNIT 500,000 500,000\n3 1003 GeForce 9600GT 1 UNIT 800,000 800,000\n4 1004 Acer Aspire X130 1 UNIT 5,000,000 5,000,000\n\nKeterangan\n1. Barang yang sudah dibeli tidak dapat dikembalikan\n\nSubtotal Rp. 7,800,000\nDiskon Rp. 0\nPajak Rp. 780,000\nTotal Rp. 8,580,000\n\\\\`;\n\nconst result = parseInvoiceText\\(ocrText\\);\nconsole.log\\(JSON.stringify\\(result, null, 2\\)\\);\n\" 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsx -e \"\nimport { parseInvoiceText } from './src/lib/invoice-scanner';\n\nconst ocrText = \\\\`BEE\nBee Accounting\nMampang Prapatan 8/3B Jakarta\n\nTelp: 021-33335800 ; Fax : 021-33335800\n\nInvoice Pembelian\n\nTanggal No.Nota\n30-Sep-13 JL00001001\n\nOperator\nsa\n\nKepada Yth. :\nCASH\n\nTermin Jatuh Tempo\n30-Sep-13\n\nNo Item Deskripsi Qty Unit Harga Disc Subtotal\n1 1001 Processor Intel i-3 1 UNIT 1,500,000 1,500,000\n2 1002 Ati Radeon 4670 HD 1 UNIT 500,000 500,000\n3 1003 GeForce 9600GT 1 UNIT 800,000 800,000\n4 1004 Acer Aspire X130 1 UNIT 5,000,000 5,000,000\n\nKeterangan\n1. Barang yang sudah dibeli tidak dapat dikembalikan\n\nSubtotal Rp. 7,800,000\nDiskon Rp. 0\nPajak Rp. 780,000\nTotal Rp. 8,580,000\n\\\\`;\n\nconst result = parseInvoiceText\\(ocrText\\);\nconsole.log\\(JSON.stringify\\({\n    invoiceNumber: result.invoiceNumber,\n    invoiceDate: result.invoiceDate,\n    dueDate: result.dueDate,\n    vendorName: result.vendorName,\n    vendorAddress: result.vendorAddress,\n    customerName: result.customerName,\n    lineItems: result.lineItems,\n    subtotal: result.subtotal,\n    taxAmount: result.taxAmount,\n    grandTotal: result.grandTotal,\n    confidence: result.confidence,\n}, null, 2\\)\\);\n\" 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx tsx test-scanner.ts 2>&1)",
-      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && rm test-scanner.ts && npx tsc --noEmit --pretty 2>&1 | head -10)"
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && rm test-scanner.ts && npx tsc --noEmit --pretty 2>&1 | head -10)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm uninstall tesseract.js 2>&1 | tail -5)",
+      "Bash(python --version 2>&1 && pip --version 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting/services/ocr\" && pip install -r requirements.txt 2>&1 | tail -20)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting/services/ocr\" && python -c \"from paddleocr import PaddleOCR; print\\('PaddleOCR import OK'\\)\" 2>&1)",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting/services/ocr\" && timeout 30 python -c \"from paddleocr import PaddleOCR; print\\('PaddleOCR import OK'\\)\" 2>&1 || echo \"timeout/error\")",
+      "Bash(cd \"D:/THE PROJECT/saas-consulting/services/ocr\" && PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python main.py 2>&1)",
+      "Bash(sleep 30 && curl -s http://localhost:8100/health 2>&1)",
+      "Bash(python -c \"\nfrom paddleocr import PaddleOCR\nimport inspect\nsig = inspect.signature\\(PaddleOCR.__init__\\)\nprint\\(sig\\)\n\" 2>&1)",
+      "Bash(pip install:*)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\\\\services\\\\ocr\" && python -c \"\nimport inspect\nfrom paddleocr import PaddleOCR\nsig = inspect.signature\\(PaddleOCR.__init__\\)\nprint\\(sig\\)\n\")",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\\\\services\\\\ocr\" && PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True python -c \"\nfrom ocr_engine import get_ocr\nocr = get_ocr\\(\\)\nprint\\('OCR engine initialized successfully!'\\)\n\")",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -80)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -40)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx next lint --quiet 2>&1 | tail -10)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npm run lint 2>&1 | tail -10)",
+      "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx tsc --noEmit --pretty 2>&1 | head -20)"
     ]
   }
 }

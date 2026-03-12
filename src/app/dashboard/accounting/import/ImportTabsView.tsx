@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { Client } from "@/lib/data";
 import { ImportView } from "./ImportView";
 import { TemplateUploadView } from "./TemplateUploadView";
-import { InvoiceScanView } from "./InvoiceScanView";
+import { DocumentScanView } from "./DocumentScanView";
 
 interface ImportTabsViewProps {
     clients: Client[];
@@ -44,9 +44,9 @@ export function ImportTabsView({ clients, defaultClientId, isClientRole }: Impor
         },
         {
             key: "scan",
-            label: "Scan Faktur",
+            label: "Scan Dokumen",
             icon: <ScanLine className="h-4 w-4" />,
-            description: "Scan faktur/invoice dari gambar atau PDF menggunakan OCR",
+            description: "Scan dokumen keuangan (faktur, kwitansi, rekening koran) dari gambar atau PDF menggunakan OCR",
         },
     ];
 
@@ -115,7 +115,7 @@ export function ImportTabsView({ clients, defaultClientId, isClientRole }: Impor
             )}
 
             {activeTab === "scan" && (
-                <InvoiceScanView
+                <DocumentScanView
                     clients={clients}
                     defaultClientId={defaultClientId}
                     isClientRole={isClientRole}

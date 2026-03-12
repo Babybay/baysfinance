@@ -1,0 +1,10 @@
+paddlepaddle>=2.6,<3
+paddleocr>=2.9,<3
+fastapi>=0.115.0
+uvicorn>=0.34.0
+python-multipart>=0.0.18
+Pillow>=10.0
+pdfplumber>=0.11
+pdf2image>=1.17
+requests>=2.32
+numpy>=1.26

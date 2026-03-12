@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { s3Client, BUCKET_NAME } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
-import { parseInvoiceText } from "@/lib/invoice-scanner";
-import Tesseract from "tesseract.js";
+import { classifyOcrText } from "@/lib/ocr-document-classifier";
+import { parseOcrDocument } from "@/lib/ocr-document-parser";
+import { mapOcrToJournalEntries } from "@/lib/ocr-journal-mapper";
 
-// ─── OCR API — processes an accounting document image/PDF ────────────────────
+// PaddleOCR Python service URL
+const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://localhost:8100";
+const PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
+
+// ─── OCR API — sends document to PaddleOCR service for processing ────────────
 
 export async function POST(req: NextRequest) {
     let documentId: string | undefined;
@@ -39,31 +47,7 @@ export async function POST(req: NextRequest) {
 
         const fileType = doc.fileType.toLowerCase();
 
-        let ocrText = "";
-
-        if (["jpg", "jpeg", "png"].includes(fileType)) {
-            // OCR on image using Tesseract.js
-            const result = await Tesseract.recognize(doc.fileUrl, "ind+eng", {
-                logger: () => {},
-            });
-            ocrText = result.data.text;
-        } else if (fileType === "pdf") {
-            // For PDF, try fetching and extracting text with pdf-parse
-            const { PDFParse } = await import("pdf-parse");
-            const response = await fetch(doc.fileUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch PDF: ${response.status}`);
-            }
-            const arrayBuf = await response.arrayBuffer();
-            const parser = new PDFParse({ data: new Uint8Array(arrayBuf) });
-            const textResult = await parser.getText();
-            ocrText = textResult.text;
-
-            // If PDF text is very short (scanned PDF), note limited extraction
-            if (ocrText.trim().length < 50) {
-                ocrText = `[Scanned PDF - limited text extracted]\n${ocrText}`;
-            }
-        } else {
+        if (!["jpg", "jpeg", "png", "pdf"].includes(fileType)) {
             await prisma.accountingDocument.update({
                 where: { id: documentId },
                 data: { ocrStatus: "failed", ocrData: { error: "Unsupported file type" } },
@@ -71,26 +55,88 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unsupported file type for OCR" }, { status: 400 });
         }
 
-        // Parse the extracted text into structured invoice data
-        const invoiceData = parseInvoiceText(ocrText);
+        // Generate a presigned URL so the OCR service can access the file
+        const r2Key = doc.fileUrl.replace(`${PUBLIC_URL}/`, "");
+        const presignedUrl = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({ Bucket: BUCKET_NAME, Key: r2Key }),
+            { expiresIn: 600 },
+        );
 
-        // Store results
+        // Call PaddleOCR service
+        const ocrResponse = await fetch(`${OCR_SERVICE_URL}/ocr/url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                url: presignedUrl,
+                file_type: fileType === "pdf" ? "pdf" : "image",
+            }),
+        });
+
+        if (!ocrResponse.ok) {
+            throw new Error(`OCR service returned ${ocrResponse.status}`);
+        }
+
+        const ocrResult = await ocrResponse.json();
+
+        if (!ocrResult.success) {
+            throw new Error(ocrResult.error || "OCR service failed");
+        }
+
+        const ocrText = ocrResult.text || "";
+
+        // 1) Classify the document type from OCR text
+        const classification = classifyOcrText(ocrText);
+
+        // 2) Parse the text based on detected type
+        const parsedData = parseOcrDocument(ocrText, classification.accDocType);
+        parsedData.confidence = Math.round(
+            (parsedData.confidence + classification.confidence) / 2,
+        );
+
+        // 3) Generate suggested journal entries
+        const suggestedEntries = mapOcrToJournalEntries(parsedData);
+        parsedData.suggestedEntries = suggestedEntries.map((e) => ({
+            description: e.description,
+            items: e.items,
+        }));
+
+        // 4) Auto-update document type/module if confidence > 70%
+        const updateData: Record<string, unknown> = {
+            ocrStatus: "done",
+            ocrData: {
+                ...parsedData,
+                classification,
+                ocrEntries: ocrResult.entries,
+                processingTimeMs: ocrResult.processing_time_ms,
+                pageCount: ocrResult.page_count,
+                journalEntries: suggestedEntries,
+            },
+        };
+
+        if (classification.confidence >= 70) {
+            updateData.documentType = classification.accDocType;
+            updateData.linkedModule = classification.accDocModule;
+        }
+
         await prisma.accountingDocument.update({
             where: { id: documentId },
-            data: {
-                ocrStatus: "done",
-                ocrData: invoiceData as any,
-            },
+            data: updateData as any,
         });
 
         return NextResponse.json({
             success: true,
-            data: invoiceData,
+            data: {
+                ...parsedData,
+                classification,
+                journalEntries: suggestedEntries,
+                processingTimeMs: ocrResult.processing_time_ms,
+                pageCount: ocrResult.page_count,
+            },
         });
     } catch (error) {
         console.error("[OCR API]", error);
 
-        // Try to mark as failed
         if (documentId) {
             try {
                 await prisma.accountingDocument.update({
