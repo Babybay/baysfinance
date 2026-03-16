@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import {
     Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, X, Loader2,
-    ChevronDown, ArrowRight, History,
+    ChevronDown, ArrowRight, History, Scan,
 } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -12,6 +12,7 @@ import { importDocumentEntries } from "@/app/actions/import-accounting";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/document-detector";
 import type { DocumentType } from "@/lib/document-detector";
 import type { GeneratedEntry } from "@/lib/journal-generator";
+import { OcrScanner } from "@/components/dashboard/OcrScanner";
 
 interface ImportViewProps {
     clients: Client[];
@@ -47,10 +48,13 @@ const DOC_TYPES: DocumentType[] = [
     "expense_report", "payroll", "petty_cash", "tax_report",
 ];
 
+type ImportMode = "spreadsheet" | "scan";
+
 export function ImportView({ clients, defaultClientId, isClientRole }: ImportViewProps) {
     const { t, locale } = useI18n();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [mode, setMode] = useState<ImportMode>("spreadsheet");
     const [clientId, setClientId] = useState(defaultClientId);
     const [stage, setStage] = useState<ImportStage>("upload");
     const [fileName, setFileName] = useState("");
@@ -198,9 +202,32 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
 
     return (
         <div className="space-y-6">
-            {/* Header with history link */}
+            {/* Header with mode tabs + history link */}
             <div className="flex items-center justify-between">
-                <div />
+                <div className="flex rounded-lg border border-border bg-card p-1">
+                    <button
+                        onClick={() => { setMode("spreadsheet"); resetState(); }}
+                        className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                            mode === "spreadsheet"
+                                ? "bg-accent text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Spreadsheet
+                    </button>
+                    <button
+                        onClick={() => { setMode("scan"); resetState(); }}
+                        className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                            mode === "scan"
+                                ? "bg-accent text-white"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Upload className="h-4 w-4" />
+                        {locale === "id" ? "Scan OCR" : "OCR Scan"}
+                    </button>
+                </div>
                 <Link
                     href="/dashboard/accounting/import/history"
                     className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -210,8 +237,13 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
                 </Link>
             </div>
 
+            {/* OCR Scan mode */}
+            {mode === "scan" && (
+                <OcrScanner />
+            )}
+
             {/* Client selector */}
-            {!isClientRole && (
+            {mode === "spreadsheet" && !isClientRole && (
                 <div className="flex items-center gap-4">
                     <label className="text-sm font-medium text-foreground">
                         {ti?.selectClient ?? "Pilih Klien"}
@@ -230,7 +262,7 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
             )}
 
             {/* Upload Stage */}
-            {stage === "upload" && (
+            {mode === "spreadsheet" && stage === "upload" && (
                 <div
                     onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                     onDragLeave={() => setIsDragOver(false)}
