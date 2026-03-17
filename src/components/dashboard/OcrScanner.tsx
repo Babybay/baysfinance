@@ -4,7 +4,8 @@ import React, { useState, useCallback, useRef } from "react";
 import {
     Camera, Upload, Loader2, FileText, AlertTriangle,
     CheckCircle2, X, Copy, Download, Eye, EyeOff,
-    Scan, RefreshCw, BookOpen,
+    Scan, RefreshCw, BookOpen, ChevronDown, ChevronUp,
+    Pencil, Plus, Trash2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatIDR, Client } from "@/lib/data";
@@ -40,6 +41,91 @@ interface OcrResponse {
 
 type ScanStage = "idle" | "scanning" | "result";
 
+// ── Smart account mapping per document type ──────────────────────────────────
+
+interface AccountMapping {
+    debitCode: string;
+    debitName: string;
+    creditCode: string;
+    creditName: string;
+}
+
+const DOC_TYPE_ACCOUNT_MAP: Record<DocumentType, { debit: AccountMapping; credit: AccountMapping }> = {
+    invoice: {
+        debit: { debitCode: "120", debitName: "Piutang Usaha", creditCode: "600", creditName: "Pendapatan Jasa" },
+        credit: { debitCode: "300", debitName: "Utang Usaha", creditCode: "111", creditName: "Bank" },
+    },
+    bank_statement: {
+        debit: { debitCode: "729", debitName: "Beban Lain-lain", creditCode: "111", creditName: "Bank" },
+        credit: { debitCode: "111", debitName: "Bank", creditCode: "902", creditName: "Pendapatan Lainnya" },
+    },
+    cashier_report: {
+        debit: { debitCode: "111", debitName: "Bank BNI Giro", creditCode: "600", creditName: "Pendapatan F&B" },
+        credit: { debitCode: "111", debitName: "Bank BNI Giro", creditCode: "600", creditName: "Pendapatan F&B" },
+    },
+    tax_report: {
+        debit: { debitCode: "321", debitName: "Utang Pajak", creditCode: "111", creditName: "Bank" },
+        credit: { debitCode: "111", debitName: "Bank", creditCode: "320", creditName: "PPN Masukan" },
+    },
+    expense_report: {
+        debit: { debitCode: "729", debitName: "Beban Lain-lain", creditCode: "100", creditName: "Kas" },
+        credit: { debitCode: "100", debitName: "Kas", creditCode: "729", creditName: "Beban Lain-lain" },
+    },
+    payroll: {
+        debit: { debitCode: "700", debitName: "Gaji dan Upah", creditCode: "300", creditName: "Utang Gaji" },
+        credit: { debitCode: "300", debitName: "Utang Gaji", creditCode: "111", creditName: "Bank" },
+    },
+    petty_cash: {
+        debit: { debitCode: "729", debitName: "Beban Lain-lain", creditCode: "100", creditName: "Kas Kecil" },
+        credit: { debitCode: "100", debitName: "Kas Kecil", creditCode: "111", creditName: "Bank" },
+    },
+    purchase_order: {
+        debit: { debitCode: "130", debitName: "Persediaan", creditCode: "300", creditName: "Utang Usaha" },
+        credit: { debitCode: "300", debitName: "Utang Usaha", creditCode: "111", creditName: "Bank" },
+    },
+    unknown: {
+        debit: { debitCode: "729", debitName: "Beban Lain-lain", creditCode: "100", creditName: "Kas" },
+        credit: { debitCode: "100", debitName: "Kas", creditCode: "902", creditName: "Pendapatan Lainnya" },
+    },
+};
+
+function buildSmartEntries(rows: OcrRow[], docType: DocumentType): GeneratedEntry[] {
+    const mapping = DOC_TYPE_ACCOUNT_MAP[docType] || DOC_TYPE_ACCOUNT_MAP.unknown;
+
+    return rows.map((row, i) => {
+        const acctMap = row.type === "debit" ? mapping.debit : mapping.credit;
+        return {
+            date: row.date || new Date().toISOString().split("T")[0],
+            description: row.description,
+            items: [
+                {
+                    accountCode: acctMap.debitCode,
+                    accountName: acctMap.debitName,
+                    debit: row.amount,
+                    credit: 0,
+                },
+                {
+                    accountCode: acctMap.creditCode,
+                    accountName: acctMap.creditName,
+                    debit: 0,
+                    credit: row.amount,
+                },
+            ],
+            totalDebit: row.amount,
+            totalCredit: row.amount,
+            balanced: true,
+            sourceRow: i + 1,
+        };
+    });
+}
+
+// ── Editable journal entry type ──────────────────────────────────────────────
+
+interface EditableEntry extends GeneratedEntry {
+    _expanded?: boolean;
+    _removed?: boolean;
+}
+
 interface OcrScannerProps {
     clients?: Client[];
     defaultClientId?: string;
@@ -61,6 +147,10 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
     const [importClientId, setImportClientId] = useState(defaultClientId);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+
+    // ── Editable journal entries state ──
+    const [journalEntries, setJournalEntries] = useState<EditableEntry[]>([]);
+    const [showJournalPreview, setShowJournalPreview] = useState(false);
 
     const ti = t?.accounting?.import;
 
@@ -139,38 +229,79 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
         }
     }, [result]);
 
+    // Build journal entries when result changes
+    const handlePrepareJournal = useCallback(() => {
+        if (!result || result.rows.length === 0) return;
+        const entries = buildSmartEntries(result.rows, result.documentType);
+        setJournalEntries(entries.map(e => ({ ...e, _expanded: false, _removed: false })));
+        setShowJournalPreview(true);
+    }, [result]);
+
+    // Edit an entry's field
+    const updateEntry = (index: number, field: string, value: string) => {
+        setJournalEntries(prev => prev.map((e, i) => {
+            if (i !== index) return e;
+            return { ...e, [field]: value };
+        }));
+    };
+
+    // Edit an entry item's account or amount
+    const updateEntryItem = (entryIdx: number, itemIdx: number, field: string, value: string | number) => {
+        setJournalEntries(prev => prev.map((e, i) => {
+            if (i !== entryIdx) return e;
+            const items = [...e.items];
+            items[itemIdx] = { ...items[itemIdx], [field]: value };
+            // Recalculate totals
+            const totalDebit = items.reduce((s, it) => s + (it.debit || 0), 0);
+            const totalCredit = items.reduce((s, it) => s + (it.credit || 0), 0);
+            return { ...e, items, totalDebit, totalCredit, balanced: Math.abs(totalDebit - totalCredit) < 0.01 };
+        }));
+    };
+
+    // Add a line item to an entry
+    const addEntryItem = (entryIdx: number) => {
+        setJournalEntries(prev => prev.map((e, i) => {
+            if (i !== entryIdx) return e;
+            return { ...e, items: [...e.items, { accountCode: "", accountName: "", debit: 0, credit: 0 }] };
+        }));
+    };
+
+    // Remove a line item from an entry
+    const removeEntryItem = (entryIdx: number, itemIdx: number) => {
+        setJournalEntries(prev => prev.map((e, i) => {
+            if (i !== entryIdx || e.items.length <= 2) return e;
+            const items = e.items.filter((_, j) => j !== itemIdx);
+            const totalDebit = items.reduce((s, it) => s + (it.debit || 0), 0);
+            const totalCredit = items.reduce((s, it) => s + (it.credit || 0), 0);
+            return { ...e, items, totalDebit, totalCredit, balanced: Math.abs(totalDebit - totalCredit) < 0.01 };
+        }));
+    };
+
+    // Toggle remove an entry
+    const toggleRemoveEntry = (index: number) => {
+        setJournalEntries(prev => prev.map((e, i) => i === index ? { ...e, _removed: !e._removed } : e));
+    };
+
+    // Toggle expand an entry
+    const toggleExpandEntry = (index: number) => {
+        setJournalEntries(prev => prev.map((e, i) => i === index ? { ...e, _expanded: !e._expanded } : e));
+    };
+
     const handleImportToJournal = useCallback(async () => {
-        if (!result || result.rows.length === 0 || !importClientId) return;
+        if (!result || !importClientId) return;
+
+        const entriesToImport = journalEntries.filter(e => !e._removed && e.balanced);
+        if (entriesToImport.length === 0) return;
+
         setImporting(true);
         setImportResult(null);
 
         try {
-            // Convert OCR rows to GeneratedEntry format
-            const entries: GeneratedEntry[] = result.rows.map((row, i) => ({
-                date: row.date || new Date().toISOString().split("T")[0],
-                description: row.description,
-                items: [
-                    {
-                        accountCode: row.type === "debit" ? "6000" : "1100",
-                        accountName: row.type === "debit" ? "Beban Umum" : "Kas",
-                        debit: row.type === "debit" ? row.amount : 0,
-                        credit: row.type === "credit" ? row.amount : 0,
-                    },
-                    {
-                        accountCode: row.type === "debit" ? "1100" : "4000",
-                        accountName: row.type === "debit" ? "Kas" : "Pendapatan",
-                        debit: row.type === "credit" ? row.amount : 0,
-                        credit: row.type === "debit" ? row.amount : 0,
-                    },
-                ],
-                totalDebit: row.amount,
-                totalCredit: row.amount,
-                balanced: true,
-                source: `ocr_scan`,
-            }));
+            // Strip UI-only fields before sending
+            const cleanEntries: GeneratedEntry[] = entriesToImport.map(({ _expanded, _removed, ...rest }) => rest);
 
             const res = await importDocumentEntries(
-                entries,
+                cleanEntries,
                 importClientId,
                 result.documentType,
                 `OCR-${fileName}`,
@@ -185,7 +316,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
         } finally {
             setImporting(false);
         }
-    }, [result, importClientId, fileName]);
+    }, [result, importClientId, fileName, journalEntries]);
 
     const confidenceColor = (c: number) =>
         c >= 70 ? "text-green-600" : c >= 40 ? "text-yellow-600" : "text-red-600";
@@ -489,11 +620,24 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
 
                     {/* Import to Journal */}
                     {result.rows.length > 0 && clients.length > 0 && (
-                        <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 space-y-3">
-                            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                                <BookOpen className="h-4 w-4 text-accent" />
-                                {locale === "id" ? "Impor ke Jurnal Akuntansi" : "Import to Accounting Journal"}
-                            </h3>
+                        <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                                    <BookOpen className="h-4 w-4 text-accent" />
+                                    {locale === "id" ? "Impor ke Jurnal Akuntansi" : "Import to Accounting Journal"}
+                                </h3>
+                                {!showJournalPreview && (
+                                    <button
+                                        onClick={handlePrepareJournal}
+                                        className="flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90"
+                                    >
+                                        <Pencil className="h-3 w-3" />
+                                        {locale === "id" ? "Siapkan Jurnal" : "Prepare Journal"}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Client selector */}
                             <div className="flex items-center gap-3">
                                 <select
                                     value={importClientId}
@@ -505,22 +649,175 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                         <option key={c.id} value={c.id}>{c.nama}</option>
                                     ))}
                                 </select>
-                                <button
-                                    onClick={handleImportToJournal}
-                                    disabled={!importClientId || importing}
-                                    className="flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-                                >
-                                    {importing ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <BookOpen className="h-4 w-4" />
-                                    )}
-                                    {locale === "id" ? "Impor" : "Import"} {result.rows.length} {locale === "id" ? "entri" : "entries"}
-                                </button>
                             </div>
+
+                            {/* Journal entries preview/editor */}
+                            {showJournalPreview && journalEntries.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <span>
+                                            {journalEntries.filter(e => !e._removed).length} {locale === "id" ? "entri jurnal" : "journal entries"}
+                                            {journalEntries.some(e => !e.balanced && !e._removed) && (
+                                                <span className="ml-2 text-red-500">
+                                                    {locale === "id" ? "⚠ Ada entri tidak seimbang" : "⚠ Some entries are unbalanced"}
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            {locale === "id" ? "Klik untuk edit akun & jumlah" : "Click to edit accounts & amounts"}
+                                        </span>
+                                    </div>
+
+                                    {journalEntries.map((entry, entryIdx) => (
+                                        <div
+                                            key={entryIdx}
+                                            className={`rounded-lg border bg-card overflow-hidden transition-opacity ${
+                                                entry._removed ? "opacity-40 border-border" : entry.balanced ? "border-border" : "border-red-300 dark:border-red-700"
+                                            }`}
+                                        >
+                                            {/* Entry header */}
+                                            <div
+                                                className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/50"
+                                                onClick={() => toggleExpandEntry(entryIdx)}
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    {entry._expanded ? <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                                                    <span className="text-xs font-mono text-muted-foreground">{entry.date}</span>
+                                                    <span className="text-sm truncate text-foreground">{entry.description}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="text-xs font-medium text-foreground">{formatIDR(entry.totalDebit)}</span>
+                                                    {!entry.balanced && !entry._removed && (
+                                                        <span className="text-xs text-red-500 font-medium">
+                                                            {locale === "id" ? "Tidak seimbang" : "Unbalanced"}
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleRemoveEntry(entryIdx); }}
+                                                        className={`p-1 rounded transition-colors ${entry._removed ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"}`}
+                                                        title={entry._removed ? "Restore" : "Remove"}
+                                                    >
+                                                        {entry._removed ? <RefreshCw className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded: editable items */}
+                                            {entry._expanded && !entry._removed && (
+                                                <div className="border-t border-border px-3 py-2 space-y-2">
+                                                    {/* Edit description & date */}
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <input
+                                                            type="date"
+                                                            value={entry.date}
+                                                            onChange={(e) => updateEntry(entryIdx, "date", e.target.value)}
+                                                            className="col-span-1 rounded-md border border-border bg-surface px-2 py-1 text-xs"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={entry.description}
+                                                            onChange={(e) => updateEntry(entryIdx, "description", e.target.value)}
+                                                            className="col-span-2 rounded-md border border-border bg-surface px-2 py-1 text-xs"
+                                                        />
+                                                    </div>
+
+                                                    {/* Line items header */}
+                                                    <div className="grid grid-cols-12 gap-1 text-[10px] font-medium text-muted-foreground uppercase px-1">
+                                                        <div className="col-span-2">Kode</div>
+                                                        <div className="col-span-4">Nama Akun</div>
+                                                        <div className="col-span-2 text-right">Debit</div>
+                                                        <div className="col-span-2 text-right">Kredit</div>
+                                                        <div className="col-span-2" />
+                                                    </div>
+
+                                                    {/* Line items */}
+                                                    {entry.items.map((item, itemIdx) => (
+                                                        <div key={itemIdx} className="grid grid-cols-12 gap-1 items-center">
+                                                            <input
+                                                                type="text"
+                                                                value={item.accountCode}
+                                                                onChange={(e) => updateEntryItem(entryIdx, itemIdx, "accountCode", e.target.value)}
+                                                                className="col-span-2 rounded border border-border bg-surface px-1.5 py-1 text-xs font-mono"
+                                                                placeholder="Kode"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={item.accountName}
+                                                                onChange={(e) => updateEntryItem(entryIdx, itemIdx, "accountName", e.target.value)}
+                                                                className="col-span-4 rounded border border-border bg-surface px-1.5 py-1 text-xs"
+                                                                placeholder="Nama akun"
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                value={item.debit || ""}
+                                                                onChange={(e) => updateEntryItem(entryIdx, itemIdx, "debit", parseFloat(e.target.value) || 0)}
+                                                                className="col-span-2 rounded border border-border bg-surface px-1.5 py-1 text-xs text-right"
+                                                                placeholder="0"
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                value={item.credit || ""}
+                                                                onChange={(e) => updateEntryItem(entryIdx, itemIdx, "credit", parseFloat(e.target.value) || 0)}
+                                                                className="col-span-2 rounded border border-border bg-surface px-1.5 py-1 text-xs text-right"
+                                                                placeholder="0"
+                                                            />
+                                                            <div className="col-span-2 flex justify-end">
+                                                                {entry.items.length > 2 && (
+                                                                    <button
+                                                                        onClick={() => removeEntryItem(entryIdx, itemIdx)}
+                                                                        className="p-0.5 rounded text-muted-foreground hover:text-red-500"
+                                                                    >
+                                                                        <Trash2 className="h-3 w-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {/* Add item button + totals */}
+                                                    <div className="flex items-center justify-between pt-1">
+                                                        <button
+                                                            onClick={() => addEntryItem(entryIdx)}
+                                                            className="flex items-center gap-1 text-xs text-accent hover:underline"
+                                                        >
+                                                            <Plus className="h-3 w-3" /> {locale === "id" ? "Tambah baris" : "Add line"}
+                                                        </button>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            D: {formatIDR(entry.totalDebit)} | K: {formatIDR(entry.totalCredit)}
+                                                            {entry.balanced ? (
+                                                                <CheckCircle2 className="inline ml-1 h-3 w-3 text-green-500" />
+                                                            ) : (
+                                                                <AlertTriangle className="inline ml-1 h-3 w-3 text-red-500" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Import button */}
+                            <button
+                                onClick={showJournalPreview ? handleImportToJournal : handlePrepareJournal}
+                                disabled={!importClientId || importing || (showJournalPreview && journalEntries.filter(e => !e._removed && e.balanced).length === 0)}
+                                className="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                            >
+                                {importing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <BookOpen className="h-4 w-4" />
+                                )}
+                                {showJournalPreview
+                                    ? `${locale === "id" ? "Impor" : "Import"} ${journalEntries.filter(e => !e._removed && e.balanced).length} ${locale === "id" ? "entri ke jurnal" : "entries to journal"}`
+                                    : `${locale === "id" ? "Siapkan & Impor" : "Prepare & Import"} ${result.rows.length} ${locale === "id" ? "entri" : "entries"}`
+                                }
+                            </button>
+
                             {importResult && (
-                                <div className={`rounded-md p-3 text-sm ${importResult.errors.length > 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"}`}>
-                                    {importResult.imported > 0 && <p>{importResult.imported} {locale === "id" ? "entri berhasil diimpor" : "entries imported successfully"}</p>}
+                                <div className={`rounded-md p-3 text-sm ${importResult.errors.length > 0 && importResult.imported === 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"}`}>
+                                    {importResult.imported > 0 && <p>{importResult.imported} {locale === "id" ? "entri berhasil diimpor ke jurnal" : "entries imported to journal"}</p>}
                                     {importResult.skipped > 0 && <p>{importResult.skipped} {locale === "id" ? "dilewati (duplikat)" : "skipped (duplicates)"}</p>}
                                     {importResult.errors.map((e, i) => <p key={i}>{e}</p>)}
                                 </div>
