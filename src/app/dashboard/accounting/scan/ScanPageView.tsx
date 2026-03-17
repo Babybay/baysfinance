@@ -2,11 +2,17 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { OcrScanner } from "@/components/dashboard/OcrScanner";
+import type { Client } from "@/lib/data";
 
-export function ScanPageView() {
+interface ScanPageViewProps {
+    clients: Client[];
+    defaultClientId: string;
+}
+
+export function ScanPageView({ clients, defaultClientId }: ScanPageViewProps) {
     const { locale } = useI18n();
 
     return (
@@ -28,7 +34,7 @@ export function ScanPageView() {
                     className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
                 >
                     <FileSpreadsheet className="h-4 w-4" />
-                    {locale === "id" ? "Import Spreadsheet" : "Import Spreadsheet"}
+                    Import Spreadsheet
                 </Link>
             </div>
 
@@ -40,25 +46,25 @@ export function ScanPageView() {
                 <ul className="grid grid-cols-1 gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
                     <li className="flex items-start gap-2">
                         <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                        {locale === "id" ? "Pastikan cahaya cukup dan dokumen tidak berbayang" : "Ensure good lighting with no shadows on the document"}
+                        {locale === "id" ? "Upload gambar (JPG, PNG) atau file PDF" : "Upload images (JPG, PNG) or PDF files"}
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                        {locale === "id" ? "Posisikan dokumen lurus dan rata" : "Position the document straight and flat"}
+                        {locale === "id" ? "PDF digital langsung diekstrak teksnya (cepat & akurat)" : "Digital PDFs are directly text-extracted (fast & accurate)"}
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                        {locale === "id" ? "Foto: pastikan cahaya cukup, dokumen lurus & tidak blur" : "Photos: ensure good lighting, straight & not blurry"}
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                         {locale === "id" ? "Resolusi minimal 300 DPI untuk teks kecil" : "Use at least 300 DPI for small text"}
                     </li>
-                    <li className="flex items-start gap-2">
-                        <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                        {locale === "id" ? "Hindari foto yang blur atau miring" : "Avoid blurry or skewed photos"}
-                    </li>
                 </ul>
             </div>
 
-            {/* Scanner */}
-            <OcrScanner />
+            {/* Scanner with journal import capability */}
+            <OcrScanner clients={clients} defaultClientId={defaultClientId} />
         </div>
     );
 }

@@ -9,6 +9,7 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  serverExternalPackages: ['tesseract.js', 'pdf-parse'],
 };
 
 export default nextConfig;

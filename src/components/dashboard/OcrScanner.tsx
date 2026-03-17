@@ -4,12 +4,14 @@ import React, { useState, useCallback, useRef } from "react";
 import {
     Camera, Upload, Loader2, FileText, AlertTriangle,
     CheckCircle2, X, Copy, Download, Eye, EyeOff,
-    Scan, RefreshCw,
+    Scan, RefreshCw, BookOpen,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { formatIDR } from "@/lib/data";
+import { formatIDR, Client } from "@/lib/data";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/document-detector";
 import type { DocumentType } from "@/lib/document-detector";
+import { importDocumentEntries } from "@/app/actions/import-accounting";
+import type { GeneratedEntry } from "@/lib/journal-generator";
 
 interface OcrField {
     label: string;
@@ -33,11 +35,17 @@ interface OcrResponse {
     rows: OcrRow[];
     warnings: string[];
     wordCount: number;
+    method?: "ocr" | "pdf-text";
 }
 
 type ScanStage = "idle" | "scanning" | "result";
 
-export function OcrScanner() {
+interface OcrScannerProps {
+    clients?: Client[];
+    defaultClientId?: string;
+}
+
+export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerProps) {
     const { t, locale } = useI18n();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +58,9 @@ export function OcrScanner() {
     const [showRawText, setShowRawText] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const [scanProgress, setScanProgress] = useState(0);
+    const [importClientId, setImportClientId] = useState(defaultClientId);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
     const ti = t?.accounting?.import;
 
@@ -72,10 +83,12 @@ export function OcrScanner() {
         setStage("scanning");
         setScanProgress(0);
 
-        // Create preview for images
+        // Create preview for images (not for PDFs)
         if (file.type.startsWith("image/")) {
             const url = URL.createObjectURL(file);
             setPreviewUrl(url);
+        } else {
+            setPreviewUrl(null);
         }
 
         // Simulate progress for UX (OCR takes time)
@@ -126,6 +139,54 @@ export function OcrScanner() {
         }
     }, [result]);
 
+    const handleImportToJournal = useCallback(async () => {
+        if (!result || result.rows.length === 0 || !importClientId) return;
+        setImporting(true);
+        setImportResult(null);
+
+        try {
+            // Convert OCR rows to GeneratedEntry format
+            const entries: GeneratedEntry[] = result.rows.map((row, i) => ({
+                date: row.date || new Date().toISOString().split("T")[0],
+                description: row.description,
+                items: [
+                    {
+                        accountCode: row.type === "debit" ? "6000" : "1100",
+                        accountName: row.type === "debit" ? "Beban Umum" : "Kas",
+                        debit: row.type === "debit" ? row.amount : 0,
+                        credit: row.type === "credit" ? row.amount : 0,
+                    },
+                    {
+                        accountCode: row.type === "debit" ? "1100" : "4000",
+                        accountName: row.type === "debit" ? "Kas" : "Pendapatan",
+                        debit: row.type === "credit" ? row.amount : 0,
+                        credit: row.type === "debit" ? row.amount : 0,
+                    },
+                ],
+                totalDebit: row.amount,
+                totalCredit: row.amount,
+                balanced: true,
+                source: `ocr_scan`,
+            }));
+
+            const res = await importDocumentEntries(
+                entries,
+                importClientId,
+                result.documentType,
+                `OCR-${fileName}`,
+            );
+            setImportResult({
+                imported: res.imported,
+                skipped: res.skipped,
+                errors: res.errors,
+            });
+        } catch {
+            setImportResult({ imported: 0, skipped: 0, errors: ["Gagal mengimpor ke jurnal."] });
+        } finally {
+            setImporting(false);
+        }
+    }, [result, importClientId, fileName]);
+
     const confidenceColor = (c: number) =>
         c >= 70 ? "text-green-600" : c >= 40 ? "text-yellow-600" : "text-red-600";
 
@@ -151,7 +212,7 @@ export function OcrScanner() {
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="image/*,.pdf"
+                            accept="image/*,.pdf,application/pdf"
                             onChange={handleFileSelect}
                             className="hidden"
                         />
@@ -165,7 +226,7 @@ export function OcrScanner() {
                                 : "Upload a photo of receipt, invoice, tax document, or financial document"}
                         </p>
                         <p className="mt-2 text-xs text-muted-foreground">
-                            JPG, PNG, WebP, BMP (max 10 MB)
+                            JPG, PNG, WebP, BMP, PDF (max 10 MB)
                         </p>
                     </div>
 
@@ -266,11 +327,16 @@ export function OcrScanner() {
                                         {DOCUMENT_TYPE_LABELS[result.documentType]?.[locale] || result.documentType}
                                     </span>
                                     <span className={`text-xs ${confidenceColor(result.ocrConfidence)}`}>
-                                        OCR: {result.ocrConfidence}%
+                                        {result.method === "pdf-text" ? "PDF" : "OCR"}: {result.ocrConfidence}%
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                         {result.wordCount} {locale === "id" ? "kata" : "words"}
                                     </span>
+                                    {result.method === "pdf-text" && (
+                                        <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                                            PDF Text Extract
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -420,6 +486,47 @@ export function OcrScanner() {
                             </div>
                         )}
                     </div>
+
+                    {/* Import to Journal */}
+                    {result.rows.length > 0 && clients.length > 0 && (
+                        <div className="rounded-lg border border-accent/20 bg-accent/5 p-4 space-y-3">
+                            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-accent" />
+                                {locale === "id" ? "Impor ke Jurnal Akuntansi" : "Import to Accounting Journal"}
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={importClientId}
+                                    onChange={(e) => setImportClientId(e.target.value)}
+                                    className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm"
+                                >
+                                    <option value="">{locale === "id" ? "— Pilih klien —" : "— Select client —"}</option>
+                                    {clients.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.nama}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={handleImportToJournal}
+                                    disabled={!importClientId || importing}
+                                    className="flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                                >
+                                    {importing ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <BookOpen className="h-4 w-4" />
+                                    )}
+                                    {locale === "id" ? "Impor" : "Import"} {result.rows.length} {locale === "id" ? "entri" : "entries"}
+                                </button>
+                            </div>
+                            {importResult && (
+                                <div className={`rounded-md p-3 text-sm ${importResult.errors.length > 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"}`}>
+                                    {importResult.imported > 0 && <p>{importResult.imported} {locale === "id" ? "entri berhasil diimpor" : "entries imported successfully"}</p>}
+                                    {importResult.skipped > 0 && <p>{importResult.skipped} {locale === "id" ? "dilewati (duplikat)" : "skipped (duplicates)"}</p>}
+                                    {importResult.errors.map((e, i) => <p key={i}>{e}</p>)}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3">

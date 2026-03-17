@@ -25,7 +25,8 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma generate 2>&1 | tail -5)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)",
       "Bash(find:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(grep:*)"
     ]
   }
 }
