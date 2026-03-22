@@ -7,9 +7,11 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Search, Receipt, Eye, Trash2, Printer } from "lucide-react";
+import { Plus, Search, Receipt, Eye, Trash2, Printer, Download, RefreshCw } from "lucide-react";
+import { exportToCsv, csvIDR, csvDate } from "@/lib/csv-export";
 import { Invoice, InvoiceItem, Client, formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { useToast } from "@/components/ui/Toast";
 import { createInvoice, updateInvoiceStatus } from "@/app/actions/invoices";
 import { InvoiceStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
@@ -34,6 +36,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
     const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
+    const toast = useToast();
 
     const [form, setForm] = useState({
         clientId: "",
@@ -74,9 +77,9 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             router.refresh();
             setModalOpen(false);
             setForm({ clientId: "", jatuhTempo: "", catatan: "", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
-            // Optimistic update not needed if router.refresh is fast, but helps if needed later.
+            toast.success("Invoice berhasil dibuat");
         } else {
-            alert(res.error || "Gagal membuat invoice");
+            toast.error(res.error || "Gagal membuat invoice");
         }
     };
 
@@ -86,8 +89,9 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             setInvoices(invoices.map(inv => inv.id === id ? { ...inv, status } : inv));
             if (viewInvoice?.id === id) setViewInvoice({ ...viewInvoice, status });
             router.refresh();
+            toast.success("Status invoice berhasil diperbarui");
         } else {
-            alert(res.error || "Gagal mengubah status invoice");
+            toast.error(res.error || "Gagal mengubah status invoice");
         }
     };
 
@@ -116,11 +120,39 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                     <h1 className="text-2xl font-bold text-foreground">Invoice &amp; Billing</h1>
                     <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Kelola invoice konsultasi pajak" : "Daftar tagihan Anda"}</p>
                 </div>
-                {isAdmin && (
-                    <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
-                        <Plus className="h-4 w-4 mr-2" /> Buat Invoice
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {filtered.length > 0 && (
+                        <button
+                            onClick={() => exportToCsv(
+                                filtered,
+                                [
+                                    { key: "nomorInvoice", label: "No. Invoice" },
+                                    { key: "clientName", label: "Klien" },
+                                    { key: "tanggal", label: "Tanggal", format: csvDate },
+                                    { key: "jatuhTempo", label: "Jatuh Tempo", format: csvDate },
+                                    { key: "subtotal", label: "Subtotal", format: csvIDR },
+                                    { key: "ppn", label: "PPN", format: csvIDR },
+                                    { key: "total", label: "Total", format: csvIDR },
+                                    { key: "status", label: "Status" },
+                                ],
+                                "invoices"
+                            )}
+                            className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors"
+                        >
+                            <Download className="h-4 w-4 mr-2" /> CSV
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <>
+                            <a href="/dashboard/invoices/recurring" className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors">
+                                <RefreshCw className="h-4 w-4 mr-2" /> Berulang
+                            </a>
+                            <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
+                                <Plus className="h-4 w-4 mr-2" /> Buat Invoice
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Stats */}
@@ -305,7 +337,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                                     <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Terkirim)}>Tandai Terkirim</Button>
                                 </>
                             )}
-                            <Button size="default" variant="transparent"><Printer className="h-4 w-4 mr-1" /> Cetak</Button>
+                            <Button size="default" variant="transparent" onClick={() => window.open(`/dashboard/invoices/print/${viewInvoice.id}`, '_blank')}><Printer className="h-4 w-4 mr-1" /> Cetak</Button>
                         </div>
                     </div>
                 )}

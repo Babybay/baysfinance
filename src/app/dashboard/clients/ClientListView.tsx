@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { Plus, Search, Edit2, Trash2, Users, ShieldAlert } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
+import { Plus, Search, Edit2, Trash2, Eye, Users, ShieldAlert, Download } from "lucide-react";
+import { exportToCsv, csvDate } from "@/lib/csv-export";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { createClient, updateClient, deleteClient } from "@/app/actions/clients";
 import type { Client } from "@prisma/client";
@@ -33,6 +36,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
+    const toast = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +47,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                 setClients(clients.map(c => c.id === editingClient.id ? res.data as Client : c));
                 router.refresh(); // Sync server state
             } else {
-                alert(res.error || "Gagal memperbarui klien");
+                toast.error(res.error || "Gagal memperbarui klien");
             }
         } else {
             const res = await createClient(form);
@@ -51,7 +55,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                 setClients([res.data as Client, ...clients]);
                 router.refresh();
             } else {
-                alert(res.error || "Gagal menambahkan klien");
+                toast.error(res.error || "Gagal menambahkan klien");
             }
         }
         closeModal();
@@ -63,7 +67,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             setClients(clients.filter((c) => c.id !== id));
             router.refresh();
         } else {
-            alert(res.error || "Gagal menghapus klien");
+            toast.error(res.error || "Gagal menghapus klien");
         }
         setDeleteConfirm(null);
     };
@@ -125,9 +129,32 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                     <h1 className="text-2xl font-bold text-foreground">Manajemen Klien</h1>
                     <p className="text-sm text-muted-foreground mt-1">{clients.length} klien terdaftar</p>
                 </div>
-                <button onClick={openAdd} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
-                    <Plus className="h-4 w-4 mr-2" /> Tambah Klien
-                </button>
+                <div className="flex items-center gap-2">
+                    {filtered.length > 0 && (
+                        <button
+                            onClick={() => exportToCsv(
+                                filtered,
+                                [
+                                    { key: "nama", label: "Nama" },
+                                    { key: "npwp", label: "NPWP" },
+                                    { key: "jenisWP", label: "Jenis WP" },
+                                    { key: "email", label: "Email" },
+                                    { key: "telepon", label: "Telepon" },
+                                    { key: "alamat", label: "Alamat" },
+                                    { key: "status", label: "Status" },
+                                    { key: "createdAt", label: "Terdaftar", format: csvDate },
+                                ],
+                                "klien"
+                            )}
+                            className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors"
+                        >
+                            <Download className="h-4 w-4 mr-2" /> CSV
+                        </button>
+                    )}
+                    <button onClick={openAdd} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
+                        <Plus className="h-4 w-4 mr-2" /> Tambah Klien
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}

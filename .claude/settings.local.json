@@ -24,6 +24,7 @@
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx eslint src/lib/document-detector.ts src/lib/column-mapper.ts src/lib/document-parser.ts src/lib/journal-generator.ts src/lib/import-helpers.ts src/app/api/accounting/import/route.ts src/app/actions/import-accounting.ts src/app/dashboard/accounting/import/page.tsx src/app/dashboard/accounting/import/ImportView.tsx src/app/dashboard/accounting/import/history/page.tsx src/app/dashboard/accounting/import/history/ImportHistoryView.tsx src/lib/translations/en.ts src/lib/translations/id.ts 2>&1)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx prisma generate 2>&1 | tail -5)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1)",
+<<<<<<< HEAD
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npx next lint 2>&1 | tail -30)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run lint 2>&1 | tail -40)",
       "Bash(cd \"D:/THE PROJECT/saas-consulting\" && npm run build 2>&1 | tail -60)",
@@ -64,6 +65,11 @@
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx prisma migrate dev --name enhance-permits-module 2>&1)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx prisma db push 2>&1)",
       "Bash(cd \"D:\\\\THE PROJECT\\\\saas-consulting\" && npx prisma generate 2>&1)"
+=======
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Bash(grep:*)"
+>>>>>>> 167b089edf15a657c0e96b2bc96044807935c996
     ]
   }
 }

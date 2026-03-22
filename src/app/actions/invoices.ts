@@ -103,3 +103,19 @@ export async function deleteInvoice(id: string) {
         return { success: false, error: "Gagal menghapus invoice" };
     }
 }
+
+// ─── GET INVOICE BY ID ──────────────────────────────────────────────────────
+
+export async function getInvoiceById(id: string) {
+    try {
+        const invoice = await prisma.invoice.findUnique({
+            where: { id },
+            include: { items: true, client: true },
+        });
+        if (!invoice) return { success: false, error: "Invoice tidak ditemukan" };
+        return { success: true, data: invoice };
+    } catch (error) {
+        console.error("getInvoiceById error:", error);
+        return { success: false, error: "Gagal mengambil data invoice" };
+    }
+}

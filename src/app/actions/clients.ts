@@ -47,3 +47,22 @@ export async function deleteClient(id: string) {
         return { success: false, error: "Gagal menghapus klien" };
     }
 }
+
+export async function getClientDetail(id: string) {
+    try {
+        const client = await prisma.client.findUnique({
+            where: { id },
+            include: {
+                invoices: { orderBy: { tanggal: "desc" }, take: 10, include: { items: true } },
+                deadlines: { orderBy: { tanggalBatas: "asc" } },
+                documents: { orderBy: { tanggalUpload: "desc" }, take: 10 },
+                permits: { orderBy: { createdAt: "desc" }, take: 5, include: { permitType: true } },
+            },
+        });
+        if (!client) return { success: false, error: "Client not found" };
+        return { success: true, data: client };
+    } catch (error) {
+        console.error("getClientDetail error:", error);
+        return { success: false, error: "Gagal mengambil data klien" };
+    }
+}

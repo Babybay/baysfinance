@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { RoleProvider } from "@/lib/hooks/useRoles";
+import { ToastProvider } from "@/components/ui/Toast";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -21,7 +22,9 @@ export default async function DashboardLayout({
 
     return (
         <RoleProvider role={role} clientId={clientId}>
-            <DashboardShell>{children}</DashboardShell>
+            <ToastProvider>
+                <DashboardShell>{children}</DashboardShell>
+            </ToastProvider>
         </RoleProvider>
     );
 }

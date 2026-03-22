@@ -3,7 +3,6 @@ import { currentUser } from "@clerk/nextjs/server";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { getDashboardData } from "@/app/actions/dashboard-data";
-import { prisma } from "@/lib/prisma";
 import { JenisWP, ClientStatus, InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
 
 export default async function DashboardPage() {
@@ -41,7 +40,7 @@ export default async function DashboardPage() {
         tanggal: new Date(i.tanggal).toISOString().split("T")[0],
         jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
         status: i.status as InvoiceStatus,
-        items: [], // Note: items are not fetched stringently yet
+        items: [],
         catatan: i.catatan || ""
     }));
 
@@ -58,6 +57,11 @@ export default async function DashboardPage() {
                 clients={formattedClients}
                 invoices={formattedInvoices}
                 deadlines={formattedDeadlines}
+                permitSummary={response.data.permitSummary}
+                monthlyRevenue={response.data.monthlyRevenue}
+                recentActivity={response.data.recentActivity}
+                documentCount={response.data.documentCount}
+                importBatchCount={response.data.importBatchCount}
             />
         );
     }
