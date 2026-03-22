@@ -36,6 +36,16 @@ export async function isAdminOrStaff(): Promise<boolean> {
     return role === "admin" || role === "staff";
 }
 
+/**
+ * Returns the clientId of the currently authenticated client-role user,
+ * or null if the user is admin/staff or unauthenticated.
+ */
+export async function getOwnClientId(): Promise<string | null> {
+    const user = await currentUser();
+    if (!user) return null;
+    return (user.publicMetadata?.clientId as string) || null;
+}
+
 /** Re-usable handler: converts auth errors to the standard action return shape. */
 export function handleAuthError(error: unknown): { success: false; error: string } {
     if (error instanceof Error) {

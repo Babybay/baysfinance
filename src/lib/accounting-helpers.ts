@@ -21,8 +21,8 @@ export function validateJournalBalance(items: JournalEntryItemInput[]): { isVali
         return { isValid: false, error: "Total jurnal harus lebih dari 0." };
     }
 
-    // Using 0.01 to avoid floating point precision issues
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    // Using 0.001 tolerance for floating point precision
+    if (Math.abs(totalDebit - totalCredit) > 0.001) {
         return { isValid: false, error: `Total Debit (${totalDebit}) harus sama dengan total Kredit (${totalCredit}). Selisih: ${Math.abs(totalDebit - totalCredit)}` };
     }
 

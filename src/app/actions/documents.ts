@@ -5,6 +5,11 @@ import { s3Client, BUCKET_NAME } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { DocumentKategori } from "@prisma/client";
+import {
+    assertCanAccessClient,
+    handleAuthError,
+    isAdminOrStaff,
+} from "@/lib/auth-helpers";
 
 const BUCKET = BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL!; // e.g. https://pub-xxx.r2.dev
@@ -18,6 +23,13 @@ function extractR2Key(fileUrl: string): string {
 
 export async function getDocuments(clientId?: string) {
     try {
+        if (clientId) {
+            await assertCanAccessClient(clientId);
+        } else {
+            const admin = await isAdminOrStaff();
+            if (!admin) return { success: false, data: [], error: "Akses ditolak." };
+        }
+
         const documents = await prisma.document.findMany({
             where: {
                 ...(clientId ? { clientId } : {}),
@@ -36,7 +48,7 @@ export async function getDocuments(clientId?: string) {
         return { success: true, data: mapped };
     } catch (error) {
         console.error("getDocuments error:", error);
-        return { success: false, error: "Gagal mengambil data dokumen" };
+        return { ...handleAuthError(error), data: [] };
     }
 }
 
@@ -56,6 +68,8 @@ export async function uploadDocument(formData: FormData) {
         if (!file || !nama || !kategori || !clientId) {
             return { success: false, error: "Data tidak lengkap" };
         }
+
+        await assertCanAccessClient(clientId);
 
         // Validate file size (max 50MB)
         const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -110,7 +124,7 @@ export async function uploadDocument(formData: FormData) {
         return { success: true, data: document };
     } catch (error) {
         console.error("uploadDocument error:", error);
-        return { success: false, error: "Gagal mengupload dokumen" };
+        return handleAuthError(error);
     }
 }
 
@@ -121,6 +135,14 @@ export async function updateDocument(
     data: { nama?: string; kategori?: DocumentKategori; catatan?: string | null }
 ) {
     try {
+        const existing = await prisma.document.findUnique({
+            where: { id },
+            select: { clientId: true },
+        });
+        if (!existing) return { success: false, error: "Dokumen tidak ditemukan" };
+
+        await assertCanAccessClient(existing.clientId);
+
         const document = await prisma.document.update({
             where: { id },
             data,
@@ -130,7 +152,7 @@ export async function updateDocument(
         return { success: true, data: document };
     } catch (error) {
         console.error("updateDocument error:", error);
-        return { success: false, error: "Gagal mengupdate dokumen" };
+        return handleAuthError(error);
     }
 }
 
@@ -140,10 +162,12 @@ export async function deleteDocument(id: string) {
     try {
         const document = await prisma.document.findUnique({
             where: { id },
-            select: { fileUrl: true },
+            select: { fileUrl: true, clientId: true },
         });
 
         if (!document) return { success: false, error: "Dokumen tidak ditemukan" };
+
+        await assertCanAccessClient(document.clientId);
 
         // Hapus dari R2 jika ada fileUrl
         if (document.fileUrl) {
@@ -165,7 +189,7 @@ export async function deleteDocument(id: string) {
         return { success: true };
     } catch (error) {
         console.error("deleteDocument error:", error);
-        return { success: false, error: "Gagal menghapus dokumen" };
+        return handleAuthError(error);
     }
 }
 
@@ -173,6 +197,9 @@ export async function deleteDocument(id: string) {
 
 export async function hardDeleteDocument(id: string) {
     try {
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
+
         const document = await prisma.document.findUnique({
             where: { id },
             select: { fileUrl: true },
@@ -196,6 +223,6 @@ export async function hardDeleteDocument(id: string) {
         return { success: true };
     } catch (error) {
         console.error("hardDeleteDocument error:", error);
-        return { success: false, error: "Gagal menghapus dokumen secara permanen" };
+        return handleAuthError(error);
     }
 }

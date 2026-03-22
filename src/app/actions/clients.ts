@@ -2,31 +2,54 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Client } from "@prisma/client";
+import {
+    assertCanAccessClient,
+    getOwnClientId,
+    handleAuthError,
+    isAdminOrStaff,
+} from "@/lib/auth-helpers";
 
 export async function getClients() {
     try {
-        const clients = await prisma.client.findMany({
-            orderBy: { createdAt: "desc" }
-        });
-        return { success: true, data: clients };
+        const admin = await isAdminOrStaff();
+        if (admin) {
+            // Admin/staff sees all clients
+            const clients = await prisma.client.findMany({
+                orderBy: { createdAt: "desc" }
+            });
+            return { success: true, data: clients };
+        }
+
+        // Client-role user: return only their own client
+        const ownClientId = await getOwnClientId();
+        if (!ownClientId) return { success: true, data: [] };
+
+        const client = await prisma.client.findUnique({ where: { id: ownClientId } });
+        return { success: true, data: client ? [client] : [] };
     } catch (error) {
         console.error("Error fetching clients:", error);
-        return { success: false, data: [], error: "Gagal mengambil data klien" };
+        return { ...handleAuthError(error), data: [] };
     }
 }
 
 export async function createClient(data: Omit<Client, "id" | "createdAt" | "updatedAt" | "deletedAt">) {
     try {
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
+
         const newClient = await prisma.client.create({ data });
         return { success: true, data: newClient };
     } catch (error) {
         console.error("Error creating client:", error);
-        return { success: false, error: "Gagal menambahkan klien" };
+        return handleAuthError(error);
     }
 }
 
 export async function updateClient(id: string, data: Partial<Client>) {
     try {
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
+
         const updatedClient = await prisma.client.update({
             where: { id },
             data
@@ -34,22 +57,28 @@ export async function updateClient(id: string, data: Partial<Client>) {
         return { success: true, data: updatedClient };
     } catch (error) {
         console.error("Error updating client:", error);
-        return { success: false, error: "Gagal memperbarui klien" };
+        return handleAuthError(error);
     }
 }
 
 export async function deleteClient(id: string) {
     try {
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
+
         await prisma.client.delete({ where: { id } });
         return { success: true };
     } catch (error) {
         console.error("Error deleting client:", error);
-        return { success: false, error: "Gagal menghapus klien" };
+        return handleAuthError(error);
     }
 }
 
 export async function getClientDetail(id: string) {
     try {
+        // Admins can see any client; client-role users can only see their own
+        await assertCanAccessClient(id);
+
         const client = await prisma.client.findUnique({
             where: { id },
             include: {
@@ -63,6 +92,6 @@ export async function getClientDetail(id: string) {
         return { success: true, data: client };
     } catch (error) {
         console.error("getClientDetail error:", error);
-        return { success: false, error: "Gagal mengambil data klien" };
+        return handleAuthError(error);
     }
 }

@@ -1,12 +1,24 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus, RecurringInterval } from "@prisma/client";
+import { InvoiceStatus, Prisma, RecurringInterval } from "@prisma/client";
+import {
+    assertCanAccessClient,
+    handleAuthError,
+    isAdminOrStaff,
+} from "@/lib/auth-helpers";
 
 // ─── GET RECURRING INVOICES ─────────────────────────────────────────────────
 
 export async function getRecurringInvoices(clientId?: string) {
     try {
+        if (clientId) {
+            await assertCanAccessClient(clientId);
+        } else {
+            const admin = await isAdminOrStaff();
+            if (!admin) return { success: false, data: [], error: "Akses ditolak." };
+        }
+
         const where = clientId ? { clientId } : {};
         const recurring = await prisma.recurringInvoice.findMany({
             where,
@@ -16,7 +28,7 @@ export async function getRecurringInvoices(clientId?: string) {
         return { success: true, data: recurring };
     } catch (error) {
         console.error("getRecurringInvoices error:", error);
-        return { success: false, data: [], error: "Gagal mengambil data recurring invoice" };
+        return { ...handleAuthError(error), data: [] };
     }
 }
 
@@ -54,6 +66,24 @@ export async function createRecurringInvoice(data: {
     items: { deskripsi: string; qty: number; harga: number; jumlah: number }[];
 }) {
     try {
+        await assertCanAccessClient(data.clientId);
+
+        // Server-side input validation
+        if (!data.items || data.items.length === 0) {
+            return { success: false, error: "Harus memiliki minimal 1 item." };
+        }
+        for (const item of data.items) {
+            if (typeof item.qty !== "number" || item.qty <= 0) {
+                return { success: false, error: "Jumlah (qty) harus lebih dari 0." };
+            }
+            if (typeof item.harga !== "number" || item.harga < 0) {
+                return { success: false, error: "Harga tidak boleh negatif." };
+            }
+            if (item.harga > 999_999_999_999) {
+                return { success: false, error: "Harga melebihi batas maksimum." };
+            }
+        }
+
         const client = await prisma.client.findUnique({ where: { id: data.clientId } });
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
@@ -82,7 +112,7 @@ export async function createRecurringInvoice(data: {
         return { success: true, data: recurring };
     } catch (error) {
         console.error("createRecurringInvoice error:", error);
-        return { success: false, error: "Gagal membuat recurring invoice" };
+        return handleAuthError(error);
     }
 }
 
@@ -90,6 +120,14 @@ export async function createRecurringInvoice(data: {
 
 export async function updateRecurringInvoiceStatus(id: string, isActive: boolean) {
     try {
+        const existing = await prisma.recurringInvoice.findUnique({
+            where: { id },
+            select: { clientId: true },
+        });
+        if (!existing) return { success: false, error: "Recurring invoice tidak ditemukan" };
+
+        await assertCanAccessClient(existing.clientId);
+
         const recurring = await prisma.recurringInvoice.update({
             where: { id },
             data: { isActive },
@@ -98,7 +136,7 @@ export async function updateRecurringInvoiceStatus(id: string, isActive: boolean
         return { success: true, data: recurring };
     } catch (error) {
         console.error("updateRecurringInvoiceStatus error:", error);
-        return { success: false, error: "Gagal mengupdate status recurring invoice" };
+        return handleAuthError(error);
     }
 }
 
@@ -106,11 +144,19 @@ export async function updateRecurringInvoiceStatus(id: string, isActive: boolean
 
 export async function deleteRecurringInvoice(id: string) {
     try {
+        const existing = await prisma.recurringInvoice.findUnique({
+            where: { id },
+            select: { clientId: true },
+        });
+        if (!existing) return { success: false, error: "Recurring invoice tidak ditemukan" };
+
+        await assertCanAccessClient(existing.clientId);
+
         await prisma.recurringInvoice.delete({ where: { id } });
         return { success: true };
     } catch (error) {
         console.error("deleteRecurringInvoice error:", error);
-        return { success: false, error: "Gagal menghapus recurring invoice" };
+        return handleAuthError(error);
     }
 }
 
@@ -136,48 +182,57 @@ export async function generateRecurringInvoices() {
         const ppn = Math.round(subtotal * 0.11);
         const total = subtotal + ppn;
 
-        // Generate invoice number
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, "0");
-        const prefix = `INV-${yyyy}${mm}`;
-        const count = await prisma.invoice.count({
-            where: { nomorInvoice: { startsWith: prefix } },
-        });
-        const nomorInvoice = `${prefix}-${String(count + 1).padStart(3, "0")}`;
-
         // Due date: 30 days from generation
         const jatuhTempo = new Date(now);
         jatuhTempo.setDate(jatuhTempo.getDate() + 30);
 
-        await prisma.invoice.create({
-            data: {
-                nomorInvoice,
-                clientId: recurring.clientId,
-                clientName: client.nama,
-                tanggal: new Date(),
-                jatuhTempo,
-                subtotal,
-                ppn,
-                total,
-                status: InvoiceStatus.Terkirim,
-                catatan: recurring.catatan || null,
-                recurringInvoiceId: recurring.id,
-                items: {
-                    create: recurring.items.map((item) => ({
-                        deskripsi: item.deskripsi,
-                        qty: item.qty,
-                        harga: item.harga,
-                        jumlah: item.qty * item.harga,
-                    })),
-                },
-            },
-        });
+        // Atomic invoice number generation inside transaction
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const counterKey = `INV-${dateStr}`;
 
-        // Advance nextRunDate
-        const nextRunDate = calculateNextRunDate(recurring.interval, recurring.nextRunDate);
-        await prisma.recurringInvoice.update({
-            where: { id: recurring.id },
-            data: { nextRunDate },
+        await prisma.$transaction(async (tx) => {
+            const rows = await tx.$queryRaw<[{ counter: number }]>(
+                Prisma.sql`
+                    INSERT INTO permit_counters (id, counter)
+                    VALUES (${counterKey}, 1)
+                    ON CONFLICT (id) DO UPDATE
+                        SET counter = permit_counters.counter + 1
+                    RETURNING counter
+                `
+            );
+            const seq = rows[0].counter;
+            const nomorInvoice = `INV-${dateStr}-${seq.toString().padStart(3, "0")}`;
+
+            await tx.invoice.create({
+                data: {
+                    nomorInvoice,
+                    clientId: recurring.clientId,
+                    clientName: client.nama,
+                    tanggal: new Date(),
+                    jatuhTempo,
+                    subtotal,
+                    ppn,
+                    total,
+                    status: InvoiceStatus.Terkirim,
+                    catatan: recurring.catatan || null,
+                    recurringInvoiceId: recurring.id,
+                    items: {
+                        create: recurring.items.map((item) => ({
+                            deskripsi: item.deskripsi,
+                            qty: item.qty,
+                            harga: item.harga,
+                            jumlah: item.qty * item.harga,
+                        })),
+                    },
+                },
+            });
+
+            // Advance nextRunDate atomically within transaction
+            const nextRunDate = calculateNextRunDate(recurring.interval, recurring.nextRunDate);
+            await tx.recurringInvoice.update({
+                where: { id: recurring.id },
+                data: { nextRunDate },
+            });
         });
 
         generated++;

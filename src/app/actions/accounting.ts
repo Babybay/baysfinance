@@ -122,6 +122,17 @@ export async function deleteAccount(id: string) {
             if (!admin) return { success: false, error: "Akses ditolak." };
         }
 
+        // Prevent deletion if account has journal entries
+        const txCount = await prisma.journalItem.count({
+            where: { accountId: id },
+        });
+        if (txCount > 0) {
+            return {
+                success: false,
+                error: `Akun ini memiliki ${txCount} transaksi jurnal. Nonaktifkan akun alih-alih menghapus.`,
+            };
+        }
+
         await prisma.account.delete({ where: { id } });
         return { success: true };
     } catch (error) {

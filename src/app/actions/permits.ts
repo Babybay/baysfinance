@@ -2,6 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { PermitCaseStatus, VerificationStatus } from "@prisma/client";
+import {
+    assertCanAccessClient,
+    handleAuthError,
+    isAdminOrStaff,
+} from "@/lib/auth-helpers";
 
 // ─── PERMIT TYPES ────────────────────────────────────────────────────────────
 
@@ -59,6 +64,13 @@ async function generateCaseId(prefix: string): Promise<string> {
 
 export async function getPermits(clientId?: string, permitTypeId?: string) {
     try {
+        if (clientId) {
+            await assertCanAccessClient(clientId);
+        } else {
+            const admin = await isAdminOrStaff();
+            if (!admin) return { success: false, data: [], error: "Akses ditolak." };
+        }
+
         const permits = await prisma.permitCase.findMany({
             where: {
                 ...(clientId ? { clientId } : {}),
@@ -79,7 +91,7 @@ export async function getPermits(clientId?: string, permitTypeId?: string) {
         return { success: true, data: mappedPermits };
     } catch (error) {
         console.error("getPermits error:", error);
-        return { success: false, data: [], error: "Gagal mengambil data perijinan" };
+        return { ...handleAuthError(error), data: [] };
     }
 }
 
@@ -97,6 +109,8 @@ export async function getPermitById(id: string) {
 
         if (!permit) return { success: false, data: null, error: "Data perijinan tidak ditemukan" };
 
+        await assertCanAccessClient(permit.clientId);
+
         const mappedPermit = {
             ...permit,
             clientName: permit.client?.nama ?? "Unknown",
@@ -105,7 +119,7 @@ export async function getPermitById(id: string) {
         return { success: true, data: mappedPermit };
     } catch (error) {
         console.error("getPermitById error:", error);
-        return { success: false, data: null };
+        return { ...handleAuthError(error), data: null };
     }
 }
 
@@ -122,6 +136,16 @@ export async function createPermitCase(data: {
     customDocs?: string[];
 }) {
     try {
+        await assertCanAccessClient(data.clientId);
+
+        // Server-side validation
+        if (typeof data.feeAmount !== "number" || data.feeAmount < 0) {
+            return { success: false, error: "Biaya tidak boleh negatif." };
+        }
+        if (data.feeAmount > 999_999_999_999) {
+            return { success: false, error: "Biaya melebihi batas maksimum." };
+        }
+
         // Fetch the permit type with its templates
         const permitType = await prisma.permitType.findUnique({
             where: { id: data.permitTypeId },
@@ -191,7 +215,7 @@ export async function createPermitCase(data: {
         return { success: true, data: mappedPermit };
     } catch (error) {
         console.error("createPermitCase error:", error);
-        return { success: false, error: "Gagal membuat pengajuan perijinan" };
+        return handleAuthError(error);
     }
 }
 
@@ -199,6 +223,14 @@ export async function createPermitCase(data: {
 
 export async function updatePermitStatus(id: string, status: PermitCaseStatus) {
     try {
+        const existing = await prisma.permitCase.findUnique({
+            where: { id },
+            select: { clientId: true },
+        });
+        if (!existing) return { success: false, error: "Perijinan tidak ditemukan" };
+
+        await assertCanAccessClient(existing.clientId);
+
         const permit = await prisma.permitCase.update({
             where: { id },
             data: { status },
@@ -206,7 +238,7 @@ export async function updatePermitStatus(id: string, status: PermitCaseStatus) {
         return { success: true, data: permit };
     } catch (error) {
         console.error("updatePermitStatus error:", error);
-        return { success: false, error: "Gagal mengupdate status perijinan" };
+        return handleAuthError(error);
     }
 }
 
@@ -214,6 +246,10 @@ export async function updatePermitStatus(id: string, status: PermitCaseStatus) {
 
 export async function verifyDocument(id: string, status: VerificationStatus, comments: string | null) {
     try {
+        // Only admins/staff can verify documents
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
+
         const document = await prisma.permitDocument.update({
             where: { id },
             data: {
@@ -224,12 +260,21 @@ export async function verifyDocument(id: string, status: VerificationStatus, com
         return { success: true, data: document };
     } catch (error) {
         console.error("verifyDocument error:", error);
-        return { success: false, error: "Gagal memverifikasi dokumen" };
+        return handleAuthError(error);
     }
 }
 
 export async function updatePermitDocument(id: string, fileUrl: string) {
     try {
+        // Look up the parent permit to check authorization
+        const doc = await prisma.permitDocument.findUnique({
+            where: { id },
+            select: { permitCase: { select: { clientId: true } } },
+        });
+        if (!doc) return { success: false, error: "Dokumen tidak ditemukan" };
+
+        await assertCanAccessClient(doc.permitCase.clientId);
+
         const document = await prisma.permitDocument.update({
             where: { id },
             data: {
@@ -241,7 +286,7 @@ export async function updatePermitDocument(id: string, fileUrl: string) {
         return { success: true, data: document };
     } catch (error) {
         console.error("updatePermitDocument error:", error);
-        return { success: false, error: "Gagal mengupdate dokumen" };
+        return handleAuthError(error);
     }
 }
 
@@ -249,6 +294,15 @@ export async function updatePermitDocument(id: string, fileUrl: string) {
 
 export async function updateChecklistItem(id: string, isChecked: boolean, userId?: string) {
     try {
+        // Look up the parent permit to check authorization
+        const checklist = await prisma.permitChecklist.findUnique({
+            where: { id },
+            select: { permitCase: { select: { clientId: true } } },
+        });
+        if (!checklist) return { success: false, error: "Checklist tidak ditemukan" };
+
+        await assertCanAccessClient(checklist.permitCase.clientId);
+
         const item = await prisma.permitChecklist.update({
             where: { id },
             data: {
@@ -260,7 +314,7 @@ export async function updateChecklistItem(id: string, isChecked: boolean, userId
         return { success: true, data: item };
     } catch (error) {
         console.error("updateChecklistItem error:", error);
-        return { success: false, error: "Gagal mengupdate checklist" };
+        return handleAuthError(error);
     }
 }
 // ─── NIB AUTOMATION (INTEGRATED) ─────────────────────────────────────────────
@@ -277,6 +331,10 @@ export async function automateNIBFlow(id: string) {
         });
 
         if (!permit) return { success: false, error: "Data perijinan tidak ditemukan" };
+
+        // Only admins/staff can trigger automation
+        const admin = await isAdminOrStaff();
+        if (!admin) return { success: false, error: "Akses ditolak." };
 
         const appData = (permit.applicationData as any) || {};
         const nik = appData.nik || "3273010101700001";
@@ -335,6 +393,6 @@ export async function automateNIBFlow(id: string) {
 
     } catch (error) {
         console.error("automateNIBFlow error:", error);
-        return { success: false, error: "Gagal menjalankan otomasi NIB" };
+        return handleAuthError(error);
     }
 }
