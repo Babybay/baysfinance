@@ -325,7 +325,7 @@ export default function PermitDetailPage() {
                                                                 <Upload className="h-3 w-3 mr-1" /> {doc.verificationStatus === "Rejected" ? "Unggah Ulang" : "Unggah"}
                                                             </Button>
                                                         ) : (
-                                                            <Button variant="soft" size="icon" onClick={() => window.open(`/api/documents/presigned?key=${doc.fileUrl}`)}>
+                                                            <Button variant="soft" size="icon" onClick={() => window.open(`/api/documents/presigned?key=${encodeURIComponent(doc.fileUrl)}`)}>
                                                                 <Download className="h-4 w-4" />
                                                             </Button>
                                                         )}

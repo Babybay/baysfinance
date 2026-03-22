@@ -1,5 +1,5 @@
 // Shared types and data for the tax consulting application
-import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, VerificationStatus, AccountType, JournalStatus, AccDocType, AccDocModule } from "@prisma/client";
+import { ClientStatus, JenisWP, TaxDeadlineStatus, DocumentKategori, InvoiceStatus, PermitCaseStatus, PermitPriority, VerificationStatus, AccountType, JournalStatus, AccDocType, AccDocModule } from "@prisma/client";
 
 
 export interface Client {
@@ -149,16 +149,55 @@ export interface PermitCase {
     serviceType: string;
     riskCategory: PermitRiskCategory;
     status: PermitStatus;
+    priority: PermitPriority;
     feeAmount: number;
     notes?: string;
+    deadline?: string | null;
+    cancelReason?: string | null;
+    completedAt?: string | null;
     createdAt: string;
     updatedAt: string;
     documents?: PermitDocument[];
     checklists?: PermitChecklist[];
+    activities?: PermitActivity[];
+    comments?: PermitCommentItem[];
+    deadlines?: PermitDeadlineItem[];
 }
 
 export type PermitStatus = PermitCaseStatus;
 export type PermitRiskCategory = "Low" | "Medium-Low" | "Medium-High" | "High";
+
+export interface PermitActivity {
+    id: string;
+    caseId: string;
+    action: string;
+    description: string;
+    metadata?: Record<string, unknown> | null;
+    performedBy?: string | null;
+    createdAt: string;
+}
+
+export interface PermitCommentItem {
+    id: string;
+    caseId: string;
+    userId: string;
+    userName: string;
+    userRole: string;
+    message: string;
+    parentId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    replies?: PermitCommentItem[];
+}
+
+export interface PermitDeadlineItem {
+    id: string;
+    caseId: string;
+    label: string;
+    dueDate: string;
+    completedAt?: string | null;
+    createdAt: string;
+}
 
 export interface PermitDocument {
     id: string;
@@ -168,6 +207,10 @@ export interface PermitDocument {
     verificationStatus: VerificationStatus;
     comments?: string;
     sortOrder: number;
+    fileSize?: number | null;
+    fileType?: string | null;
+    version: number;
+    uploadedBy?: string | null;
 }
 
 export interface PermitChecklist {
