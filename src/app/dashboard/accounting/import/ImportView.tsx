@@ -195,10 +195,10 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
     }, [clientId, entries, selectedType, fileName]);
 
     const confidenceColor = (c: number) =>
-        c >= 80 ? "text-green-600" : c >= 50 ? "text-yellow-600" : "text-red-600";
+        c >= 80 ? "text-success" : c >= 50 ? "text-warning" : "text-error";
 
     const confidenceBg = (c: number) =>
-        c >= 80 ? "bg-green-100 dark:bg-green-900/20" : c >= 50 ? "bg-yellow-100 dark:bg-yellow-900/20" : "bg-red-100 dark:bg-red-900/20";
+        c >= 80 ? "bg-success-bg" : c >= 50 ? "bg-warning-bg" : "bg-error-muted";
 
     return (
         <div className="space-y-6">
@@ -303,10 +303,10 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
 
             {/* Error display */}
             {(error || parseErrors.length > 0) && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                <div className="rounded-lg border border-error/30 bg-error-muted p-4">
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-                        <div className="text-sm text-red-700 dark:text-red-400">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-error" />
+                        <div className="text-sm text-error">
                             {error && <p>{error}</p>}
                             {parseErrors.map((e, i) => <p key={i}>{e}</p>)}
                         </div>
@@ -386,10 +386,10 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
 
                     {/* Warnings */}
                     {parseWarnings.length > 0 && (
-                        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+                        <div className="rounded-lg border border-warning-border bg-warning-bg p-4">
                             <div className="flex items-start gap-3">
-                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
-                                <div className="text-sm text-yellow-700 dark:text-yellow-400">
+                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                                <div className="text-sm text-warning">
                                     <p className="mb-1 font-medium">{ti?.warnings ?? "Peringatan:"}</p>
                                     {parseWarnings.slice(0, 5).map((w, i) => <p key={i}>{w}</p>)}
                                     {parseWarnings.length > 5 && (
@@ -414,7 +414,7 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
                                             <span className="text-muted-foreground">{m.fileHeader}</span>
                                             <ArrowRight className="h-3 w-3 text-muted-foreground" />
                                             <span className="font-medium">{m.canonical}</span>
-                                            <span className={`text-xs ${m.score >= 0.8 ? "text-green-600" : "text-yellow-600"}`}>
+                                            <span className={`text-xs ${m.score >= 0.8 ? "text-success" : "text-warning"}`}>
                                                 ({Math.round(m.score * 100)}%)
                                             </span>
                                         </div>
@@ -474,7 +474,7 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {entries.map((entry, i) => (
-                                    <tr key={i} className={!entry.balanced ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}>
+                                    <tr key={i} className={!entry.balanced ? "bg-warning-bg" : ""}>
                                         <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                                         <td className="px-3 py-2 font-mono text-xs">{entry.date}</td>
                                         <td className="px-3 py-2 max-w-xs truncate">{entry.description}</td>
@@ -482,9 +482,9 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
                                         <td className="px-3 py-2 text-right">{formatIDR(entry.totalCredit)}</td>
                                         <td className="px-3 py-2 text-center">
                                             {entry.balanced ? (
-                                                <CheckCircle2 className="mx-auto h-4 w-4 text-green-600" />
+                                                <CheckCircle2 className="mx-auto h-4 w-4 text-success" />
                                             ) : (
-                                                <AlertTriangle className="mx-auto h-4 w-4 text-yellow-600" />
+                                                <AlertTriangle className="mx-auto h-4 w-4 text-warning" />
                                             )}
                                         </td>
                                     </tr>
@@ -496,11 +496,11 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
                     {/* Validation summary */}
                     <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
                         <div className="flex gap-4">
-                            <span className="text-green-600 font-medium">
+                            <span className="text-success font-medium">
                                 {entries.filter((e) => e.balanced).length} {ti?.balanced ?? "seimbang"}
                             </span>
                             {entries.some((e) => !e.balanced) && (
-                                <span className="text-yellow-600 font-medium">
+                                <span className="text-warning font-medium">
                                     {entries.filter((e) => !e.balanced).length} {ti?.unbalanced ?? "tidak seimbang"}
                                 </span>
                             )}
@@ -541,27 +541,27 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
             {stage === "result" && result && (
                 <div className="space-y-4">
                     <div className="rounded-xl border border-border bg-card p-8 text-center">
-                        <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
+                        <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
                         <h2 className="mt-4 text-xl font-semibold text-foreground">
                             {ti?.complete ?? "Impor Selesai!"}
                         </h2>
                         <div className="mt-4 flex justify-center gap-8 text-sm">
                             <div>
-                                <p className="text-2xl font-bold text-green-600">{result.imported}</p>
+                                <p className="text-2xl font-bold text-success">{result.imported}</p>
                                 <p className="text-muted-foreground">{ti?.imported ?? "Diimpor"}</p>
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-yellow-600">{result.skipped}</p>
+                                <p className="text-2xl font-bold text-warning">{result.skipped}</p>
                                 <p className="text-muted-foreground">{ti?.skipped ?? "Dilewati"}</p>
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-red-600">{result.errors.length}</p>
+                                <p className="text-2xl font-bold text-error">{result.errors.length}</p>
                                 <p className="text-muted-foreground">{ti?.errorsCount ?? "Error"}</p>
                             </div>
                         </div>
 
                         {result.errors.length > 0 && (
-                            <div className="mx-auto mt-4 max-w-md rounded-lg border border-red-200 bg-red-50 p-3 text-left text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                            <div className="mx-auto mt-4 max-w-md rounded-lg border border-error/30 bg-error-muted p-3 text-left text-sm text-error">
                                 {result.errors.map((e, i) => <p key={i}>{e}</p>)}
                             </div>
                         )}
@@ -593,7 +593,7 @@ function FileInfoBar({ fileName, subtitle, onClose }: { fileName: string; subtit
     return (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                <FileSpreadsheet className="h-8 w-8 text-success" />
                 <div>
                     <p className="font-medium text-foreground">{fileName}</p>
                     <p className="text-sm text-muted-foreground">{subtitle}</p>

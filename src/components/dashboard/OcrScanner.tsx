@@ -319,10 +319,10 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
     }, [result, importClientId, fileName, journalEntries]);
 
     const confidenceColor = (c: number) =>
-        c >= 70 ? "text-green-600" : c >= 40 ? "text-yellow-600" : "text-red-600";
+        c >= 70 ? "text-success" : c >= 40 ? "text-warning" : "text-error";
 
     const confidenceBg = (c: number) =>
-        c >= 70 ? "bg-green-100 dark:bg-green-900/20" : c >= 40 ? "bg-yellow-100 dark:bg-yellow-900/20" : "bg-red-100 dark:bg-red-900/20";
+        c >= 70 ? "bg-success-bg" : c >= 40 ? "bg-warning-bg" : "bg-error-muted";
 
     return (
         <div className="space-y-6">
@@ -398,10 +398,10 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
 
             {/* Error display */}
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                <div className="rounded-lg border border-error/30 bg-error-muted p-4">
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-                        <div className="text-sm text-red-700 dark:text-red-400">{error}</div>
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-error" />
+                        <div className="text-sm text-error">{error}</div>
                     </div>
                 </div>
             )}
@@ -464,7 +464,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                         {result.wordCount} {locale === "id" ? "kata" : "words"}
                                     </span>
                                     {result.method === "pdf-text" && (
-                                        <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                                        <span className="inline-flex rounded-full bg-info-bg px-2 py-0.5 text-xs font-medium text-info">
                                             PDF Text Extract
                                         </span>
                                     )}
@@ -520,10 +520,10 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
 
                     {/* Warnings */}
                     {result.warnings.length > 0 && (
-                        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+                        <div className="rounded-lg border border-warning-border bg-warning-bg p-4">
                             <div className="flex items-start gap-3">
-                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
-                                <div className="text-sm text-yellow-700 dark:text-yellow-400">
+                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                                <div className="text-sm text-warning">
                                     {result.warnings.map((w, i) => <p key={i}>{w}</p>)}
                                 </div>
                             </div>
@@ -566,8 +566,8 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                             <td className="px-3 py-2 text-center">
                                                 <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                                                     row.type === "credit"
-                                                        ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                                                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                                                        ? "bg-success-bg text-success"
+                                                        : "bg-info-bg text-info"
                                                 }`}>
                                                     {row.type === "credit" ? "Kredit" : "Debit"}
                                                 </span>
@@ -658,7 +658,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                         <span>
                                             {journalEntries.filter(e => !e._removed).length} {locale === "id" ? "entri jurnal" : "journal entries"}
                                             {journalEntries.some(e => !e.balanced && !e._removed) && (
-                                                <span className="ml-2 text-red-500">
+                                                <span className="ml-2 text-error">
                                                     {locale === "id" ? "⚠ Ada entri tidak seimbang" : "⚠ Some entries are unbalanced"}
                                                 </span>
                                             )}
@@ -672,7 +672,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                         <div
                                             key={entryIdx}
                                             className={`rounded-lg border bg-card overflow-hidden transition-opacity ${
-                                                entry._removed ? "opacity-40 border-border" : entry.balanced ? "border-border" : "border-red-300 dark:border-red-700"
+                                                entry._removed ? "opacity-40 border-border" : entry.balanced ? "border-border" : "border-error/50"
                                             }`}
                                         >
                                             {/* Entry header */}
@@ -688,13 +688,13 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     <span className="text-xs font-medium text-foreground">{formatIDR(entry.totalDebit)}</span>
                                                     {!entry.balanced && !entry._removed && (
-                                                        <span className="text-xs text-red-500 font-medium">
+                                                        <span className="text-xs text-error font-medium">
                                                             {locale === "id" ? "Tidak seimbang" : "Unbalanced"}
                                                         </span>
                                                     )}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); toggleRemoveEntry(entryIdx); }}
-                                                        className={`p-1 rounded transition-colors ${entry._removed ? "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"}`}
+                                                        className={`p-1 rounded transition-colors ${entry._removed ? "text-success hover:bg-success-bg" : "text-muted-foreground hover:text-error hover:bg-error-muted"}`}
                                                         title={entry._removed ? "Restore" : "Remove"}
                                                     >
                                                         {entry._removed ? <RefreshCw className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -765,7 +765,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                                                 {entry.items.length > 2 && (
                                                                     <button
                                                                         onClick={() => removeEntryItem(entryIdx, itemIdx)}
-                                                                        className="p-0.5 rounded text-muted-foreground hover:text-red-500"
+                                                                        className="p-0.5 rounded text-muted-foreground hover:text-error"
                                                                     >
                                                                         <Trash2 className="h-3 w-3" />
                                                                     </button>
@@ -785,9 +785,9 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                                         <div className="text-xs text-muted-foreground">
                                                             D: {formatIDR(entry.totalDebit)} | K: {formatIDR(entry.totalCredit)}
                                                             {entry.balanced ? (
-                                                                <CheckCircle2 className="inline ml-1 h-3 w-3 text-green-500" />
+                                                                <CheckCircle2 className="inline ml-1 h-3 w-3 text-success" />
                                                             ) : (
-                                                                <AlertTriangle className="inline ml-1 h-3 w-3 text-red-500" />
+                                                                <AlertTriangle className="inline ml-1 h-3 w-3 text-error" />
                                                             )}
                                                         </div>
                                                     </div>
@@ -816,7 +816,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                             </button>
 
                             {importResult && (
-                                <div className={`rounded-md p-3 text-sm ${importResult.errors.length > 0 && importResult.imported === 0 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"}`}>
+                                <div className={`rounded-md p-3 text-sm ${importResult.errors.length > 0 && importResult.imported === 0 ? "bg-error-muted text-error" : "bg-success-bg text-success"}`}>
                                     {importResult.imported > 0 && <p>{importResult.imported} {locale === "id" ? "entri berhasil diimpor ke jurnal" : "entries imported to journal"}</p>}
                                     {importResult.skipped > 0 && <p>{importResult.skipped} {locale === "id" ? "dilewati (duplikat)" : "skipped (duplicates)"}</p>}
                                     {importResult.errors.map((e, i) => <p key={i}>{e}</p>)}

@@ -62,8 +62,8 @@ function GroupBlock({
     if (group.accounts.length === 0) return null;
     return (
         <>
-            <tr className="bg-[#EFF6FF]">
-                <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700 pl-6" colSpan={2}>
+            <tr className="bg-info-bg">
+                <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-info pl-6" colSpan={2}>
                     {group.label}
                 </td>
             </tr>
@@ -97,7 +97,7 @@ function SideTable({
 }) {
     return (
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
-            <div className="bg-blue-900 text-white px-4 py-3">
+            <div className="bg-table-header-bg text-table-header-text px-4 py-3">
                 <h3 className="text-sm font-bold uppercase tracking-wider">{title}</h3>
             </div>
             <div className="overflow-x-auto flex-1">
@@ -122,7 +122,7 @@ function SideTable({
                         ))}
                     </tbody>
                     <tfoot>
-                        <tr className="border-t-2 border-double border-border bg-blue-50/60">
+                        <tr className="border-t-2 border-double border-border bg-table-alt-bg">
                             <td className="px-4 py-3 text-sm font-bold uppercase">
                                 {grandTotalLabel}
                             </td>

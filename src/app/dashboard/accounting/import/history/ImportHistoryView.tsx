@@ -163,14 +163,14 @@ export function ImportHistoryView({
                                             {getTypeLabel(batch.documentType)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-2 text-right font-medium text-green-600">{batch.entriesCount}</td>
-                                    <td className="px-4 py-2 text-right text-yellow-600">{batch.skippedCount}</td>
+                                    <td className="px-4 py-2 text-right font-medium text-success">{batch.entriesCount}</td>
+                                    <td className="px-4 py-2 text-right text-warning">{batch.skippedCount}</td>
                                     <td className="px-4 py-2 text-muted-foreground">{batch.importedBy}</td>
                                     <td className="px-4 py-2 text-center">
                                         <button
                                             onClick={() => handleRollback(batch.id)}
                                             disabled={rollingBack === batch.id}
-                                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/20"
+                                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-error hover:bg-error-muted disabled:opacity-50"
                                             title={ti?.rollback ?? "Batalkan Import"}
                                         >
                                             {rollingBack === batch.id ? (

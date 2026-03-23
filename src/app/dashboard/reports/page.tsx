@@ -105,28 +105,28 @@ export default function ReportsPage() {
                 <div className="bg-card rounded-[12px] border border-border p-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-muted-foreground">Total Pendapatan</span>
-                        <div className="h-8 w-8 rounded-[8px] bg-emerald-500/10 flex items-center justify-center">
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        <div className="h-8 w-8 rounded-[8px] bg-success-muted flex items-center justify-center">
+                            <TrendingUp className="h-4 w-4 text-success" />
                         </div>
                     </div>
                     <p className="text-xl font-bold text-foreground">{formatIDR(totalPendapatan)}</p>
-                    <p className="text-xs text-emerald-500 mt-1">Invoice lunas</p>
+                    <p className="text-xs text-success mt-1">Invoice lunas</p>
                 </div>
                 <div className="bg-card rounded-[12px] border border-border p-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-muted-foreground">Outstanding</span>
-                        <div className="h-8 w-8 rounded-[8px] bg-amber-500/10 flex items-center justify-center">
-                            <TrendingDown className="h-4 w-4 text-amber-500" />
+                        <div className="h-8 w-8 rounded-[8px] bg-warning-muted flex items-center justify-center">
+                            <TrendingDown className="h-4 w-4 text-warning" />
                         </div>
                     </div>
                     <p className="text-xl font-bold text-foreground">{formatIDR(outstanding)}</p>
-                    <p className="text-xs text-amber-500 mt-1">Belum dibayar</p>
+                    <p className="text-xs text-warning mt-1">Belum dibayar</p>
                 </div>
                 <div className="bg-card rounded-[12px] border border-border p-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-muted-foreground">Klien Aktif</span>
-                        <div className="h-8 w-8 rounded-[8px] bg-blue-500/10 flex items-center justify-center">
-                            <Users className="h-4 w-4 text-blue-500" />
+                        <div className="h-8 w-8 rounded-[8px] bg-info-muted flex items-center justify-center">
+                            <Users className="h-4 w-4 text-info" />
                         </div>
                     </div>
                     <p className="text-xl font-bold text-foreground">{klienAktif}</p>
@@ -135,8 +135,8 @@ export default function ReportsPage() {
                 <div className="bg-card rounded-[12px] border border-border p-5">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-muted-foreground">Kepatuhan Pajak</span>
-                        <div className="h-8 w-8 rounded-[8px] bg-indigo-500/10 flex items-center justify-center">
-                            <CheckCircle2 className="h-4 w-4 text-indigo-500" />
+                        <div className="h-8 w-8 rounded-[8px] bg-purple-muted flex items-center justify-center">
+                            <CheckCircle2 className="h-4 w-4 text-purple" />
                         </div>
                     </div>
                     <p className="text-xl font-bold text-foreground">{kepatuhanPersen}%</p>
@@ -183,7 +183,7 @@ export default function ReportsPage() {
                             {clientRevenue.map((cr, i) => (
                                 <div key={cr.name} className="flex items-center justify-between p-3 rounded-[8px] bg-surface">
                                     <div className="flex items-center gap-3">
-                                        <span className="h-7 w-7 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                                        <span className="h-7 w-7 rounded-full bg-info-muted text-info flex items-center justify-center text-xs font-bold">{i + 1}</span>
                                         <span className="text-sm font-medium text-foreground">{cr.name}</span>
                                     </div>
                                     <span className="text-sm font-bold text-foreground">{formatIDR(cr.total)}</span>
@@ -212,19 +212,19 @@ export default function ReportsPage() {
                 <div className="bg-card rounded-[12px] border border-border p-6">
                     <h3 className="font-semibold text-foreground mb-4">Status Kepatuhan Pajak</h3>
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-emerald-500/10 rounded-[8px]">
+                        <div className="flex items-center justify-between p-3 bg-success-muted rounded-[8px]">
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                <span className="text-sm font-medium text-emerald-500">Sudah Lapor</span>
+                                <CheckCircle2 className="h-4 w-4 text-success" />
+                                <span className="text-sm font-medium text-success">Sudah Lapor</span>
                             </div>
-                            <span className="text-lg font-bold text-emerald-500">{deadlineSudah}</span>
+                            <span className="text-lg font-bold text-success">{deadlineSudah}</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-amber-500/10 rounded-[8px]">
+                        <div className="flex items-center justify-between p-3 bg-warning-muted rounded-[8px]">
                             <div className="flex items-center gap-2">
-                                <CalendarDays className="h-4 w-4 text-amber-500" />
-                                <span className="text-sm font-medium text-amber-500">Belum Lapor</span>
+                                <CalendarDays className="h-4 w-4 text-warning" />
+                                <span className="text-sm font-medium text-warning">Belum Lapor</span>
                             </div>
-                            <span className="text-lg font-bold text-amber-500">{deadlines.filter((d) => d.status === TaxDeadlineStatus.BelumLapor).length}</span>
+                            <span className="text-lg font-bold text-warning">{deadlines.filter((d) => d.status === TaxDeadlineStatus.BelumLapor).length}</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-error-muted rounded-[8px]">
                             <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export default function ReportsPage() {
                             <span>{kepatuhanPersen}%</span>
                         </div>
                         <div className="w-full bg-surface rounded-full h-3 overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${kepatuhanPersen >= 80 ? "bg-emerald-500" : kepatuhanPersen >= 50 ? "bg-amber-500" : "bg-error"}`}
+                            <div className={`h-full rounded-full transition-all ${kepatuhanPersen >= 80 ? "bg-success" : kepatuhanPersen >= 50 ? "bg-warning" : "bg-error"}`}
                                 style={{ width: `${kepatuhanPersen}%` }} />
                         </div>
                     </div>

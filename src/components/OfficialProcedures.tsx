@@ -359,7 +359,7 @@ export function OfficialProcedures() {
                                 <p className="text-muted-foreground mb-10">{t.procedures.sourcesSubtitle}</p>
 
                                 <div className="flex items-center gap-2 mb-6">
-                                    <div className="h-2 w-2 rounded-full bg-[#10B981]"></div>
+                                    <div className="h-2 w-2 rounded-full bg-success"></div>
                                     <span className="text-xs font-medium text-muted-foreground">{t.procedures.sourcesVerified}</span>
                                 </div>
 

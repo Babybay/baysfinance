@@ -30,20 +30,20 @@ export function useToast(): ToastContextValue {
 
 const VARIANT_STYLES: Record<ToastVariant, { bg: string; icon: React.ReactNode }> = {
     success: {
-        bg: "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300",
-        icon: <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />,
+        bg: "border-success-border bg-success-bg text-success",
+        icon: <CheckCircle2 className="h-5 w-5 text-success shrink-0" />,
     },
     error: {
-        bg: "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300",
-        icon: <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />,
+        bg: "border-error/30 bg-error-muted text-error",
+        icon: <XCircle className="h-5 w-5 text-error shrink-0" />,
     },
     warning: {
-        bg: "border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-        icon: <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0" />,
+        bg: "border-warning-border bg-warning-bg text-warning",
+        icon: <AlertTriangle className="h-5 w-5 text-warning shrink-0" />,
     },
     info: {
-        bg: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-        icon: <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />,
+        bg: "border-info-border bg-info-bg text-info",
+        icon: <Info className="h-5 w-5 text-info shrink-0" />,
     },
 };
 

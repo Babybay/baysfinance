@@ -52,7 +52,7 @@ function AccountLedger({
         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
             <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-[#EFF6FF] hover:bg-blue-100/60 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 bg-info-bg hover:bg-info-muted transition-colors"
             >
                 <div className="flex items-center gap-2">
                     {expanded ? (

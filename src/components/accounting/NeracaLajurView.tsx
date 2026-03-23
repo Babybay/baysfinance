@@ -45,12 +45,12 @@ function SubsectionRows({ sub }: { sub: NLSubsection }) {
     return (
         <>
             {/* Sub-header */}
-            <tr className="bg-[#EFF6FF]">
-                <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700 pl-8">
+            <tr className="bg-info-bg">
+                <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-info pl-8">
                     {sub.label}
                 </td>
-                <td className="px-4 py-2 text-xs font-bold text-blue-700" />
-                <td className="px-4 py-2 text-xs font-bold text-right text-blue-700" />
+                <td className="px-4 py-2 text-xs font-bold text-info" />
+                <td className="px-4 py-2 text-xs font-bold text-right text-info" />
             </tr>
 
             {/* Account rows */}
@@ -85,7 +85,7 @@ function SectionBlock({ section }: { section: NLSection }) {
     return (
         <>
             {/* Section header */}
-            <tr className="bg-blue-900 text-white">
+            <tr className="bg-table-header-bg text-table-header-text">
                 <td className="px-4 py-3 text-sm font-bold uppercase tracking-wider" colSpan={3}>
                     {section.label}
                 </td>
@@ -96,7 +96,7 @@ function SectionBlock({ section }: { section: NLSection }) {
             ))}
 
             {/* Section total */}
-            <tr className="border-t-2 border-double border-border bg-blue-50/60">
+            <tr className="border-t-2 border-double border-border bg-table-alt-bg">
                 <td className="px-4 py-3 text-sm font-bold uppercase">
                     JUMLAH {section.label}
                 </td>
@@ -302,7 +302,7 @@ export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
                                     <SectionBlock section={data.kewajiban} />
 
                                     {/* LABA RUGI section */}
-                                    <tr className="bg-blue-900 text-white">
+                                    <tr className="bg-table-header-bg text-table-header-text">
                                         <td className="px-4 py-3 text-sm font-bold uppercase tracking-wider" colSpan={3}>
                                             LABA RUGI
                                         </td>
@@ -312,8 +312,8 @@ export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
                                     {data.labaRugi.subsections[0] &&
                                         data.labaRugi.subsections[0].accounts.length > 0 && (
                                             <>
-                                                <tr className="bg-[#EFF6FF]">
-                                                    <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700 pl-8">
+                                                <tr className="bg-info-bg">
+                                                    <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-info pl-8">
                                                         PENDAPATAN
                                                     </td>
                                                     <td colSpan={2} />
@@ -341,8 +341,8 @@ export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
                                     {data.labaRugi.subsections[1] &&
                                         data.labaRugi.subsections[1].accounts.length > 0 && (
                                             <>
-                                                <tr className="bg-[#EFF6FF]">
-                                                    <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700 pl-8">
+                                                <tr className="bg-info-bg">
+                                                    <td className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-info pl-8">
                                                         BEBAN
                                                     </td>
                                                     <td colSpan={2} />
@@ -367,14 +367,14 @@ export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
                                         )}
 
                                     {/* Laba Rugi calculations */}
-                                    <tr className="border-t-2 border-double border-border bg-amber-50/60">
+                                    <tr className="border-t-2 border-double border-border bg-warning-bg">
                                         <td className="px-4 py-3 text-sm font-bold">LABA RUGI SEBELUM PAJAK</td>
                                         <td />
                                         <td className="px-4 py-3 text-sm text-right font-bold tabular-nums border-t-2 border-double border-border">
                                             {formatRp(data.labaRugiSebelumPajak)}
                                         </td>
                                     </tr>
-                                    <tr className="bg-amber-50/40">
+                                    <tr className="bg-warning-muted">
                                         <td className="px-4 py-3 text-sm font-bold">LABA RUGI SETELAH PAJAK</td>
                                         <td />
                                         <td className="px-4 py-3 text-sm text-right font-bold tabular-nums">

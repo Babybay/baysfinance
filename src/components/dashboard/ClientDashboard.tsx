@@ -151,12 +151,12 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                             )}
                         </div>
                     </div>
-                    <p className={`text-xl font-semibold ${complianceRate >= 80 ? "text-green-600" : complianceRate >= 50 ? "text-yellow-600" : "text-error"}`}>
+                    <p className={`text-xl font-semibold ${complianceRate >= 80 ? "text-success" : complianceRate >= 50 ? "text-warning" : "text-error"}`}>
                         {complianceRate}%
                     </p>
                     <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                            className={`h-full rounded-full transition-all ${complianceRate >= 80 ? "bg-green-500" : complianceRate >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
+                            className={`h-full rounded-full transition-all ${complianceRate >= 80 ? "bg-success" : complianceRate >= 50 ? "bg-warning" : "bg-error"}`}
                             style={{ width: `${complianceRate}%` }}
                         />
                     </div>
@@ -168,8 +168,8 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                         <span className="text-xs font-medium text-muted-foreground">
                             {locale === "id" ? "Total Dibayar" : "Total Paid"}
                         </span>
-                        <div className="h-8 w-8 rounded-[8px] bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                        <div className="h-8 w-8 rounded-[8px] bg-success-bg flex items-center justify-center">
+                            <TrendingUp className="h-4 w-4 text-success" />
                         </div>
                     </div>
                     <p className="text-xl font-semibold text-foreground">{formatIDR(totalPaid)}</p>
@@ -237,7 +237,7 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                                             <span className="text-xs font-medium text-muted">
                                                 {new Date(d.tanggalBatas).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                                             </span>
-                                            <p className={`text-xs font-bold ${daysLeft < 0 ? "text-error" : daysLeft <= 3 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                                            <p className={`text-xs font-bold ${daysLeft < 0 ? "text-error" : daysLeft <= 3 ? "text-warning" : "text-muted-foreground"}`}>
                                                 {daysLeft < 0
                                                     ? `${Math.abs(daysLeft)}d ${locale === "id" ? "lalu" : "ago"}`
                                                     : daysLeft === 0
@@ -281,7 +281,7 @@ export function ClientDashboard({ client, invoices, deadlines }: ClientDashboard
                                                     </span>
                                                 )}
                                                 {dueDays > 0 && dueDays <= 7 && (
-                                                    <span className="ml-1 text-yellow-600 font-medium">
+                                                    <span className="ml-1 text-warning font-medium">
                                                         ({dueDays}d {locale === "id" ? "lagi" : "left"})
                                                     </span>
                                                 )}

@@ -49,7 +49,7 @@ function MatrixRow({ row }: { row: EkuitasRow }) {
         <tr
             className={`border-b border-border/50 transition-colors ${
                 row.isBold
-                    ? "bg-blue-50/60 font-bold border-t-2 border-double border-border"
+                    ? "bg-table-alt-bg font-bold border-t-2 border-double border-border"
                     : "hover:bg-muted/20"
             }`}
         >
@@ -202,7 +202,7 @@ export function EkuitasView({ clients }: EkuitasViewProps) {
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="bg-blue-900 text-white">
+                                    <tr className="bg-table-header-bg text-table-header-text">
                                         <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-left w-48">
                                             Keterangan
                                         </th>
@@ -211,7 +211,7 @@ export function EkuitasView({ clients }: EkuitasViewProps) {
                                                 key={key}
                                                 className={`px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-right w-36 ${
                                                     key === "total"
-                                                        ? "bg-blue-950"
+                                                        ? "bg-black/10"
                                                         : ""
                                                 }`}
                                             >

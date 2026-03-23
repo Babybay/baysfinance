@@ -67,18 +67,18 @@ export function InvoicePrintView({ invoice }: InvoicePrintViewProps) {
                 }
             `}</style>
 
-            <div className="min-h-screen bg-gray-100 py-8 px-4">
+            <div className="min-h-screen bg-background py-8 px-4">
                 {/* Print Button */}
                 <div className="no-print max-w-3xl mx-auto mb-4 flex gap-3">
                     <button
                         onClick={() => window.print()}
-                        className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                        className="px-6 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
                     >
                         Cetak Invoice
                     </button>
                     <button
                         onClick={() => window.close()}
-                        className="px-6 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors shadow-sm"
+                        className="px-6 py-2.5 bg-surface text-foreground font-medium rounded-lg hover:bg-border transition-colors shadow-sm"
                     >
                         Tutup
                     </button>

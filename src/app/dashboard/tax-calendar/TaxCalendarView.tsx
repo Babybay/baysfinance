@@ -144,7 +144,7 @@ export function TaxCalendarView({ initialDeadlines }: { initialDeadlines: TaxDea
                                 className={`bg-card rounded-[12px] border p-4 cursor-pointer hover:shadow-md transition-all ${d.status === TaxDeadlineStatus.Terlambat
                                     ? "border-error/40 bg-error-muted"
                                     : d.status === TaxDeadlineStatus.SudahLapor
-                                        ? "border-emerald-500/30 bg-emerald-500/5"
+                                        ? "border-success-border bg-success-muted"
                                         : "border-border"
                                     }`}
                             >

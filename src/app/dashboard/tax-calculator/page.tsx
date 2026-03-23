@@ -66,8 +66,8 @@ function PPh21Calculator() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Input Data PPh 21</h3>
+            <div className="bg-card rounded-xl border border-border p-6">
+                <h3 className="font-semibold text-foreground mb-4">Input Data PPh 21</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                         label="Gaji Bruto per Bulan (Rp)"
@@ -94,55 +94,55 @@ function PPh21Calculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh 21</Button>
-                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={reset}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-foreground bg-card" onClick={reset}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
 
             {result && (
-                <div className="bg-white rounded-xl border p-6">
-                    <h3 className="font-semibold text-slate-900 mb-4">Hasil Perhitungan PPh 21</h3>
+                <div className="bg-card rounded-xl border border-border p-6">
+                    <h3 className="font-semibold text-foreground mb-4">Hasil Perhitungan PPh 21</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Gaji Setahun</p>
-                            <p className="font-bold text-slate-900">{formatIDR(result.gajiSetahun)}</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Gaji Setahun</p>
+                            <p className="font-bold text-foreground">{formatIDR(result.gajiSetahun)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">PTKP ({statusPTKP})</p>
-                            <p className="font-bold text-slate-900">{formatIDR(result.ptkp)}</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">PTKP ({statusPTKP})</p>
+                            <p className="font-bold text-foreground">{formatIDR(result.ptkp)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">PKP</p>
-                            <p className="font-bold text-slate-900">{formatIDR(result.pkp)}</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">PKP</p>
+                            <p className="font-bold text-foreground">{formatIDR(result.pkp)}</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-xs text-blue-600">PPh 21 / Bulan</p>
-                            <p className="font-bold text-blue-700 text-lg">{formatIDR(result.pphPerBulan)}</p>
+                        <div className="bg-info-bg rounded-lg p-3">
+                            <p className="text-xs text-info">PPh 21 / Bulan</p>
+                            <p className="font-bold text-info font-semibold text-lg">{formatIDR(result.pphPerBulan)}</p>
                         </div>
                     </div>
 
-                    <h4 className="text-sm font-medium text-slate-700 mb-2">Rincian Tarif Progresif (Pasal 17)</h4>
+                    <h4 className="text-sm font-medium text-foreground mb-2">Rincian Tarif Progresif (Pasal 17)</h4>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b bg-slate-50">
-                                    <th className="text-left px-3 py-2 font-medium text-slate-600">Lapisan</th>
-                                    <th className="text-right px-3 py-2 font-medium text-slate-600">PKP Kena Tarif</th>
-                                    <th className="text-right px-3 py-2 font-medium text-slate-600">Tarif</th>
-                                    <th className="text-right px-3 py-2 font-medium text-slate-600">Pajak</th>
+                                <tr className="border-b bg-surface">
+                                    <th className="text-left px-3 py-2 font-medium text-muted">Lapisan</th>
+                                    <th className="text-right px-3 py-2 font-medium text-muted">PKP Kena Tarif</th>
+                                    <th className="text-right px-3 py-2 font-medium text-muted">Tarif</th>
+                                    <th className="text-right px-3 py-2 font-medium text-muted">Pajak</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {result.breakdown.map((b, i) => (
                                     <tr key={i} className="border-b">
-                                        <td className="px-3 py-2 text-slate-600">{b.layer}</td>
+                                        <td className="px-3 py-2 text-muted">{b.layer}</td>
                                         <td className="px-3 py-2 text-right">{formatIDR(b.taxable)}</td>
                                         <td className="px-3 py-2 text-right">{b.rate}%</td>
                                         <td className="px-3 py-2 text-right font-medium">{formatIDR(b.tax)}</td>
                                     </tr>
                                 ))}
-                                <tr className="bg-blue-50">
+                                <tr className="bg-info-bg">
                                     <td colSpan={3} className="px-3 py-2 font-semibold">Total PPh 21 Setahun</td>
-                                    <td className="px-3 py-2 text-right font-bold text-blue-700">{formatIDR(result.pphSetahun)}</td>
+                                    <td className="px-3 py-2 text-right font-bold text-info font-semibold">{formatIDR(result.pphSetahun)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -167,8 +167,8 @@ function PPh23Calculator() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Input Data PPh 23</h3>
+            <div className="bg-card rounded-xl border border-border p-6">
+                <h3 className="font-semibold text-foreground mb-4">Input Data PPh 23</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                         label="Jumlah Bruto (Rp)"
@@ -189,24 +189,24 @@ function PPh23Calculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh 23</Button>
-                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setJumlahBruto(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-foreground bg-card" onClick={() => { setJumlahBruto(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (
-                <div className="bg-white rounded-xl border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold mb-4">Hasil Perhitungan PPh 23</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Jumlah Bruto</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Jumlah Bruto</p>
                             <p className="font-bold">{formatIDR(result.bruto)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Tarif</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Tarif</p>
                             <p className="font-bold">{result.tarif}%</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-xs text-blue-600">PPh 23 Terutang</p>
-                            <p className="font-bold text-blue-700 text-lg">{formatIDR(result.pph)}</p>
+                        <div className="bg-info-bg rounded-lg p-3">
+                            <p className="text-xs text-info">PPh 23 Terutang</p>
+                            <p className="font-bold text-info font-semibold text-lg">{formatIDR(result.pph)}</p>
                         </div>
                     </div>
                 </div>
@@ -235,8 +235,8 @@ function PPNCalculator() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Input Data PPN (11%)</h3>
+            <div className="bg-card rounded-xl border border-border p-6">
+                <h3 className="font-semibold text-foreground mb-4">Input Data PPN (11%)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                         label={tipe === "exclusive" ? "DPP / Harga Sebelum PPN (Rp)" : "Harga Termasuk PPN (Rp)"}
@@ -257,23 +257,23 @@ function PPNCalculator() {
                 </div>
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPN</Button>
-                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setDpp(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-foreground bg-card" onClick={() => { setDpp(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (
-                <div className="bg-white rounded-xl border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold mb-4">Hasil Perhitungan PPN</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">DPP</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">DPP</p>
                             <p className="font-bold">{formatIDR(result.dpp)}</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-xs text-blue-600">PPN 11%</p>
-                            <p className="font-bold text-blue-700 text-lg">{formatIDR(result.ppn)}</p>
+                        <div className="bg-info-bg rounded-lg p-3">
+                            <p className="text-xs text-info">PPN 11%</p>
+                            <p className="font-bold text-info font-semibold text-lg">{formatIDR(result.ppn)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Total (DPP + PPN)</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Total (DPP + PPN)</p>
                             <p className="font-bold">{formatIDR(result.total)}</p>
                         </div>
                     </div>
@@ -295,9 +295,9 @@ function PPhFinalUMKMCalculator() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-xl border p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Input Data PPh Final UMKM (PP 55/2022)</h3>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+            <div className="bg-card rounded-xl border border-border p-6">
+                <h3 className="font-semibold text-foreground mb-4">Input Data PPh Final UMKM (PP 55/2022)</h3>
+                <div className="bg-warning-bg border border-warning-border rounded-lg p-3 mb-4 text-sm text-warning">
                     <strong>Catatan:</strong> Tarif PPh Final UMKM sebesar 0,5% berlaku untuk WP dengan omzet bruto ≤ Rp 4,8 miliar per tahun. WP Orang Pribadi dengan omzet ≤ Rp 500 juta per tahun tidak dikenai pajak (PP 55/2022).
                 </div>
                 <Input
@@ -309,24 +309,24 @@ function PPhFinalUMKMCalculator() {
                 />
                 <div className="flex gap-3 mt-4">
                     <Button onClick={calculate}><Calculator className="h-4 w-4 mr-2" /> Hitung PPh Final</Button>
-                    <Button variant="transparent" className="border border-border text-slate-700 bg-white" onClick={() => { setOmzet(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
+                    <Button variant="transparent" className="border border-border text-foreground bg-card" onClick={() => { setOmzet(""); setResult(null); }}><RotateCcw className="h-4 w-4 mr-2" /> Reset</Button>
                 </div>
             </div>
             {result && (
-                <div className="bg-white rounded-xl border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                     <h3 className="font-semibold mb-4">Hasil Perhitungan PPh Final UMKM</h3>
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Omzet Bruto</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Omzet Bruto</p>
                             <p className="font-bold">{formatIDR(result.omzet)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-lg p-3">
-                            <p className="text-xs text-slate-500">Tarif PPh Final</p>
+                        <div className="bg-surface rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground">Tarif PPh Final</p>
                             <p className="font-bold">{result.tarif}%</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-xs text-blue-600">PPh Final Terutang</p>
-                            <p className="font-bold text-blue-700 text-lg">{formatIDR(result.pph)}</p>
+                        <div className="bg-info-bg rounded-lg p-3">
+                            <p className="text-xs text-info">PPh Final Terutang</p>
+                            <p className="font-bold text-info font-semibold text-lg">{formatIDR(result.pph)}</p>
                         </div>
                     </div>
                 </div>
@@ -340,8 +340,8 @@ export default function TaxCalculatorPage() {
     return (
         <div>
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-slate-900">Kalkulator Pajak</h1>
-                <p className="text-sm text-slate-500 mt-1">Hitung pajak sesuai peraturan perpajakan Indonesia</p>
+                <h1 className="text-2xl font-bold text-foreground">Kalkulator Pajak</h1>
+                <p className="text-sm text-muted-foreground mt-1">Hitung pajak sesuai peraturan perpajakan Indonesia</p>
             </div>
 
             <Tabs

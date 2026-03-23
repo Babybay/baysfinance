@@ -31,23 +31,23 @@ interface AdminDashboardProps {
 }
 
 const PERMIT_STATUS_COLORS: Record<string, string> = {
-    Draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-    WaitingDocument: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
-    Processing: "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
-    Issued: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-    Completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400",
-    Cancelled: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
-    OnHold: "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
-    Verification: "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400",
-    RevisionRequired: "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
+    Draft: "bg-surface text-muted-foreground",
+    WaitingDocument: "bg-warning-bg text-warning border border-warning-border",
+    Processing: "bg-info-bg text-info border border-info-border",
+    Issued: "bg-success-bg text-success border border-success-border",
+    Completed: "bg-success-bg text-success border border-success-border",
+    Cancelled: "bg-error-muted text-error",
+    OnHold: "bg-warning-bg text-warning border border-warning-border",
+    Verification: "bg-purple-bg text-purple border border-purple-border",
+    RevisionRequired: "bg-warning-bg text-warning border border-warning-border",
 };
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
     invoice: <Receipt className="h-4 w-4 text-accent" />,
-    deadline: <CalendarDays className="h-4 w-4 text-yellow-600" />,
-    permit: <FileCheck className="h-4 w-4 text-blue-600" />,
-    document: <FolderOpen className="h-4 w-4 text-purple-600" />,
-    import: <Upload className="h-4 w-4 text-green-600" />,
+    deadline: <CalendarDays className="h-4 w-4 text-warning" />,
+    permit: <FileCheck className="h-4 w-4 text-info" />,
+    document: <FolderOpen className="h-4 w-4 text-purple" />,
+    import: <Upload className="h-4 w-4 text-success" />,
 };
 
 export function AdminDashboard({
@@ -150,7 +150,7 @@ export function AdminDashboard({
                     <p className="text-xl font-semibold text-foreground">{formatIDR(pendapatan)}</p>
                     <div className="flex items-center gap-1 mt-1">
                         {revenueTrend !== 0 && (
-                            <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${revenueTrend > 0 ? "text-green-600" : "text-red-600"}`}>
+                            <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${revenueTrend > 0 ? "text-success" : "text-error"}`}>
                                 {revenueTrend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                                 {revenueTrend > 0 ? "+" : ""}{revenueTrend.toFixed(0)}%
                             </span>
@@ -193,7 +193,7 @@ export function AdminDashboard({
                     {daysUntilDeadline !== null ? (
                         <>
                             <p className={`text-2xl font-bold ${
-                                daysUntilDeadline < 0 ? "text-error" : daysUntilDeadline <= 3 ? "text-yellow-600" : "text-foreground"
+                                daysUntilDeadline < 0 ? "text-error" : daysUntilDeadline <= 3 ? "text-warning" : "text-foreground"
                             }`}>
                                 {daysUntilDeadline < 0
                                     ? `${Math.abs(daysUntilDeadline)}d ${locale === "id" ? "terlambat" : "overdue"}`
@@ -254,12 +254,12 @@ export function AdminDashboard({
                         const rate = total > 0 ? Math.round((compliant / total) * 100) : 100;
                         return (
                             <>
-                                <p className={`text-2xl font-bold ${rate >= 80 ? "text-green-600" : rate >= 50 ? "text-yellow-600" : "text-red-600"}`}>
+                                <p className={`text-2xl font-bold ${rate >= 80 ? "text-success" : rate >= 50 ? "text-warning" : "text-error"}`}>
                                     {rate}%
                                 </p>
                                 <div className="mt-1 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all ${rate >= 80 ? "bg-green-500" : rate >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
+                                        className={`h-full rounded-full transition-all ${rate >= 80 ? "bg-success" : rate >= 50 ? "bg-warning" : "bg-error"}`}
                                         style={{ width: `${rate}%` }}
                                     />
                                 </div>
@@ -339,7 +339,7 @@ export function AdminDashboard({
                                             <span className="text-xs font-medium text-muted">
                                                 {new Date(d.tanggalBatas).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                                             </span>
-                                            <p className={`text-xs font-bold ${daysLeft < 0 ? "text-error" : daysLeft <= 3 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                                            <p className={`text-xs font-bold ${daysLeft < 0 ? "text-error" : daysLeft <= 3 ? "text-warning" : "text-muted-foreground"}`}>
                                                 {daysLeft < 0
                                                     ? `${Math.abs(daysLeft)}d ${locale === "id" ? "lalu" : "ago"}`
                                                     : daysLeft === 0
@@ -435,7 +435,7 @@ export function AdminDashboard({
                                 .sort(([, a], [, b]) => b - a)
                                 .map(([status, count]) => (
                                     <div key={status} className="flex items-center justify-between p-2.5 rounded-[8px] bg-surface">
-                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${PERMIT_STATUS_COLORS[status] || "bg-gray-100 text-gray-700"}`}>
+                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${PERMIT_STATUS_COLORS[status] || "bg-surface text-muted-foreground"}`}>
                                             {t.permits?.status?.[status.charAt(0).toLowerCase() + status.slice(1) as keyof typeof t.permits.status] || status}
                                         </span>
                                         <span className="text-sm font-semibold text-foreground">{count}</span>

@@ -132,7 +132,7 @@ export default function UserManagementPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className={`p-4 rounded-[12px] flex items-center gap-3 border ${message.type === "success"
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
+                            ? "bg-success-muted border-success-border text-success"
                             : "bg-error-muted border-error/20 text-error"
                             }`}
                     >

@@ -233,10 +233,10 @@ export function TemplateUploadView({
 
             {/* Batch mode info */}
             {mode === "batch" && stage === "upload" && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                <div className="rounded-lg border border-info-border bg-info-bg p-4">
+                    <p className="text-sm text-info">
                         <strong>Batch Upload:</strong> Pilih beberapa file sekaligus. Nama file harus sesuai format{" "}
-                        <code className="rounded bg-blue-100 px-1 dark:bg-blue-800">NamaKlien_Periode.xlsx</code>{" "}
+                        <code className="rounded bg-info-muted px-1">NamaKlien_Periode.xlsx</code>{" "}
                         agar sistem dapat mencocokkan dengan klien yang terdaftar.
                     </p>
                 </div>
@@ -244,10 +244,10 @@ export function TemplateUploadView({
 
             {/* Error */}
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                <div className="rounded-lg border border-error/30 bg-error-muted p-4">
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-                        <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-error" />
+                        <p className="text-sm text-error">{error}</p>
                     </div>
                 </div>
             )}
@@ -353,9 +353,9 @@ function SingleResultView({
         <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-8 text-center">
                 {result.success ? (
-                    <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
+                    <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
                 ) : (
-                    <AlertTriangle className="mx-auto h-16 w-16 text-red-600" />
+                    <AlertTriangle className="mx-auto h-16 w-16 text-error" />
                 )}
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
                     {result.success
@@ -380,7 +380,7 @@ function SingleResultView({
                 )}
 
                 {result.errors.length > 0 && (
-                    <div className="mx-auto mt-4 max-w-lg rounded-lg border border-red-200 bg-red-50 p-3 text-left text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                    <div className="mx-auto mt-4 max-w-lg rounded-lg border border-error/30 bg-error-muted p-3 text-left text-sm text-error">
                         {result.errors.map((e, i) => <p key={i}>{e}</p>)}
                     </div>
                 )}
@@ -419,7 +419,7 @@ function BatchResultView({
     return (
         <div className="space-y-4">
             <div className="rounded-xl border border-border bg-card p-8 text-center">
-                <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
+                <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
                     Batch Import Selesai
                 </h2>
@@ -445,7 +445,7 @@ function BatchResultView({
                     </thead>
                     <tbody className="divide-y divide-border">
                         {results.map((r, i) => (
-                            <tr key={i} className={r.success ? "" : "bg-red-50 dark:bg-red-900/10"}>
+                            <tr key={i} className={r.success ? "" : "bg-error-muted"}>
                                 <td className="px-3 py-2 max-w-[200px] truncate font-mono text-xs">{r.fileName}</td>
                                 <td className="px-3 py-2">{r.companyName || "—"}</td>
                                 <td className="px-3 py-2">{r.period || "—"}</td>
@@ -453,9 +453,9 @@ function BatchResultView({
                                 <td className="px-3 py-2 text-right">{r.assetsCreated}</td>
                                 <td className="px-3 py-2 text-center">
                                     {r.success ? (
-                                        <CheckCircle2 className="mx-auto h-4 w-4 text-green-600" />
+                                        <CheckCircle2 className="mx-auto h-4 w-4 text-success" />
                                     ) : (
-                                        <span className="text-xs text-red-600">{r.errors[0]?.slice(0, 40)}</span>
+                                        <span className="text-xs text-error">{r.errors[0]?.slice(0, 40)}</span>
                                     )}
                                 </td>
                             </tr>
@@ -504,11 +504,11 @@ function BatchResultView({
 
 function StatBox({ value, label, color }: { value: number; label: string; color: string }) {
     const colors: Record<string, string> = {
-        green: "text-green-600",
-        blue: "text-blue-600",
-        purple: "text-purple-600",
-        yellow: "text-yellow-600",
-        red: "text-red-600",
+        green: "text-success",
+        blue: "text-info",
+        purple: "text-purple",
+        yellow: "text-warning",
+        red: "text-error",
     };
     return (
         <div>
@@ -520,11 +520,11 @@ function StatBox({ value, label, color }: { value: number; label: string; color:
 
 function WarningsPanel({ warnings }: { warnings: string[] }) {
     return (
-        <details className="mx-auto mt-4 max-w-lg rounded-lg border border-yellow-200 bg-yellow-50 text-left dark:border-yellow-800 dark:bg-yellow-900/20">
-            <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-yellow-700 dark:text-yellow-400">
+        <details className="mx-auto mt-4 max-w-lg rounded-lg border border-warning-border bg-warning-bg text-left">
+            <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-warning">
                 Peringatan ({warnings.length})
             </summary>
-            <div className="border-t border-yellow-200 px-4 py-2 text-sm text-yellow-700 dark:border-yellow-800 dark:text-yellow-400">
+            <div className="border-t border-warning-border px-4 py-2 text-sm text-warning">
                 {warnings.slice(0, 10).map((w, i) => <p key={i}>{w}</p>)}
                 {warnings.length > 10 && (
                     <p className="mt-1 text-xs">+{warnings.length - 10} lainnya</p>

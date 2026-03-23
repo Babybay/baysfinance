@@ -254,7 +254,7 @@ export function ClientDetailView({ client }: { client: ClientWithRelations }) {
                 <div className="rounded-[16px] border border-border bg-card p-6">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 rounded-[8px] bg-surface">
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <TrendingUp className="h-4 w-4 text-success" />
                         </div>
                         <span className="text-xs text-muted-foreground">Kepatuhan</span>
                     </div>
@@ -264,7 +264,7 @@ export function ClientDetailView({ client }: { client: ClientWithRelations }) {
                 <div className="rounded-[16px] border border-border bg-card p-6">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 rounded-[8px] bg-surface">
-                            <Briefcase className="h-4 w-4 text-blue-600" />
+                            <Briefcase className="h-4 w-4 text-info" />
                         </div>
                         <span className="text-xs text-muted-foreground">Izin Aktif</span>
                     </div>
