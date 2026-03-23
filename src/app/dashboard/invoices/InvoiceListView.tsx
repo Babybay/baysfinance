@@ -7,12 +7,13 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Search, Receipt, Eye, Trash2, Printer, Download, RefreshCw } from "lucide-react";
+import { Plus, Search, Receipt, Eye, Trash2, Printer, Download, RefreshCw, CreditCard, X } from "lucide-react";
 import { exportToCsv, csvIDR, csvDate } from "@/lib/csv-export";
-import { Invoice, InvoiceItem, Client, formatIDR } from "@/lib/data";
+import { Invoice, InvoiceItem, Client, PaymentRecord, formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { useToast } from "@/components/ui/Toast";
 import { createInvoice, updateInvoiceStatus } from "@/app/actions/invoices";
+import { recordPayment, getPaymentsByInvoice, deletePayment } from "@/app/actions/payments";
 import { InvoiceStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
@@ -37,6 +38,20 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
     const toast = useToast();
+
+    // Payment state
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+    const [payments, setPayments] = useState<PaymentRecord[]>([]);
+    const [totalPaid, setTotalPaid] = useState(0);
+    const [remaining, setRemaining] = useState(0);
+    const [loadingPayments, setLoadingPayments] = useState(false);
+    const [paymentForm, setPaymentForm] = useState({
+        jumlah: 0,
+        tanggalBayar: new Date().toISOString().split("T")[0],
+        metodePembayaran: "Transfer",
+        catatan: "",
+    });
 
     const [form, setForm] = useState({
         clientId: "",
@@ -92,6 +107,57 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             toast.success("Status invoice berhasil diperbarui");
         } else {
             toast.error(res.error || "Gagal mengubah status invoice");
+        }
+    };
+
+    const openPaymentModal = async (inv: Invoice) => {
+        setPaymentInvoice(inv);
+        setPaymentModalOpen(true);
+        setLoadingPayments(true);
+        setPaymentForm({ jumlah: 0, tanggalBayar: new Date().toISOString().split("T")[0], metodePembayaran: "Transfer", catatan: "" });
+        const res = await getPaymentsByInvoice(inv.id);
+        if (res.success) {
+            setPayments(res.data as PaymentRecord[]);
+            setTotalPaid(res.totalPaid);
+            setRemaining(res.remaining);
+            setPaymentForm(f => ({ ...f, jumlah: res.remaining }));
+        }
+        setLoadingPayments(false);
+    };
+
+    const handleRecordPayment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!paymentInvoice) return;
+        const res = await recordPayment({
+            invoiceId: paymentInvoice.id,
+            jumlah: paymentForm.jumlah,
+            tanggalBayar: paymentForm.tanggalBayar,
+            metodePembayaran: paymentForm.metodePembayaran,
+            catatan: paymentForm.catatan || undefined,
+        });
+        if (res.success) {
+            toast.success(res.data?.autoLunas ? "Pembayaran dicatat — Invoice lunas!" : "Pembayaran berhasil dicatat");
+            if (res.data?.autoLunas) {
+                setInvoices(invoices.map(inv => inv.id === paymentInvoice.id ? { ...inv, status: InvoiceStatus.Lunas } : inv));
+                if (viewInvoice?.id === paymentInvoice.id) setViewInvoice({ ...viewInvoice, status: InvoiceStatus.Lunas });
+            }
+            // Refresh payment list
+            await openPaymentModal(paymentInvoice);
+            router.refresh();
+        } else {
+            toast.error(res.error || "Gagal mencatat pembayaran");
+        }
+    };
+
+    const handleDeletePayment = async (paymentId: string) => {
+        if (!paymentInvoice) return;
+        const res = await deletePayment(paymentId);
+        if (res.success) {
+            toast.success("Pembayaran dihapus");
+            await openPaymentModal(paymentInvoice);
+            router.refresh();
+        } else {
+            toast.error(res.error || "Gagal menghapus pembayaran");
         }
     };
 
@@ -333,11 +399,137 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                             {isAdmin && (
                                 <>
-                                    <Button size="default" variant={viewInvoice.status === InvoiceStatus.Lunas ? "soft" : "accent"} onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Lunas)}>Tandai Lunas</Button>
+                                    {(viewInvoice.status === InvoiceStatus.Terkirim || viewInvoice.status === InvoiceStatus.JatuhTempo) && (
+                                        <Button size="default" variant="accent" onClick={() => openPaymentModal(viewInvoice)}>
+                                            <CreditCard className="h-4 w-4 mr-1" /> Catat Pembayaran
+                                        </Button>
+                                    )}
+                                    <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Lunas)}>Tandai Lunas</Button>
                                     <Button size="default" variant="soft" onClick={() => handleUpdateStatus(viewInvoice.id, InvoiceStatus.Terkirim)}>Tandai Terkirim</Button>
                                 </>
                             )}
                             <Button size="default" variant="transparent" onClick={() => window.open(`/dashboard/invoices/print/${viewInvoice.id}`, '_blank')}><Printer className="h-4 w-4 mr-1" /> Cetak</Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Payment Modal */}
+            <Modal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} title={`Pembayaran — ${paymentInvoice?.nomorInvoice || ""}`} size="lg">
+                {paymentInvoice && (
+                    <div className="space-y-5">
+                        {/* Payment Summary */}
+                        <div className="bg-surface rounded-[10px] p-4 space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Total Invoice</span>
+                                <span className="font-semibold text-foreground">{formatIDR(paymentInvoice.total)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Sudah Dibayar</span>
+                                <span className="font-semibold text-emerald-500">{formatIDR(totalPaid)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Sisa Tagihan</span>
+                                <span className="font-semibold text-amber-500">{formatIDR(remaining)}</span>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                                    style={{ width: `${paymentInvoice.total > 0 ? Math.min(100, (totalPaid / paymentInvoice.total) * 100) : 0}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground text-right">
+                                {paymentInvoice.total > 0 ? Math.round((totalPaid / paymentInvoice.total) * 100) : 0}% terbayar
+                            </p>
+                        </div>
+
+                        {/* Payment Form (only if there's remaining balance) */}
+                        {remaining > 0 && (
+                            <form onSubmit={handleRecordPayment} className="space-y-3 border border-border rounded-[10px] p-4">
+                                <h3 className="text-sm font-semibold text-foreground">Catat Pembayaran Baru</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <Input
+                                        label="Jumlah (Rp)"
+                                        type="number"
+                                        value={paymentForm.jumlah || ""}
+                                        onChange={(e) => setPaymentForm({ ...paymentForm, jumlah: parseFloat(e.target.value) || 0 })}
+                                        required
+                                        min={1}
+                                        max={remaining}
+                                    />
+                                    <Input
+                                        label="Tanggal Bayar"
+                                        type="date"
+                                        value={paymentForm.tanggalBayar}
+                                        onChange={(e) => setPaymentForm({ ...paymentForm, tanggalBayar: e.target.value })}
+                                        required
+                                    />
+                                    <Select
+                                        label="Metode Pembayaran"
+                                        value={paymentForm.metodePembayaran}
+                                        onChange={(e) => setPaymentForm({ ...paymentForm, metodePembayaran: e.target.value })}
+                                        options={[
+                                            { value: "Transfer", label: "Transfer Bank" },
+                                            { value: "Cash", label: "Tunai" },
+                                            { value: "Giro", label: "Giro" },
+                                        ]}
+                                    />
+                                    <Input
+                                        label="Catatan (opsional)"
+                                        type="text"
+                                        value={paymentForm.catatan}
+                                        onChange={(e) => setPaymentForm({ ...paymentForm, catatan: e.target.value })}
+                                        placeholder="Nomor referensi, dll."
+                                    />
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button type="submit" variant="accent" size="default">
+                                        <CreditCard className="h-4 w-4 mr-1" /> Simpan Pembayaran
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Payment History */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-foreground mb-2">Riwayat Pembayaran</h3>
+                            {loadingPayments ? (
+                                <div className="text-center py-6 text-muted-foreground animate-pulse">Memuat...</div>
+                            ) : payments.length === 0 ? (
+                                <div className="text-center py-6 text-muted-foreground text-sm">Belum ada pembayaran tercatat.</div>
+                            ) : (
+                                <div className="overflow-x-auto rounded-[8px] border border-border">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-border bg-surface">
+                                                <th className="text-left px-3 py-2 text-muted-foreground font-medium text-[11px] uppercase">Tanggal</th>
+                                                <th className="text-right px-3 py-2 text-muted-foreground font-medium text-[11px] uppercase">Jumlah</th>
+                                                <th className="text-left px-3 py-2 text-muted-foreground font-medium text-[11px] uppercase">Metode</th>
+                                                <th className="text-left px-3 py-2 text-muted-foreground font-medium text-[11px] uppercase">Catatan</th>
+                                                {isAdmin && <th className="text-right px-3 py-2 text-muted-foreground font-medium text-[11px] uppercase">Aksi</th>}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {payments.map((p) => (
+                                                <tr key={p.id}>
+                                                    <td className="px-3 py-2 text-foreground">{new Date(p.tanggalBayar).toLocaleDateString("id-ID")}</td>
+                                                    <td className="px-3 py-2 text-right font-medium text-emerald-500">{formatIDR(p.jumlah)}</td>
+                                                    <td className="px-3 py-2 text-muted-foreground">{p.metodePembayaran}</td>
+                                                    <td className="px-3 py-2 text-muted-foreground text-xs">{p.catatan || "—"}</td>
+                                                    {isAdmin && (
+                                                        <td className="px-3 py-2 text-right">
+                                                            <button onClick={() => handleDeletePayment(p.id)} className="p-1 rounded-[6px] hover:bg-error-muted text-muted-foreground hover:text-error transition-colors">
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

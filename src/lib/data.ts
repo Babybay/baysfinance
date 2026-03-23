@@ -58,6 +58,19 @@ export interface InvoiceItem {
     jumlah: number;
 }
 
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+
+export interface PaymentRecord {
+    id: string;
+    invoiceId: string;
+    jumlah: number;
+    tanggalBayar: string;
+    metodePembayaran: string;
+    catatan: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 // ─── ACCOUNTING SYSTEM ───────────────────────────────────────────────────────
 
 export interface Account {

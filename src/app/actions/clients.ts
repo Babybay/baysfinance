@@ -8,6 +8,7 @@ import {
     handleAuthError,
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
+import { generateDeadlinesForClient } from "@/lib/tax-deadline-templates";
 
 export async function getClients() {
     try {
@@ -38,6 +39,18 @@ export async function createClient(data: Omit<Client, "id" | "createdAt" | "upda
         if (!admin) return { success: false, error: "Akses ditolak." };
 
         const newClient = await prisma.client.create({ data });
+
+        // Auto-seed tax deadlines for new client
+        try {
+            const deadlines = generateDeadlinesForClient(newClient.id, newClient.jenisWP);
+            if (deadlines.length > 0) {
+                await prisma.taxDeadline.createMany({ data: deadlines });
+            }
+        } catch (deadlineError) {
+            console.error("Auto-seed deadlines error:", deadlineError);
+            // Don't fail client creation if deadline seeding fails
+        }
+
         return { success: true, data: newClient };
     } catch (error) {
         console.error("Error creating client:", error);

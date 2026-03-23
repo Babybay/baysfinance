@@ -7,6 +7,7 @@ import {
     handleAuthError,
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
+import { createInvoiceSentJournal } from "@/lib/auto-journal";
 
 // ─── VALID STATUS TRANSITIONS ───────────────────────────────────────────────
 
@@ -145,12 +146,37 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
             };
         }
 
-        const invoice = await prisma.invoice.update({
-            where: { id },
-            data: { status },
-            include: { items: true },
+        // Use transaction to atomically update status + create auto-journal
+        const result = await prisma.$transaction(async (tx) => {
+            const invoice = await tx.invoice.update({
+                where: { id },
+                data: { status },
+                include: { items: true },
+            });
+
+            let journalRefNumber: string | null = null;
+
+            // Auto-journal on Draft → Terkirim (first send)
+            if (existing.status === InvoiceStatus.Draft && status === InvoiceStatus.Terkirim) {
+                const journalResult = await createInvoiceSentJournal(tx, {
+                    id: invoice.id,
+                    nomorInvoice: invoice.nomorInvoice,
+                    clientId: invoice.clientId,
+                    subtotal: invoice.subtotal,
+                    ppn: invoice.ppn,
+                    total: invoice.total,
+                    tanggal: invoice.tanggal,
+                });
+                if (!journalResult.success) {
+                    console.warn("[updateInvoiceStatus] Auto-journal failed:", journalResult.error);
+                }
+                journalRefNumber = journalResult.refNumber || null;
+            }
+
+            return { invoice, journalRefNumber };
         });
-        return { success: true, data: invoice };
+
+        return { success: true, data: result.invoice, journalRefNumber: result.journalRefNumber };
     } catch (error) {
         console.error("updateInvoiceStatus error:", error);
         return handleAuthError(error);

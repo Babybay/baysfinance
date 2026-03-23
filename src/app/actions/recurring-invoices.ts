@@ -7,6 +7,7 @@ import {
     handleAuthError,
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
+import { createInvoiceSentJournal } from "@/lib/auto-journal";
 
 // ─── GET RECURRING INVOICES ─────────────────────────────────────────────────
 
@@ -203,7 +204,7 @@ export async function generateRecurringInvoices() {
             const seq = rows[0].counter;
             const nomorInvoice = `INV-${dateStr}-${seq.toString().padStart(3, "0")}`;
 
-            await tx.invoice.create({
+            const createdInvoice = await tx.invoice.create({
                 data: {
                     nomorInvoice,
                     clientId: recurring.clientId,
@@ -226,6 +227,20 @@ export async function generateRecurringInvoices() {
                     },
                 },
             });
+
+            // Auto-journal for recurring invoice (Piutang/Pendapatan/PPN)
+            const journalResult = await createInvoiceSentJournal(tx, {
+                id: createdInvoice.id,
+                nomorInvoice,
+                clientId: recurring.clientId,
+                subtotal,
+                ppn,
+                total,
+                tanggal: new Date(),
+            });
+            if (!journalResult.success) {
+                console.warn(`[generateRecurring] Auto-journal failed for ${nomorInvoice}:`, journalResult.error);
+            }
 
             // Advance nextRunDate atomically within transaction
             const nextRunDate = calculateNextRunDate(recurring.interval, recurring.nextRunDate);
