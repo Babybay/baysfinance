@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { AccountType } from "@prisma/client";
+import { isAdminOrStaff } from "@/lib/auth-helpers";
 
 const defaultAccounts: { code: string; name: string; type: AccountType }[] = [
     // ─── ASET ────────────────────────────────────────────────────────────────
@@ -137,6 +138,12 @@ const defaultAccounts: { code: string; name: string; type: AccountType }[] = [
 
 export async function seedAccounts(clientId?: string, force: boolean = false) {
     try {
+        // Auth: only admin/staff can seed accounts
+        const admin = await isAdminOrStaff();
+        if (!admin) {
+            return { success: false, error: "Akses ditolak. Hanya admin yang dapat melakukan operasi ini." };
+        }
+
         const resolvedClientId = clientId || null;
 
         const existing = await prisma.account.count({
@@ -147,9 +154,35 @@ export async function seedAccounts(clientId?: string, force: boolean = false) {
             return { success: true, message: "Accounts already exist" };
         }
 
+        let skipped = 0;
         if (force) {
+            // Find accounts that have journal items — deactivate instead of deleting
+            const usedAccounts = await prisma.journalItem.groupBy({
+                by: ["accountId"],
+                where: {
+                    account: { clientId: resolvedClientId },
+                },
+            });
+            const usedIds = new Set(usedAccounts.map((a) => a.accountId));
+
+            if (usedIds.size > 0) {
+                // Deactivate accounts with journal entries (preserve data integrity)
+                await prisma.account.updateMany({
+                    where: {
+                        clientId: resolvedClientId,
+                        id: { in: [...usedIds] },
+                    },
+                    data: { isActive: false },
+                });
+                skipped = usedIds.size;
+            }
+
+            // Only delete accounts without journal entries
             await prisma.account.deleteMany({
-                where: { clientId: resolvedClientId }
+                where: {
+                    clientId: resolvedClientId,
+                    id: { notIn: [...usedIds] },
+                },
             });
         }
 
@@ -167,13 +200,14 @@ export async function seedAccounts(clientId?: string, force: boolean = false) {
             )
         );
 
-        return {
-            success: true,
-            message: `${defaultAccounts.length} akun berhasil dibuat`,
-        };
-    } catch (error: any) {
+        const msg = skipped > 0
+            ? `${defaultAccounts.length} akun dibuat. ${skipped} akun lama dinonaktifkan (memiliki transaksi jurnal).`
+            : `${defaultAccounts.length} akun berhasil dibuat.`;
+
+        return { success: true, message: msg };
+    } catch (error: unknown) {
         console.error("seedAccounts error:", error);
-        console.error("Error meta:", error.meta);
-        return { success: false, error: `DB Error: ${error.code} | Meta: ${JSON.stringify(error.meta)}` };
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        return { success: false, error: `Gagal seed akun: ${msg}` };
     }
 }

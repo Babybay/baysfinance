@@ -15,13 +15,15 @@ import {
  * Returns accounts visible to the current user for a given client.
  * Shared accounts (clientId = null) are always included.
  * Client-role users can only fetch accounts for their own clientId.
+ *
+ * Balances are computed from posted journal entries when clientId is provided.
+ * Without clientId (admin template view), balances are 0.
  */
-export async function getAccounts(clientId?: string) {
+export async function getAccounts(clientId?: string, includeInactive: boolean = false) {
     try {
         if (clientId) {
             await assertCanAccessClient(clientId);
         } else {
-            // Only admins/staff may fetch shared accounts without specifying a client
             const admin = await isAdminOrStaff();
             if (!admin) {
                 return { success: false, data: [], error: "Akses ditolak." };
@@ -32,17 +34,64 @@ export async function getAccounts(clientId?: string) {
             where: {
                 OR: [
                     { clientId: null },
-                    { clientId: clientId || undefined },
+                    ...(clientId ? [{ clientId }] : []),
                 ],
-                isActive: true,
+                ...(includeInactive ? {} : { isActive: true }),
             },
             orderBy: { code: "asc" },
         });
-        return { success: true, data: accounts };
+
+        // Compute balances from posted journal entries (only meaningful with client context)
+        const balanceMap = new Map<string, number>();
+        if (clientId && accounts.length > 0) {
+            const balances = await prisma.journalItem.groupBy({
+                by: ["accountId"],
+                where: {
+                    accountId: { in: accounts.map((a) => a.id) },
+                    journalEntry: {
+                        clientId,
+                        status: JournalStatus.Posted,
+                        deletedAt: null,
+                    },
+                },
+                _sum: { debit: true, credit: true },
+            });
+
+            for (const b of balances) {
+                balanceMap.set(
+                    b.accountId,
+                    Number(b._sum.debit ?? 0) - Number(b._sum.credit ?? 0)
+                );
+            }
+        }
+
+        const data = accounts.map((a) => ({
+            ...a,
+            balance: balanceMap.get(a.id) ?? 0,
+        }));
+
+        return { success: true, data };
     } catch (error) {
         console.error("[getAccounts]", error);
         return { ...handleAuthError(error), data: [] };
     }
+}
+
+// ── Validation Helpers ──────────────────────────────────────────────────────
+
+function validateAccountCode(code: string): { valid: boolean; error?: string; sanitized: string } {
+    const trimmed = code.trim();
+    if (!trimmed) return { valid: false, error: "Kode akun wajib diisi.", sanitized: trimmed };
+    if (trimmed.length > 10) return { valid: false, error: "Kode akun maksimal 10 karakter.", sanitized: trimmed };
+    if (!/^[A-Za-z0-9]+$/.test(trimmed)) return { valid: false, error: "Kode akun hanya boleh berisi huruf dan angka.", sanitized: trimmed };
+    return { valid: true, sanitized: trimmed };
+}
+
+function validateAccountName(name: string): { valid: boolean; error?: string; sanitized: string } {
+    const trimmed = name.trim();
+    if (!trimmed) return { valid: false, error: "Nama akun wajib diisi.", sanitized: trimmed };
+    if (trimmed.length > 200) return { valid: false, error: "Nama akun maksimal 200 karakter.", sanitized: trimmed };
+    return { valid: true, sanitized: trimmed };
 }
 
 export async function createAccount(data: {
@@ -53,9 +102,15 @@ export async function createAccount(data: {
     clientId?: string;
 }) {
     try {
+        // Input validation
+        const codeCheck = validateAccountCode(data.code);
+        if (!codeCheck.valid) return { success: false, error: codeCheck.error };
+        const nameCheck = validateAccountName(data.name);
+        if (!nameCheck.valid) return { success: false, error: nameCheck.error };
+
         const resolvedClientId = data.clientId || null;
 
-        // C3: Only the owning client or admins/staff may create accounts
+        // Auth: Only the owning client or admins/staff may create accounts
         if (resolvedClientId) {
             await assertCanAccessClient(resolvedClientId);
         } else {
@@ -64,15 +119,25 @@ export async function createAccount(data: {
         }
 
         const exists = await prisma.account.findFirst({
-            where: { code: data.code, clientId: resolvedClientId },
+            where: { code: codeCheck.sanitized, clientId: resolvedClientId },
         });
         if (exists) return { success: false, error: "Kode akun sudah digunakan." };
 
         const account = await prisma.account.create({
-            data: { ...data, clientId: resolvedClientId },
+            data: {
+                code: codeCheck.sanitized,
+                name: nameCheck.sanitized,
+                type: data.type,
+                isActive: data.isActive,
+                clientId: resolvedClientId,
+            },
         });
         return { success: true, data: account };
-    } catch (error) {
+    } catch (error: unknown) {
+        // Handle unique constraint violation from soft-deleted records
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return { success: false, error: "Kode akun sudah digunakan (termasuk akun yang telah dihapus). Gunakan kode lain." };
+        }
         console.error("[createAccount]", error);
         return handleAuthError(error);
     }
@@ -83,10 +148,22 @@ export async function updateAccount(
     data: Partial<{ code: string; name: string; type: AccountType; isActive: boolean }>
 ) {
     try {
+        // Validate inputs if provided
+        if (data.code !== undefined) {
+            const codeCheck = validateAccountCode(data.code);
+            if (!codeCheck.valid) return { success: false, error: codeCheck.error };
+            data.code = codeCheck.sanitized;
+        }
+        if (data.name !== undefined) {
+            const nameCheck = validateAccountName(data.name);
+            if (!nameCheck.valid) return { success: false, error: nameCheck.error };
+            data.name = nameCheck.sanitized;
+        }
+
         const current = await prisma.account.findUnique({ where: { id } });
         if (!current) return { success: false, error: "Akun tidak ditemukan." };
 
-        // C3: authorise against the account's owning client
+        // Auth: authorise against the account's owning client
         if (current.clientId) {
             await assertCanAccessClient(current.clientId);
         } else {
@@ -94,6 +171,20 @@ export async function updateAccount(
             if (!admin) return { success: false, error: "Akses ditolak." };
         }
 
+        // Prevent type change if account has journal entries (would corrupt financial reports)
+        if (data.type && data.type !== current.type) {
+            const journalCount = await prisma.journalItem.count({
+                where: { accountId: id },
+            });
+            if (journalCount > 0) {
+                return {
+                    success: false,
+                    error: `Tipe akun tidak dapat diubah karena sudah memiliki ${journalCount} transaksi jurnal.`,
+                };
+            }
+        }
+
+        // Code uniqueness check on change
         if (data.code && data.code !== current.code) {
             const exists = await prisma.account.findFirst({
                 where: { code: data.code, clientId: current.clientId },
@@ -103,7 +194,10 @@ export async function updateAccount(
 
         const account = await prisma.account.update({ where: { id }, data });
         return { success: true, data: account };
-    } catch (error) {
+    } catch (error: unknown) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return { success: false, error: "Kode akun sudah digunakan (termasuk akun yang telah dihapus). Gunakan kode lain." };
+        }
         console.error("[updateAccount]", error);
         return handleAuthError(error);
     }
@@ -111,10 +205,10 @@ export async function updateAccount(
 
 export async function deleteAccount(id: string) {
     try {
+        // Auth check before transaction (avoid holding tx open during network call to Clerk)
         const current = await prisma.account.findUnique({ where: { id } });
         if (!current) return { success: false, error: "Akun tidak ditemukan." };
 
-        // C3: authorise
         if (current.clientId) {
             await assertCanAccessClient(current.clientId);
         } else {
@@ -122,19 +216,21 @@ export async function deleteAccount(id: string) {
             if (!admin) return { success: false, error: "Akses ditolak." };
         }
 
-        // Prevent deletion if account has journal entries
-        const txCount = await prisma.journalItem.count({
-            where: { accountId: id },
-        });
-        if (txCount > 0) {
-            return {
-                success: false,
-                error: `Akun ini memiliki ${txCount} transaksi jurnal. Nonaktifkan akun alih-alih menghapus.`,
-            };
-        }
+        // Atomic check-then-delete to prevent race condition
+        return await prisma.$transaction(async (tx) => {
+            const txCount = await tx.journalItem.count({
+                where: { accountId: id },
+            });
+            if (txCount > 0) {
+                return {
+                    success: false as const,
+                    error: `Akun ini memiliki ${txCount} transaksi jurnal. Nonaktifkan akun alih-alih menghapus.`,
+                };
+            }
 
-        await prisma.account.delete({ where: { id } });
-        return { success: true };
+            await tx.account.delete({ where: { id } });
+            return { success: true as const };
+        });
     } catch (error) {
         console.error("[deleteAccount]", error);
         return handleAuthError(error);
