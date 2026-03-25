@@ -209,10 +209,10 @@ export function JournalEntriesListView({
                                         </td>
                                         <td className="p-4 text-sm">
                                             <Badge
-                                                variant={entry.status === "Posted" ? "success" : "default"}
+                                                variant={entry.status === "Posted" ? "success" : entry.status === "Reversed" ? "danger" : "default"}
                                                 className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                                             >
-                                                {entry.status}
+                                                {entry.status === "Reversed" ? "Dibalik" : entry.status}
                                             </Badge>
                                         </td>
                                         <td className="p-4 text-right">

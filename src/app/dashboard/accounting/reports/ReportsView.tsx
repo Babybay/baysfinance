@@ -27,7 +27,7 @@ export function ReportsView({ clients }: ReportsViewProps) {
         if (!selectedClient) return;
         setLoading(true);
         const [res, cfRes] = await Promise.all([
-            getFinancialReports(selectedClient, new Date(endDate), new Date(startDate)),
+            getFinancialReports(selectedClient, new Date(startDate), new Date(endDate)),
             getCashFlowReport(selectedClient, new Date(startDate), new Date(endDate)),
         ]);
         if (res.success) setReportData(res.data);

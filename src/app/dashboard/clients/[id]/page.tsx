@@ -26,5 +26,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         );
     }
 
-    return <ClientDetailView client={res.data} />;
+    // Convert Prisma Decimal fields to number for client component
+    const client = {
+        ...res.data,
+        invoices: res.data.invoices.map(inv => ({
+            ...inv,
+            total: Number(inv.total),
+            items: inv.items.map(item => ({
+                ...item,
+                harga: Number(item.harga),
+                jumlah: Number(item.jumlah),
+            })),
+        })),
+        permits: res.data.permits.map(p => ({
+            ...p,
+            feeAmount: Number(p.feeAmount),
+        })),
+    };
+
+    return <ClientDetailView client={client} />;
 }

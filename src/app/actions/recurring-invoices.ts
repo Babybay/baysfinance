@@ -28,7 +28,16 @@ export async function getRecurringInvoices(clientId?: string) {
             include: { items: true, client: true },
             orderBy: { nextRunDate: "asc" },
         });
-        return { success: true, data: recurring };
+        // Normalize Decimal → number for JSON serialization
+        const normalized = recurring.map((r) => ({
+            ...r,
+            items: r.items.map((item) => ({
+                ...item,
+                harga: Number(item.harga),
+                jumlah: Number(item.jumlah),
+            })),
+        }));
+        return { success: true, data: normalized };
     } catch (error) {
         console.error("getRecurringInvoices error:", error);
         return { ...handleAuthError(error), data: [] };
@@ -201,7 +210,7 @@ export async function generateRecurringInvoices() {
                 continue;
             }
 
-            const subtotal = recurring.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
+            const subtotal = recurring.items.reduce((sum, item) => sum + item.qty * Number(item.harga), 0);
             const ppn = roundRupiah(subtotal * TAX_CONFIG.PPN_RATE);
             const total = subtotal + ppn;
 
@@ -243,8 +252,8 @@ export async function generateRecurringInvoices() {
                             create: recurring.items.map((item) => ({
                                 deskripsi: item.deskripsi,
                                 qty: item.qty,
-                                harga: item.harga,
-                                jumlah: item.qty * item.harga,
+                                harga: Number(item.harga),
+                                jumlah: item.qty * Number(item.harga),
                             })),
                         },
                     },

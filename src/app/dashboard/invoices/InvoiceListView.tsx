@@ -178,8 +178,8 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
     });
 
     const stats = {
-        totalPendapatan: invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((sum, i) => sum + i.total, 0),
-        belumBayar: invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((sum, i) => sum + i.total, 0),
+        totalPendapatan: invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((sum, i) => sum + Number(i.total), 0),
+        belumBayar: invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((sum, i) => sum + Number(i.total), 0),
         jumlahInvoice: invoices.length,
     };
 

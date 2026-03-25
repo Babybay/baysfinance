@@ -256,13 +256,14 @@ export async function createInvoiceReversalJournal(
             { accountId: accountMap.get(ACCOUNT_CODES.PIUTANG_USAHA)!, debit: 0, credit: totalCredit },
         ];
 
-        const refNumber = await generateRefNumber(tx, "AJ", new Date());
+        const reversalDate = invoice.tanggal;
+        const refNumber = await generateRefNumber(tx, "AJ", reversalDate);
         const description = `Pembatalan invoice - ${invoice.nomorInvoice}`;
 
         const entry = await (tx as any).journalEntry.create({
             data: {
                 refNumber,
-                date: new Date(),
+                date: reversalDate,
                 description,
                 status: JournalStatus.Posted,
                 clientId: invoice.clientId,
@@ -281,6 +282,14 @@ export async function createInvoiceReversalJournal(
         });
 
         await updateAccountBalances(tx, invoice.clientId, items);
+
+        // Mark original journal as Reversed
+        if (originalJournal) {
+            await (tx as any).journalEntry.update({
+                where: { id: originalJournal.id },
+                data: { status: JournalStatus.Reversed },
+            });
+        }
 
         return { success: true, journalEntryId: entry.id, refNumber };
     } catch (error) {
@@ -443,6 +452,14 @@ export async function createPaymentReversalJournal(
         });
 
         await updateAccountBalances(tx, invoice.clientId, items);
+
+        // Mark original journal as Reversed
+        if (originalJournal) {
+            await (tx as any).journalEntry.update({
+                where: { id: originalJournal.id },
+                data: { status: JournalStatus.Reversed },
+            });
+        }
 
         return { success: true, journalEntryId: entry.id, refNumber };
     } catch (error) {

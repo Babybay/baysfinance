@@ -14,11 +14,19 @@ export default async function InvoicePrintPage({ params }: PrintPageProps) {
         notFound();
     }
 
-    // Serialize dates to strings for the client component
+    // Serialize dates to strings and convert Decimal fields to number for the client component
     const invoice = {
         ...res.data,
         tanggal: res.data.tanggal.toISOString(),
         jatuhTempo: res.data.jatuhTempo.toISOString(),
+        subtotal: Number(res.data.subtotal),
+        ppn: Number(res.data.ppn),
+        total: Number(res.data.total),
+        items: res.data.items.map(item => ({
+            ...item,
+            harga: Number(item.harga),
+            jumlah: Number(item.jumlah),
+        })),
     };
 
     return <InvoicePrintView invoice={invoice} />;

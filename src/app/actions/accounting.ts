@@ -381,6 +381,87 @@ export async function deleteJournalEntry(id: string) {
 }
 
 /**
+ * Reverse a POSTED journal entry.
+ * Creates a new journal with debits/credits swapped, marks original as Reversed.
+ */
+export async function reverseJournalEntry(id: string, reason?: string) {
+    try {
+        const entry = await prisma.journalEntry.findUnique({
+            where: { id },
+            include: { items: true },
+        });
+        if (!entry) return { success: false, error: "Jurnal tidak ditemukan." };
+
+        if (entry.status !== JournalStatus.Posted) {
+            return {
+                success: false,
+                error: "Hanya jurnal yang sudah diposting yang dapat dibalik.",
+            };
+        }
+
+        await assertCanAccessClient(entry.clientId);
+
+        const result = await prisma.$transaction(async (tx) => {
+            // Generate reversal ref number
+            const counterKey = `REV-${entry.refNumber}`;
+            const rows = await tx.$queryRaw<[{ counter: number }]>(
+                Prisma.sql`
+                    INSERT INTO permit_counters (id, counter)
+                    VALUES (${counterKey}, 1)
+                    ON CONFLICT (id) DO UPDATE
+                        SET counter = permit_counters.counter + 1
+                    RETURNING counter
+                `
+            );
+            const refNumber = `REV-${entry.refNumber}`;
+
+            // Create reversal journal (swap debits and credits)
+            const reversalItems = entry.items.map((item) => ({
+                accountId: item.accountId,
+                debit: Number(item.credit),
+                credit: Number(item.debit),
+            }));
+
+            const reversal = await tx.journalEntry.create({
+                data: {
+                    refNumber,
+                    date: entry.date,
+                    description: `Pembalik: ${entry.description || entry.refNumber}${reason ? ` — ${reason}` : ""}`,
+                    clientId: entry.clientId,
+                    status: JournalStatus.Posted,
+                    source: "reversal",
+                    relatedEntryId: entry.id,
+                    totalDebit: entry.totalCredit,
+                    totalCredit: entry.totalDebit,
+                    items: { create: reversalItems },
+                },
+            });
+
+            // Update account balances (subtract original amounts)
+            await updateAccountBalances(
+                tx,
+                entry.clientId,
+                reversalItems,
+                "add"
+            );
+
+            // Mark original as Reversed
+            await tx.journalEntry.update({
+                where: { id },
+                data: { status: JournalStatus.Reversed },
+            });
+
+            return { refNumber: reversal.refNumber, reversalId: reversal.id };
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        return { success: true, data: result };
+    } catch (error) {
+        log.error({ err: error }, "reverseJournalEntry failed");
+        return handleAuthError(error);
+    }
+}
+
+/**
  * M1 — Update a DRAFT journal entry only.
  * Posted entries are immutable.
  */
@@ -567,8 +648,8 @@ export async function getGeneralLedger(
  */
 export async function getFinancialReports(
     clientId: string,
-    endDate: Date = new Date(),
-    startDate?: Date
+    startDate?: Date,
+    endDate: Date = new Date()
 ) {
     try {
         await assertCanAccessClient(clientId);

@@ -37,6 +37,10 @@ export async function getExpenses(clientId?: string) {
             success: true,
             data: expenses.map((e) => ({
                 ...e,
+                jumlah: Number(e.jumlah),
+                pphRate: e.pphRate ? Number(e.pphRate) : null,
+                pphAmount: e.pphAmount ? Number(e.pphAmount) : null,
+                netAmount: e.netAmount ? Number(e.netAmount) : null,
                 clientName: e.client.nama,
             })),
         };

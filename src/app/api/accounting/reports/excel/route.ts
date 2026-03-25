@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     const endDate = endDateStr ? new Date(endDateStr) : new Date();
     const startDate = startDateStr ? new Date(startDateStr) : undefined;
 
-    const res = await getFinancialReports(clientId, endDate, startDate);
+    const res = await getFinancialReports(clientId, startDate, endDate);
     if (!res.success || !res.data) {
         return NextResponse.json({ error: res.error || "Failed" }, { status: 500 });
     }

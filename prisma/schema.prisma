@@ -121,9 +121,9 @@ model Invoice {
   nomorInvoice       String            @unique
   tanggal            DateTime          @default(now())
   jatuhTempo         DateTime
-  subtotal           Float
-  ppn                Float
-  total              Float
+  subtotal           Decimal  @db.Decimal(18, 2)
+  ppn                Decimal  @db.Decimal(18, 2)
+  total              Decimal  @db.Decimal(18, 2)
   status             InvoiceStatus
   catatan            String?
   namaBank           String?
@@ -155,8 +155,8 @@ model InvoiceItem {
   id        String   @id @default(cuid())
   deskripsi String
   qty       Int
-  harga     Float
-  jumlah    Float
+  harga     Decimal  @db.Decimal(18, 2)
+  jumlah    Decimal  @db.Decimal(18, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   invoiceId String
@@ -169,7 +169,7 @@ model InvoiceItem {
 model Payment {
   id               String    @id @default(cuid())
   invoiceId        String
-  jumlah           Float
+  jumlah           Decimal  @db.Decimal(18, 2)
   tanggalBayar     DateTime  @default(now())
   metodePembayaran String?
   buktiUrl         String?
@@ -206,8 +206,8 @@ model RecurringInvoiceItem {
   id                 String           @id @default(cuid())
   deskripsi          String
   qty                Int
-  harga              Float
-  jumlah             Float
+  harga              Decimal  @db.Decimal(18, 2)
+  jumlah             Decimal  @db.Decimal(18, 2)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   recurringInvoiceId String
@@ -270,7 +270,7 @@ model PermitCase {
   riskCategory    String
   status          PermitCaseStatus
   priority        PermitPriority    @default(Medium)
-  feeAmount       Float
+  feeAmount       Decimal  @db.Decimal(18, 2)
   notes           String?
   applicationData Json?
   deadline        DateTime?
@@ -541,16 +541,16 @@ model Expense {
   nomorBukti         String   @unique
   tanggal            DateTime
   deskripsi          String
-  jumlah             Float
+  jumlah             Decimal  @db.Decimal(18, 2)
   vendor             String?
   isPaid             Boolean  @default(true)
   metodePembayaran   String?
   expenseAccountCode String
   bankAccountCode    String   @default("110")
   pphType            String?
-  pphRate            Float?
-  pphAmount          Float?
-  netAmount          Float?
+  pphRate            Decimal? @db.Decimal(8, 4)
+  pphAmount          Decimal? @db.Decimal(18, 2)
+  netAmount          Decimal? @db.Decimal(18, 2)
   catatan            String?
   clientId           String
   createdBy          String?
@@ -688,6 +688,7 @@ enum AccountType {
 enum JournalStatus {
   Draft
   Posted
+  Reversed
 }
 
 enum AccDocType {

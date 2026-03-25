@@ -41,7 +41,19 @@ export async function getInvoices(clientId?: string) {
             include: { items: true },
             orderBy: { tanggal: "desc" },
         });
-        return { success: true, data: invoices };
+        // Normalize Decimal → number for JSON serialization
+        const normalized = invoices.map((inv) => ({
+            ...inv,
+            subtotal: Number(inv.subtotal),
+            ppn: Number(inv.ppn),
+            total: Number(inv.total),
+            items: inv.items.map((item) => ({
+                ...item,
+                harga: Number(item.harga),
+                jumlah: Number(item.jumlah),
+            })),
+        }));
+        return { success: true, data: normalized };
     } catch (error) {
         log.error({ err: error }, "getInvoices failed");
         return { ...handleAuthError(error), data: [] };
@@ -189,9 +201,9 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
                     id: invoice.id,
                     nomorInvoice: invoice.nomorInvoice,
                     clientId: invoice.clientId,
-                    subtotal: invoice.subtotal,
-                    ppn: invoice.ppn,
-                    total: invoice.total,
+                    subtotal: Number(invoice.subtotal),
+                    ppn: Number(invoice.ppn),
+                    total: Number(invoice.total),
                     tanggal: invoice.tanggal,
                 });
                 if (!journalResult.success) {
@@ -246,9 +258,9 @@ export async function deleteInvoice(id: string) {
                     id: existing.id,
                     nomorInvoice: existing.nomorInvoice,
                     clientId: existing.clientId,
-                    subtotal: existing.subtotal,
-                    ppn: existing.ppn,
-                    total: existing.total,
+                    subtotal: Number(existing.subtotal),
+                    ppn: Number(existing.ppn),
+                    total: Number(existing.total),
                     tanggal: existing.tanggal,
                 });
                 // Soft-delete via raw to bypass the extended client within tx

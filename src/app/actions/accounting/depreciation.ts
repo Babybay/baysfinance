@@ -116,8 +116,22 @@ export async function runMonthlyDepreciation(data: {
 
         totalDepreciation = round2(totalDepreciation);
 
-        // Create depreciation journal in a transaction
+        // Create depreciation journal + update asset book values in a single transaction
         const result = await prisma.$transaction(async (tx) => {
+            // Idempotency check: prevent running same period twice
+            const existing = await (tx as any).journalEntry.findFirst({
+                where: {
+                    clientId: data.clientId,
+                    source: "auto_depreciation",
+                    description: { contains: data.period },
+                    status: "Posted",
+                },
+                select: { id: true, refNumber: true },
+            });
+            if (existing) {
+                throw new Error(`DUPLICATE_PERIOD:${data.period}:${existing.refNumber}`);
+            }
+
             const journalResult = await createDepreciationJournal(tx, {
                 clientId: data.clientId,
                 period: data.period,
@@ -127,6 +141,27 @@ export async function runMonthlyDepreciation(data: {
 
             if (!journalResult.success) {
                 throw new Error(journalResult.error || "Gagal membuat jurnal penyusutan.");
+            }
+
+            // Update each asset's accumulated depreciation and book value
+            for (const asset of assets) {
+                const cost = Number(asset.costCurrent);
+                const rate = Number(asset.depreciationRate);
+                const bookVal = Number(asset.bookValue);
+
+                if (cost <= 0 || rate <= 0 || bookVal <= 0) continue;
+
+                let monthly = round2((cost * rate) / 12);
+                if (monthly > bookVal) monthly = bookVal;
+                if (monthly <= 0) continue;
+
+                await (tx as any).fixedAsset.update({
+                    where: { id: asset.id },
+                    data: {
+                        accumDeprecCurrent: { increment: monthly },
+                        bookValue: { decrement: monthly },
+                    },
+                });
             }
 
             return journalResult;
@@ -143,6 +178,14 @@ export async function runMonthlyDepreciation(data: {
             },
         };
     } catch (error) {
+        // Handle duplicate period error gracefully
+        if (error instanceof Error && error.message.startsWith("DUPLICATE_PERIOD:")) {
+            const parts = error.message.split(":");
+            return {
+                success: false,
+                error: `Penyusutan untuk periode ${parts[1]} sudah pernah dijalankan (Ref: ${parts[2]}).`,
+            };
+        }
         log.error({ err: error }, "runMonthlyDepreciation failed");
         return handleAuthError(error);
     }

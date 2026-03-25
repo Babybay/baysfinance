@@ -85,6 +85,7 @@ export async function getPermits(clientId?: string, permitTypeId?: string) {
 
         const mappedPermits = permits.map(p => ({
             ...p,
+            feeAmount: Number(p.feeAmount),
             clientName: p.client?.nama ?? "Unknown",
         }));
 
@@ -113,6 +114,7 @@ export async function getPermitById(id: string) {
 
         const mappedPermit = {
             ...permit,
+            feeAmount: Number(permit.feeAmount),
             clientName: permit.client?.nama ?? "Unknown",
         };
 

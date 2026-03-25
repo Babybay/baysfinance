@@ -95,7 +95,7 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                 const d = new Date(inv.tanggal);
                 const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
                 if (!revenueByMonth[key]) revenueByMonth[key] = { revenue: 0, count: 0 };
-                revenueByMonth[key].revenue += inv.total;
+                revenueByMonth[key].revenue += Number(inv.total);
                 revenueByMonth[key].count += 1;
             }
 

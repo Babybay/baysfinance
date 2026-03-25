@@ -39,6 +39,9 @@ export default async function DashboardPage() {
         ...i,
         tanggal: new Date(i.tanggal).toISOString().split("T")[0],
         jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
+        subtotal: Number(i.subtotal),
+        ppn: Number(i.ppn),
+        total: Number(i.total),
         status: i.status as InvoiceStatus,
         items: [],
         catatan: i.catatan || ""

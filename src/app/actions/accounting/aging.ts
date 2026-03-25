@@ -89,15 +89,15 @@ export async function getInvoiceAging(
             );
 
             const totalPaid = inv.payments.reduce(
-                (sum, p) => sum + p.jumlah,
+                (sum, p) => sum + Number(p.jumlah),
                 0
             );
-            const remaining = inv.total - totalPaid;
+            const remaining = Number(inv.total) - totalPaid;
 
             const agingInvoice: AgingInvoice = {
                 nomorInvoice: inv.nomorInvoice,
                 clientName: inv.clientName,
-                total: inv.total,
+                total: Number(inv.total),
                 totalPaid,
                 remaining,
                 jatuhTempo: inv.jatuhTempo.toISOString(),

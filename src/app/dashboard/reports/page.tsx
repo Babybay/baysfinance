@@ -33,6 +33,9 @@ export default function ReportsPage() {
                 ...i,
                 tanggal: new Date(i.tanggal).toISOString().split("T")[0],
                 jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
+                subtotal: Number(i.subtotal),
+                ppn: Number(i.ppn),
+                total: Number(i.total),
                 status: i.status as InvoiceStatus,
                 items: [],
                 catatan: i.catatan || ""
@@ -53,8 +56,8 @@ export default function ReportsPage() {
         setIsLoaded(true);
     };
 
-    const totalPendapatan = invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((s, i) => s + i.total, 0);
-    const outstanding = invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((s, i) => s + i.total, 0);
+    const totalPendapatan = invoices.filter((i) => i.status === InvoiceStatus.Lunas).reduce((s, i) => s + Number(i.total), 0);
+    const outstanding = invoices.filter((i) => i.status === InvoiceStatus.Terkirim || i.status === InvoiceStatus.JatuhTempo).reduce((s, i) => s + Number(i.total), 0);
     const klienAktif = clients.filter((c) => c.status === ClientStatus.Aktif).length;
     const deadlineTerlambat = deadlines.filter((d) => d.status === TaxDeadlineStatus.Terlambat).length;
     const deadlineSudah = deadlines.filter((d) => d.status === TaxDeadlineStatus.SudahLapor).length;
@@ -64,14 +67,14 @@ export default function ReportsPage() {
     const monthlyRevenue: Record<string, number> = {};
     invoices.filter((i) => i.status === InvoiceStatus.Lunas).forEach((inv) => {
         const month = new Date(inv.tanggal).toLocaleDateString("id-ID", { month: "short", year: "numeric" });
-        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + inv.total;
+        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + Number(inv.total);
     });
 
     // Per-client revenue
     const clientRevenue: { name: string; total: number }[] = [];
     const clientMap: Record<string, number> = {};
     invoices.filter((i) => i.status === InvoiceStatus.Lunas).forEach((inv) => {
-        clientMap[inv.clientName] = (clientMap[inv.clientName] || 0) + inv.total;
+        clientMap[inv.clientName] = (clientMap[inv.clientName] || 0) + Number(inv.total);
     });
     Object.entries(clientMap)
         .sort((a, b) => b[1] - a[1])

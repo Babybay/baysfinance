@@ -7,9 +7,11 @@ const globalForPrisma = globalThis as unknown as {
 
 const SOFT_DELETE_MODELS = new Set([
     'Client', 'TaxDeadline', 'Document', 'Invoice',
-    'PermitCase', 'JournalEntry', 'Payment',
+    'PermitCase',
     'RecurringInvoice', 'Account', 'ImportBatch', 'FixedAsset',
     'Expense'
+    // JournalEntry and Payment are intentionally EXCLUDED:
+    // Financial records must be immutable — use reversing entries instead of deletion.
 ])
 
 /**
@@ -20,17 +22,14 @@ const SOFT_DELETE_CASCADE: Record<string, { model: string; foreignKey: string }[
     Client: [
         { model: 'TaxDeadline', foreignKey: 'clientId' },
         { model: 'Document', foreignKey: 'clientId' },
-        { model: 'Invoice', foreignKey: 'clientId' },  // Invoice → Payment cascades via nested rule below
+        { model: 'Invoice', foreignKey: 'clientId' },
         { model: 'PermitCase', foreignKey: 'clientId' },
-        { model: 'JournalEntry', foreignKey: 'clientId' },
         { model: 'RecurringInvoice', foreignKey: 'clientId' },
         { model: 'Account', foreignKey: 'clientId' },
         { model: 'ImportBatch', foreignKey: 'clientId' },
         { model: 'FixedAsset', foreignKey: 'clientId' },
         { model: 'Expense', foreignKey: 'clientId' },
-    ],
-    Invoice: [
-        { model: 'Payment', foreignKey: 'invoiceId' },
+        // JournalEntry and Payment are NOT cascaded — they are immutable financial records.
     ],
 }
 

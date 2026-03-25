@@ -33,13 +33,14 @@ export async function getPaymentsByInvoice(invoiceId: string) {
             orderBy: { tanggalBayar: "desc" },
         });
 
-        const totalPaid = payments.reduce((sum, p) => sum + p.jumlah, 0);
-        const remaining = Math.max(0, invoice.total - totalPaid);
+        const totalPaid = payments.reduce((sum, p) => sum + Number(p.jumlah), 0);
+        const remaining = Math.max(0, Number(invoice.total) - totalPaid);
 
         return {
             success: true,
             data: payments.map((p) => ({
                 ...p,
+                jumlah: Number(p.jumlah),
                 tanggalBayar: p.tanggalBayar.toISOString(),
                 createdAt: p.createdAt.toISOString(),
                 updatedAt: p.updatedAt.toISOString(),
@@ -99,8 +100,8 @@ export async function recordPayment(data: {
             where: { invoiceId: data.invoiceId },
             _sum: { jumlah: true },
         });
-        const totalPaidBefore = existingSum._sum.jumlah ?? 0;
-        const remaining = invoice.total - totalPaidBefore;
+        const totalPaidBefore = Number(existingSum._sum.jumlah ?? 0);
+        const remaining = Number(invoice.total) - totalPaidBefore;
 
         if (data.jumlah > remaining + 0.01) {
             return {
@@ -142,8 +143,8 @@ export async function recordPayment(data: {
                 where: { invoiceId: data.invoiceId },
                 _sum: { jumlah: true },
             });
-            const totalPaidAfter = allPaymentsSum._sum.jumlah ?? 0;
-            const autoLunas = totalPaidAfter >= invoice.total - 0.01;
+            const totalPaidAfter = Number(allPaymentsSum._sum.jumlah ?? 0);
+            const autoLunas = totalPaidAfter >= Number(invoice.total) - 0.01;
 
             if (autoLunas) {
                 await tx.invoice.update({
@@ -196,13 +197,13 @@ export async function deletePayment(paymentId: string) {
         await assertCanAccessClient(payment.invoice.clientId);
 
         await prisma.$transaction(async (tx) => {
-            // 1. Soft-delete payment
+            // 1. Delete payment (reversal journal serves as the audit trail)
             await tx.payment.delete({ where: { id: paymentId } });
 
             // 2. Create reversing journal
             const reversalResult = await createPaymentReversalJournal(
                 tx,
-                { id: payment.id, jumlah: payment.jumlah, tanggalBayar: payment.tanggalBayar },
+                { id: payment.id, jumlah: Number(payment.jumlah), tanggalBayar: payment.tanggalBayar },
                 { nomorInvoice: payment.invoice.nomorInvoice, clientId: payment.invoice.clientId }
             );
             if (!reversalResult.success) {
@@ -215,9 +216,9 @@ export async function deletePayment(paymentId: string) {
                     where: { invoiceId: payment.invoiceId },
                     _sum: { jumlah: true },
                 });
-                const totalPaidAfter = remainingSum._sum.jumlah ?? 0;
+                const totalPaidAfter = Number(remainingSum._sum.jumlah ?? 0);
 
-                if (totalPaidAfter < payment.invoice.total - 0.01) {
+                if (totalPaidAfter < Number(payment.invoice.total) - 0.01) {
                     // Check if overdue
                     const inv = await tx.invoice.findUnique({
                         where: { id: payment.invoiceId },

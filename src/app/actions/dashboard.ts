@@ -15,7 +15,7 @@ export async function getDashboardStats() {
             where: { status: InvoiceStatus.Terkirim },
             select: { total: true }
         });
-        const totalPendingInvoice = invoices.reduce((acc, inv) => acc + inv.total, 0);
+        const totalPendingInvoice = invoices.reduce((acc, inv) => acc + Number(inv.total), 0);
 
         const permits = await prisma.permitCase.count({
             where: {
