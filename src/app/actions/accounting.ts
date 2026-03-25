@@ -265,6 +265,19 @@ export async function createJournalEntry(data: {
         const prefix = `JV-${dateStr}-`;
 
         const entry = await prisma.$transaction(async (tx) => {
+            // Block posting to closed fiscal periods
+            const closedPeriod = await tx.fiscalPeriodClose.findFirst({
+                where: {
+                    clientId: data.clientId,
+                    periodStart: { lte: data.date },
+                    periodEnd: { gte: data.date },
+                },
+                select: { periodLabel: true },
+            });
+            if (closedPeriod) {
+                throw new Error(`CLOSED_PERIOD:${closedPeriod.periodLabel}`);
+            }
+
             // Atomic ref number generation — single INSERT ON CONFLICT (no race condition)
             const rows = await tx.$queryRaw<[{ counter: number }]>(
                 Prisma.sql`
@@ -329,6 +342,10 @@ export async function createJournalEntry(data: {
             },
         };
     } catch (error) {
+        if (error instanceof Error && error.message.startsWith("CLOSED_PERIOD:")) {
+            const label = error.message.replace("CLOSED_PERIOD:", "");
+            return { success: false, error: `Tidak dapat posting jurnal ke periode yang sudah ditutup (${label}).` };
+        }
         log.error({ err: error }, "createJournalEntry failed");
         return handleAuthError(error);
     }

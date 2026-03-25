@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, PieChart, Printer, Download } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, PieChart, Printer, Download, Banknote } from "lucide-react";
 import { Client, formatIDR } from "@/lib/data";
 import { getFinancialReports } from "@/app/actions/accounting";
+import { getCashFlowReport } from "@/app/actions/accounting/cash-flow";
 
 interface ReportsViewProps {
     clients: Client[];
@@ -19,19 +20,18 @@ export function ReportsView({ clients }: ReportsViewProps) {
     const [startDate, setStartDate] = useState(`${new Date().getFullYear()}-01-01`);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [reportData, setReportData] = useState<any>(null);
+    const [cashFlowData, setCashFlowData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
     const fetchReport = async () => {
         if (!selectedClient) return;
         setLoading(true);
-        const res = await getFinancialReports(
-            selectedClient,
-            new Date(endDate),
-            new Date(startDate)
-        );
-        if (res.success) {
-            setReportData(res.data);
-        }
+        const [res, cfRes] = await Promise.all([
+            getFinancialReports(selectedClient, new Date(endDate), new Date(startDate)),
+            getCashFlowReport(selectedClient, new Date(startDate), new Date(endDate)),
+        ]);
+        if (res.success) setReportData(res.data);
+        if (cfRes.success) setCashFlowData(cfRes.data);
         setLoading(false);
     };
 
@@ -267,6 +267,78 @@ export function ReportsView({ clients }: ReportsViewProps) {
                             <span className={`font-bold text-lg ${netProfit >= 0 ? "text-success" : "text-error"}`}>{formatIDR(netProfit)}</span>
                         </div>
                     </Card>
+
+                    {/* Cash Flow Statement */}
+                    {cashFlowData && (
+                        <Card className="rounded-xl border-border shadow-sm col-span-1 md:col-span-2">
+                            <CardHeader className="border-b border-border bg-muted/20">
+                                <CardTitle className="text-lg font-serif flex items-center gap-2">
+                                    <Banknote className="h-5 w-5" /> Arus Kas (Cash Flow)
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-border">
+                                    {/* Operating */}
+                                    <div className="p-4 space-y-2">
+                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                            Aktivitas Operasi
+                                            <span className={cashFlowData.operating.total >= 0 ? "text-success" : "text-error"}>{formatIDR(cashFlowData.operating.total)}</span>
+                                        </h4>
+                                        {cashFlowData.operating.items.map((item: any, i: number) => (
+                                            <div key={i} className="flex justify-between text-sm">
+                                                <span className="truncate mr-4">{item.description}</span>
+                                                <span className={`font-medium shrink-0 ${item.amount >= 0 ? "" : "text-error"}`}>{formatIDR(item.amount)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Investing */}
+                                    <div className="p-4 space-y-2">
+                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                            Aktivitas Investasi
+                                            <span className={cashFlowData.investing.total >= 0 ? "text-success" : "text-error"}>{formatIDR(cashFlowData.investing.total)}</span>
+                                        </h4>
+                                        {cashFlowData.investing.items.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground italic">Tidak ada aktivitas investasi</p>
+                                        ) : cashFlowData.investing.items.map((item: any, i: number) => (
+                                            <div key={i} className="flex justify-between text-sm">
+                                                <span className="truncate mr-4">{item.description}</span>
+                                                <span className={`font-medium shrink-0 ${item.amount >= 0 ? "" : "text-error"}`}>{formatIDR(item.amount)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Financing */}
+                                    <div className="p-4 space-y-2">
+                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                            Aktivitas Pendanaan
+                                            <span className={cashFlowData.financing.total >= 0 ? "text-success" : "text-error"}>{formatIDR(cashFlowData.financing.total)}</span>
+                                        </h4>
+                                        {cashFlowData.financing.items.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground italic">Tidak ada aktivitas pendanaan</p>
+                                        ) : cashFlowData.financing.items.map((item: any, i: number) => (
+                                            <div key={i} className="flex justify-between text-sm">
+                                                <span className="truncate mr-4">{item.description}</span>
+                                                <span className={`font-medium shrink-0 ${item.amount >= 0 ? "" : "text-error"}`}>{formatIDR(item.amount)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <div className="p-4 bg-muted/30 border-t border-border space-y-1">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Saldo Awal Kas</span>
+                                    <span className="font-medium">{formatIDR(cashFlowData.openingBalance)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Perubahan Kas Bersih</span>
+                                    <span className={`font-medium ${cashFlowData.netCashChange >= 0 ? "text-success" : "text-error"}`}>{formatIDR(cashFlowData.netCashChange)}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-1 border-t border-border">
+                                    <span className="text-xs font-bold uppercase text-muted-foreground">Saldo Akhir Kas</span>
+                                    <span className="font-bold text-lg">{formatIDR(cashFlowData.closingBalance)}</span>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
                 </div>
             )}
         </div>

@@ -58,6 +58,7 @@ model Client {
   accountingDocs     AccountingDocument[]
   accounts           Account[]
   documents          Document[]
+  expenses           Expense[]
   financialSnapshots FinancialReportSnapshot[]
   fixedAssets        FixedAsset[]
   importBatches      ImportBatch[]
@@ -533,6 +534,34 @@ model FixedAsset {
   @@index([clientId, source])
   @@index([importBatchId])
   @@map("fixed_assets")
+}
+
+model Expense {
+  id                 String   @id @default(cuid())
+  nomorBukti         String   @unique
+  tanggal            DateTime
+  deskripsi          String
+  jumlah             Float
+  vendor             String?
+  isPaid             Boolean  @default(true)
+  metodePembayaran   String?
+  expenseAccountCode String
+  bankAccountCode    String   @default("110")
+  pphType            String?
+  pphRate            Float?
+  pphAmount          Float?
+  netAmount          Float?
+  catatan            String?
+  clientId           String
+  createdBy          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+  client             Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([clientId, tanggal])
+  @@map("expenses")
 }
 
 model AccountBalance {

@@ -8,7 +8,8 @@ const globalForPrisma = globalThis as unknown as {
 const SOFT_DELETE_MODELS = new Set([
     'Client', 'TaxDeadline', 'Document', 'Invoice',
     'PermitCase', 'JournalEntry', 'Payment',
-    'RecurringInvoice', 'Account', 'ImportBatch', 'FixedAsset'
+    'RecurringInvoice', 'Account', 'ImportBatch', 'FixedAsset',
+    'Expense'
 ])
 
 /**
@@ -26,6 +27,7 @@ const SOFT_DELETE_CASCADE: Record<string, { model: string; foreignKey: string }[
         { model: 'Account', foreignKey: 'clientId' },
         { model: 'ImportBatch', foreignKey: 'clientId' },
         { model: 'FixedAsset', foreignKey: 'clientId' },
+        { model: 'Expense', foreignKey: 'clientId' },
     ],
     Invoice: [
         { model: 'Payment', foreignKey: 'invoiceId' },

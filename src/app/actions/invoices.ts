@@ -12,7 +12,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("invoices");
-import { createInvoiceSentJournal } from "@/lib/auto-journal";
+import { createInvoiceSentJournal, createInvoiceReversalJournal } from "@/lib/auto-journal";
 import { round2, roundRupiah } from "@/lib/accounting-helpers";
 import { TAX_CONFIG } from "@/lib/tax-config";
 
@@ -225,21 +225,40 @@ export async function deleteInvoice(id: string) {
     try {
         const existing = await prisma.invoice.findUnique({
             where: { id },
-            select: { id: true, status: true, clientId: true },
+            select: { id: true, nomorInvoice: true, status: true, clientId: true, subtotal: true, ppn: true, total: true, tanggal: true },
         });
         if (!existing) return { success: false, error: "Invoice tidak ditemukan" };
 
         await assertCanAccessClient(existing.clientId);
 
-        // Only Draft invoices can be deleted
-        if (existing.status !== InvoiceStatus.Draft) {
+        // Lunas invoices cannot be deleted (payments exist)
+        if (existing.status === InvoiceStatus.Lunas) {
             return {
                 success: false,
-                error: "Hanya invoice berstatus Draft yang dapat dihapus.",
+                error: "Invoice yang sudah lunas tidak dapat dihapus. Hapus pembayaran terlebih dahulu.",
             };
         }
 
-        await prisma.invoice.delete({ where: { id } });
+        // For Terkirim/JatuhTempo: create reversal journal before deleting
+        if (existing.status === InvoiceStatus.Terkirim || existing.status === InvoiceStatus.JatuhTempo) {
+            await prisma.$transaction(async (tx) => {
+                await createInvoiceReversalJournal(tx, {
+                    id: existing.id,
+                    nomorInvoice: existing.nomorInvoice,
+                    clientId: existing.clientId,
+                    subtotal: existing.subtotal,
+                    ppn: existing.ppn,
+                    total: existing.total,
+                    tanggal: existing.tanggal,
+                });
+                // Soft-delete via raw to bypass the extended client within tx
+                await tx.invoice.update({ where: { id }, data: { deletedAt: new Date() } });
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        } else {
+            // Draft: just soft-delete
+            await prisma.invoice.delete({ where: { id } });
+        }
+
         return { success: true };
     } catch (error) {
         log.error({ err: error }, "deleteInvoice failed");
