@@ -11,6 +11,9 @@ import {
 } from "@/lib/auth-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { updateAccountBalances } from "@/lib/account-balance";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("accounting");
 
 // ── CHART OF ACCOUNTS ────────────────────────────────────────────────────────
 
@@ -67,7 +70,7 @@ export async function getAccounts(clientId?: string, includeInactive: boolean = 
 
         return { success: true, data };
     } catch (error) {
-        console.error("[getAccounts]", error);
+        log.error({ err: error }, "getAccounts failed");
         return { ...handleAuthError(error), data: [] };
     }
 }
@@ -133,7 +136,7 @@ export async function createAccount(data: {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             return { success: false, error: "Kode akun sudah digunakan (termasuk akun yang telah dihapus). Gunakan kode lain." };
         }
-        console.error("[createAccount]", error);
+        log.error({ err: error }, "createAccount failed");
         return handleAuthError(error);
     }
 }
@@ -193,7 +196,7 @@ export async function updateAccount(
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             return { success: false, error: "Kode akun sudah digunakan (termasuk akun yang telah dihapus). Gunakan kode lain." };
         }
-        console.error("[updateAccount]", error);
+        log.error({ err: error }, "updateAccount failed");
         return handleAuthError(error);
     }
 }
@@ -227,7 +230,7 @@ export async function deleteAccount(id: string) {
             return { success: true as const };
         });
     } catch (error) {
-        console.error("[deleteAccount]", error);
+        log.error({ err: error }, "deleteAccount failed");
         return handleAuthError(error);
     }
 }
@@ -326,7 +329,7 @@ export async function createJournalEntry(data: {
             },
         };
     } catch (error) {
-        console.error("[createJournalEntry]", error);
+        log.error({ err: error }, "createJournalEntry failed");
         return handleAuthError(error);
     }
 }
@@ -355,7 +358,7 @@ export async function deleteJournalEntry(id: string) {
         await prisma.journalEntry.delete({ where: { id } });
         return { success: true };
     } catch (error) {
-        console.error("[deleteJournalEntry]", error);
+        log.error({ err: error }, "deleteJournalEntry failed");
         return handleAuthError(error);
     }
 }
@@ -429,7 +432,7 @@ export async function updateJournalEntry(
             },
         };
     } catch (error) {
-        console.error("[updateJournalEntry]", error);
+        log.error({ err: error }, "updateJournalEntry failed");
         return handleAuthError(error);
     }
 }
@@ -491,7 +494,7 @@ export async function getJournalEntries(
 
         return { success: true, data, total, page, pageSize };
     } catch (error) {
-        console.error("[getJournalEntries]", error);
+        log.error({ err: error }, "getJournalEntries failed");
         return { ...handleAuthError(error), data: [], total: 0, page, pageSize };
     }
 }
@@ -531,7 +534,7 @@ export async function getGeneralLedger(
 
         return { success: true, data: formattedItems, totalBalance: balance };
     } catch (error) {
-        console.error("[getGeneralLedger]", error);
+        log.error({ err: error }, "getGeneralLedger failed");
         return { ...handleAuthError(error), data: [], totalBalance: 0 };
     }
 }
@@ -662,7 +665,7 @@ export async function getFinancialReports(
 
         return { success: true, data: report };
     } catch (error) {
-        console.error("[getFinancialReports]", error);
+        log.error({ err: error }, "getFinancialReports failed");
         return handleAuthError(error);
     }
 }

@@ -9,6 +9,9 @@ import {
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { writeAuditLog } from "@/lib/audit";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("invoices");
 import { createInvoiceSentJournal } from "@/lib/auto-journal";
 import { round2, roundRupiah } from "@/lib/accounting-helpers";
 import { TAX_CONFIG } from "@/lib/tax-config";
@@ -40,7 +43,7 @@ export async function getInvoices(clientId?: string) {
         });
         return { success: true, data: invoices };
     } catch (error) {
-        console.error("getInvoices error:", error);
+        log.error({ err: error }, "getInvoices failed");
         return { ...handleAuthError(error), data: [] };
     }
 }
@@ -134,7 +137,7 @@ export async function createInvoice(data: {
 
         return { success: true, data: invoice };
     } catch (error) {
-        console.error("createInvoice error:", error);
+        log.error({ err: error }, "createInvoice failed");
         return handleAuthError(error);
     }
 }
@@ -201,7 +204,7 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
 
         return { success: true, data: result.invoice, journalRefNumber: result.journalRefNumber };
     } catch (error) {
-        console.error("updateInvoiceStatus error:", error);
+        log.error({ err: error }, "updateInvoiceStatus failed");
         return handleAuthError(error);
     }
 }
@@ -229,7 +232,7 @@ export async function deleteInvoice(id: string) {
         await prisma.invoice.delete({ where: { id } });
         return { success: true };
     } catch (error) {
-        console.error("deleteInvoice error:", error);
+        log.error({ err: error }, "deleteInvoice failed");
         return handleAuthError(error);
     }
 }
@@ -248,7 +251,7 @@ export async function getInvoiceById(id: string) {
 
         return { success: true, data: invoice };
     } catch (error) {
-        console.error("getInvoiceById error:", error);
+        log.error({ err: error }, "getInvoiceById failed");
         return handleAuthError(error);
     }
 }

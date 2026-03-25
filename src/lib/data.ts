@@ -34,6 +34,7 @@ export interface Document {
     ukuran: string;
     tanggalUpload: string;
     catatan: string;
+    fileUrl?: string;
 }
 
 export interface Invoice {
@@ -264,26 +265,6 @@ export const sampleDeadlines: TaxDeadline[] = [];
 export const sampleDocuments: Document[] = [];
 export const sampleInvoices: Invoice[] = [];
 
-// PTKP 2024 values
-export const PTKP = {
-    TK0: 54000000,
-    TK1: 58500000,
-    TK2: 63000000,
-    TK3: 67500000,
-    K0: 58500000,
-    K1: 63000000,
-    K2: 67500000,
-    K3: 72000000,
-} as const;
-
-// PPh 21 progressive tax rates (Pasal 17)
-export const PPH21_RATES = [
-    { min: 0, max: 60000000, rate: 0.05 },
-    { min: 60000000, max: 250000000, rate: 0.15 },
-    { min: 250000000, max: 500000000, rate: 0.25 },
-    { min: 500000000, max: 5000000000, rate: 0.30 },
-    { min: 5000000000, max: Infinity, rate: 0.35 },
-];
 
 /**
  * Filter data based on client context (Multi-tenancy)

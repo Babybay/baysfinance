@@ -398,7 +398,6 @@ export function HomeContent() {
                             {[
                                 { icon: Users, ...t.features.clientManagement },
                                 { icon: CalendarDays, ...t.features.taxCalendar },
-                                { icon: Calculator, ...t.features.taxCalculator },
                                 { icon: FileText, ...t.features.documentManagement },
                                 { icon: Receipt, ...t.features.invoiceBilling },
                                 { icon: BarChart3, ...t.features.complianceReports },

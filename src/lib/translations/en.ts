@@ -86,10 +86,6 @@ export const en = {
             title: "Tax Calendar",
             description: "Never miss a deadline again. Automatically track all tax obligations with real-time status indicators.",
         },
-        taxCalculator: {
-            title: "Tax Calculator",
-            description: "Calculate progressive Income Tax 21, Income Tax 23, VAT 11%, and MSME Final Tax according to the latest regulations.",
-        },
         documentManagement: {
             title: "Document Management",
             description: "Archive Tax Invoices, Withholding Slips, Tax Returns, and Financial Statements in a structured manner per client.",
@@ -207,7 +203,6 @@ export const en = {
         dashboard: "Dashboard",
         clients: "Clients",
         taxCalendar: "Tax Calendar",
-        taxCalculator: "Tax Calculator",
         documents: "Documents",
         invoices: "Invoices",
         reports: "Reports",

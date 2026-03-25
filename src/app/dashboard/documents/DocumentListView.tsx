@@ -52,6 +52,19 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
     const { role, clientId, isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
 
+    const handleDownload = async (fileUrl: string | undefined) => {
+        if (!fileUrl) return;
+        try {
+            const res = await fetch(`/api/documents/presigned?key=${encodeURIComponent(fileUrl)}`);
+            const data = await res.json();
+            if (data.url) {
+                window.open(data.url, "_blank");
+            }
+        } catch (err) {
+            console.error("Download failed:", err);
+        }
+    };
+
     const [form, setForm] = useState({
         nama: "",
         kategori: DocumentKategori.FakturPajak as DocType["kategori"],
@@ -157,7 +170,7 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
                                 <button onClick={() => setPreviewDoc(doc)} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-[6px] hover:bg-accent-muted text-muted-foreground hover:text-accent transition-colors">
                                     <Eye className="h-3.5 w-3.5" /> Lihat
                                 </button>
-                                <button className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-[6px] hover:bg-surface text-muted-foreground transition-colors">
+                                <button onClick={() => handleDownload(doc.fileUrl)} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-[6px] hover:bg-surface text-muted-foreground transition-colors">
                                     <Download className="h-3.5 w-3.5" /> Unduh
                                 </button>
                                 <button onClick={() => handleDelete(doc.id)} className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs rounded-[6px] hover:bg-error-muted text-muted-foreground hover:text-error transition-colors">
@@ -221,6 +234,11 @@ export function DocumentListView({ initialDocuments, clients }: DocumentListView
                         </div>
                         {previewDoc.catatan && (
                             <div><p className="text-xs text-muted-foreground mb-1">Catatan</p><p className="text-sm text-foreground">{previewDoc.catatan}</p></div>
+                        )}
+                        {previewDoc.fileUrl && (
+                            <Button onClick={() => handleDownload(previewDoc.fileUrl)} variant="accent" className="w-full">
+                                <Download className="h-4 w-4 mr-2" /> Unduh Dokumen
+                            </Button>
                         )}
                     </div>
                 )}

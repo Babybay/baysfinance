@@ -88,10 +88,6 @@ export const id: Translations = {
             title: "Kalender Pajak",
             description: "Jangan lewatkan deadline lagi. Pantau semua kewajiban pajak otomatis dengan indikator status real-time.",
         },
-        taxCalculator: {
-            title: "Kalkulator Pajak",
-            description: "Hitung PPh 21 progresif, PPh 23, PPN 11%, dan PPh Final UMKM sesuai regulasi perpajakan terbaru.",
-        },
         documentManagement: {
             title: "Manajemen Dokumen",
             description: "Arsipkan Faktur Pajak, Bukti Potong, SPT, dan Laporan Keuangan secara terstruktur per klien.",
@@ -209,7 +205,6 @@ export const id: Translations = {
         dashboard: "Dashboard",
         clients: "Klien",
         taxCalendar: "Kalender Pajak",
-        taxCalculator: "Kalkulator Pajak",
         documents: "Dokumen",
         invoices: "Invoice",
         reports: "Laporan",

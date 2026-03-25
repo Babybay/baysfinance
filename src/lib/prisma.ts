@@ -19,10 +19,9 @@ const SOFT_DELETE_CASCADE: Record<string, { model: string; foreignKey: string }[
     Client: [
         { model: 'TaxDeadline', foreignKey: 'clientId' },
         { model: 'Document', foreignKey: 'clientId' },
-        { model: 'Invoice', foreignKey: 'clientId' },
+        { model: 'Invoice', foreignKey: 'clientId' },  // Invoice → Payment cascades via nested rule below
         { model: 'PermitCase', foreignKey: 'clientId' },
         { model: 'JournalEntry', foreignKey: 'clientId' },
-        { model: 'Payment', foreignKey: 'clientId' },
         { model: 'RecurringInvoice', foreignKey: 'clientId' },
         { model: 'Account', foreignKey: 'clientId' },
         { model: 'ImportBatch', foreignKey: 'clientId' },

@@ -42,8 +42,8 @@ export async function middleware(req: NextRequest) {
     }
 
     if (isPublic(pathname)) {
-        // Rate limit auth endpoints: 10 login attempts per 15 minutes per IP
-        if (pathname.startsWith("/api/auth")) {
+        // Rate limit only sign-in POST (not session checks which fire on every page load)
+        if (pathname.startsWith("/api/auth/callback") && req.method === "POST") {
             const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
             const rateCheck = authLimiter.check(ip);
             if (!rateCheck.success) {

@@ -8,7 +8,11 @@ import { TaxDeadlineStatus } from "@prisma/client";
 export async function getDeadlines(clientId?: string) {
     try {
         const deadlines = await prisma.taxDeadline.findMany({
-            where: clientId ? { clientId } : undefined,
+            where: {
+                ...(clientId ? { clientId } : {}),
+                // Only show deadlines whose parent client is still active (not soft-deleted)
+                client: { deletedAt: null },
+            },
             include: { client: { select: { nama: true } } },
             orderBy: { tanggalBatas: "asc" },
         });

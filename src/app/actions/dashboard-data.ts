@@ -34,10 +34,12 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                 orderBy: { createdAt: "desc" }
             });
             invoices = await prisma.invoice.findMany({
+                where: { client: { deletedAt: null } },
                 orderBy: { tanggal: "desc" },
                 take: 50 // Increased for monthly revenue calculation
             });
             rawDeadlines = await prisma.taxDeadline.findMany({
+                where: { client: { deletedAt: null } },
                 include: { client: true },
                 orderBy: { tanggalBatas: "asc" }
             });

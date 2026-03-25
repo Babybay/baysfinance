@@ -8,6 +8,9 @@ import {
     handleAuthError,
 } from "@/lib/auth-helpers";
 import { writeAuditLog } from "@/lib/audit";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("payments");
 import {
     createPaymentReceivedJournal,
     createPaymentReversalJournal,
@@ -45,7 +48,7 @@ export async function getPaymentsByInvoice(invoiceId: string) {
             remaining,
         };
     } catch (error) {
-        console.error("[getPaymentsByInvoice]", error);
+        log.error({ err: error }, "getPaymentsByInvoice failed");
         return { ...handleAuthError(error), data: [], totalPaid: 0, remaining: 0 };
     }
 }
@@ -131,7 +134,7 @@ export async function recordPayment(data: {
 
             // Log journal errors but don't fail the payment
             if (!journalResult.success) {
-                console.warn("[recordPayment] Auto-journal failed:", journalResult.error);
+                log.warn({ error: journalResult.error }, "recordPayment auto-journal failed");
             }
 
             // 3. Check if fully paid → auto-Lunas
@@ -171,7 +174,7 @@ export async function recordPayment(data: {
 
         return { success: true, data: result };
     } catch (error) {
-        console.error("[recordPayment]", error);
+        log.error({ err: error }, "recordPayment failed");
         return handleAuthError(error);
     }
 }
@@ -203,7 +206,7 @@ export async function deletePayment(paymentId: string) {
                 { nomorInvoice: payment.invoice.nomorInvoice, clientId: payment.invoice.clientId }
             );
             if (!reversalResult.success) {
-                console.warn("[deletePayment] Reversal journal failed:", reversalResult.error);
+                log.warn({ error: reversalResult.error }, "deletePayment reversal journal failed");
             }
 
             // 3. Recalculate: if invoice was Lunas, revert status
@@ -234,7 +237,7 @@ export async function deletePayment(paymentId: string) {
 
         return { success: true };
     } catch (error) {
-        console.error("[deletePayment]", error);
+        log.error({ err: error }, "deletePayment failed");
         return handleAuthError(error);
     }
 }
