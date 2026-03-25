@@ -49,6 +49,8 @@ next-env.d.ts
 
 /src/generated/prisma
 
+DEVELOPMENT_ROADMAP.md
+
 # debug/test artifacts
 tsc_output*.txt
 ts-errors.txt
