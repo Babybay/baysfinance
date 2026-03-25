@@ -10,11 +10,13 @@ export async function GET(request: Request) {
     }
 
     try {
-        const { generated } = await generateRecurringInvoices();
+        const { generated, failed } = await generateRecurringInvoices();
 
         return NextResponse.json({
             success: true,
-            message: `Successfully generated ${generated} invoice(s) from recurring templates.`,
+            generated,
+            failed,
+            message: `Generated ${generated} invoice(s)${failed > 0 ? `, ${failed} failed` : ""}.`,
         });
     } catch (error) {
         console.error("Failed to generate recurring invoices:", error);

@@ -1,20 +1,20 @@
 import React from "react";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { getDashboardData } from "@/app/actions/dashboard-data";
 import { JenisWP, ClientStatus, InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
 
 export default async function DashboardPage() {
-    const user = await currentUser();
+    const user = await getCurrentUser();
 
     if (!user) {
         return null;
     }
 
     // Retrieve role and clientId from metadata
-    const role = (user.publicMetadata?.role as string) || "client";
-    const clientId = user.publicMetadata?.clientId as string | undefined;
+    const role = user.role.toLowerCase();
+    const clientId = user.clientId;
     const isAdmin = role === "admin";
 
     const response = await getDashboardData(clientId, role);

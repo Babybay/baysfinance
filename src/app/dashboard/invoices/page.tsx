@@ -2,13 +2,13 @@ import { getInvoices } from "@/app/actions/invoices";
 import { getClients } from "@/app/actions/clients";
 import { InvoiceListView } from "./InvoiceListView";
 import { Invoice, Client } from "@/lib/data";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { JenisWP, ClientStatus } from "@prisma/client";
 
 export default async function InvoicesPage() {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
-    const clientId = user?.publicMetadata?.clientId as string | undefined;
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
+    const clientId = user?.clientId;
 
     const currentClientId = role === "client" ? clientId : undefined;
 

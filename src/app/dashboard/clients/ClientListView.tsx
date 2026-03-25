@@ -24,6 +24,7 @@ const emptyClient = {
     telepon: "",
     alamat: "",
     status: ClientStatus.Aktif,
+    organisationId: null as string | null,
 };
 
 export function ClientListView({ initialClients }: { initialClients: Client[] }) {
@@ -82,6 +83,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             telepon: client.telepon,
             alamat: client.alamat,
             status: client.status,
+            organisationId: client.organisationId,
         });
         setModalOpen(true);
     };

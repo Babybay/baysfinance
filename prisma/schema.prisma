@@ -8,19 +8,36 @@ datasource db {
 
 model User {
   id               String            @id @default(cuid())
-  clerkId          String            @unique
-  name             String
   email            String            @unique
-  role             Role
+  passwordHash     String
+  name             String
+  role             Role              @default(Client)
   isActive         Boolean           @default(true)
+  clientId         String?
+  organisationId   String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   deletedAt        DateTime?
+  client           Client?           @relation(fields: [clientId], references: [id])
+  organisation     Organisation?     @relation(fields: [organisationId], references: [id])
   advisedCases     PermitCase[]      @relation("PermitAdvisor")
   checkedItems     PermitChecklist[] @relation("PermitChecker")
   updatedDeadlines TaxDeadline[]     @relation("DeadlineUpdater")
 
   @@map("users")
+}
+
+model Organisation {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  clients   Client[]
+
+  @@map("organisations")
 }
 
 model Client {
@@ -32,9 +49,12 @@ model Client {
   telepon            String
   alamat             String
   status             ClientStatus
+  organisationId     String?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
   deletedAt          DateTime?
+  organisation       Organisation?             @relation(fields: [organisationId], references: [id])
+  users              User[]
   accountingDocs     AccountingDocument[]
   accounts           Account[]
   documents          Document[]
@@ -46,6 +66,7 @@ model Client {
   permits            PermitCase[]
   recurring          RecurringInvoice[]
   deadlines          TaxDeadline[]
+  fiscalPeriodCloses FiscalPeriodClose[]
 
   @@map("clients")
 }
@@ -366,22 +387,26 @@ model Account {
 }
 
 model JournalEntry {
-  id            String        @id @default(cuid())
-  refNumber     String        @unique
-  date          DateTime      @default(now())
-  description   String?
-  status        JournalStatus @default(Draft)
-  clientId      String
-  totalDebit    Decimal       @default(0) @db.Decimal(18, 2)
-  totalCredit   Decimal       @default(0) @db.Decimal(18, 2)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deletedAt     DateTime?
-  importBatchId String?
-  source        String?
-  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  importBatch   ImportBatch?  @relation(fields: [importBatchId], references: [id])
-  items         JournalItem[]
+  id             String        @id @default(cuid())
+  refNumber      String        @unique
+  date           DateTime      @default(now())
+  description    String?
+  status         JournalStatus @default(Draft)
+  clientId       String
+  totalDebit     Decimal       @default(0) @db.Decimal(18, 2)
+  totalCredit    Decimal       @default(0) @db.Decimal(18, 2)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+  importBatchId  String?
+  source         String?
+  relatedEntryId String?
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  importBatch    ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  relatedEntry   JournalEntry? @relation("JournalReversal", fields: [relatedEntryId], references: [id])
+  reversals      JournalEntry[] @relation("JournalReversal")
+  items          JournalItem[]
+  fiscalClose    FiscalPeriodClose?
 
   @@index([clientId, status])
   @@index([clientId, date])
@@ -404,6 +429,24 @@ model JournalItem {
   @@index([accountId])
   @@index([accountId, journalEntryId])
   @@map("journal_items")
+}
+
+model FiscalPeriodClose {
+  id             String       @id @default(cuid())
+  clientId       String
+  periodLabel    String
+  periodStart    DateTime
+  periodEnd      DateTime
+  closedAt       DateTime     @default(now())
+  closedBy       String
+  journalEntryId String       @unique
+  netIncome      Decimal      @db.Decimal(18, 2)
+  createdAt      DateTime     @default(now())
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+
+  @@unique([clientId, periodLabel])
+  @@map("fiscal_period_closes")
 }
 
 model AccountingDocument {
@@ -498,6 +541,7 @@ model FinancialReportSnapshot {
 enum Role {
   Admin
   Staff
+  Client
 }
 
 enum InvoiceStatus {

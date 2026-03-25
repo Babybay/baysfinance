@@ -2,13 +2,13 @@ import { getDocuments } from "@/app/actions/documents";
 import { getClients } from "@/app/actions/clients";
 import { DocumentListView } from "./DocumentListView";
 import { Document as DocType, Client } from "@/lib/data";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { JenisWP, ClientStatus, DocumentKategori } from "@prisma/client";
 
 export default async function DocumentsPage() {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
-    const clientId = user?.publicMetadata?.clientId as string | undefined;
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
+    const clientId = user?.clientId;
 
     const currentClientId = role === "client" ? clientId : undefined;
 

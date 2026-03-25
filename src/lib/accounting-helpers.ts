@@ -1,3 +1,11 @@
+/**
+ * Safe rounding to 2 decimal places for financial calculations.
+ * Avoids IEEE 754 floating-point issues with Math.round(n * 100) / 100.
+ */
+export function round2(n: number): number {
+    return Number(n.toFixed(2));
+}
+
 export interface JournalEntryItemInput {
     debit: number;
     credit: number;

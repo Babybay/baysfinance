@@ -263,8 +263,10 @@ export async function createJournalEntry(data: {
         // L2: Atomic ref number via INSERT … ON CONFLICT DO UPDATE (no race condition)
         const dateStr = data.date.toISOString().slice(0, 7).replace("-", ""); // YYYYMM
         const counterKey = `JV-${dateStr}`;
+        const prefix = `JV-${dateStr}-`;
 
         const entry = await prisma.$transaction(async (tx) => {
+            // Atomic ref number generation — single INSERT ON CONFLICT (no race condition)
             const rows = await tx.$queryRaw<[{ counter: number }]>(
                 Prisma.sql`
                     INSERT INTO permit_counters (id, counter)
@@ -275,7 +277,7 @@ export async function createJournalEntry(data: {
                 `
             );
             const seq = rows[0].counter;
-            const refNumber = `JV-${dateStr}-${seq.toString().padStart(4, "0")}`;
+            const refNumber = `${prefix}${seq.toString().padStart(4, "0")}`;
 
             return tx.journalEntry.create({
                 data: {
@@ -433,6 +435,10 @@ export async function getJournalEntries(
     try {
         await assertCanAccessClient(clientId);
 
+        // Prevent memory exhaustion from unbounded pagination
+        page = Math.max(1, Math.floor(page));
+        pageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100);
+
         const skip = (page - 1) * pageSize;
 
         const [entries, total] = await prisma.$transaction([
@@ -522,12 +528,16 @@ export async function getGeneralLedger(
 // ── FINANCIAL REPORTS ────────────────────────────────────────────────────────
 
 /**
- * M5: Aggregation is now done entirely in PostgreSQL via groupBy + _sum.
- * Previously it loaded every JournalItem row into JavaScript memory.
+ * M5: Aggregation is done entirely in PostgreSQL via groupBy + _sum.
+ *
+ * Balance Sheet (neraca) is always cumulative up to endDate.
+ * P&L (labaRugi) uses startDate→endDate for period-specific reporting.
+ * If startDate is omitted, P&L also shows cumulative (legacy behavior).
  */
 export async function getFinancialReports(
     clientId: string,
-    endDate: Date = new Date()
+    endDate: Date = new Date(),
+    startDate?: Date
 ) {
     try {
         await assertCanAccessClient(clientId);
@@ -538,40 +548,82 @@ export async function getFinancialReports(
         });
         if (!client) return { success: false, error: "Klien tidak ditemukan." };
 
-        // Single aggregation query — no full-table scan into JS
-        const sums = await prisma.journalItem.groupBy({
+        const baseWhere = {
+            journalEntry: {
+                clientId,
+                status: JournalStatus.Posted,
+                deletedAt: null,
+            },
+        };
+
+        // Balance Sheet: cumulative up to endDate (Asset, Liability, Equity)
+        const neracaSums = await prisma.journalItem.groupBy({
             by: ["accountId"],
             where: {
+                ...baseWhere,
                 journalEntry: {
-                    clientId,
-                    status: JournalStatus.Posted,
-                    deletedAt: null,
+                    ...baseWhere.journalEntry,
                     date: { lte: endDate },
                 },
             },
             _sum: { debit: true, credit: true },
         });
 
-        const accountIds = sums.map((s) => s.accountId);
+        // P&L: period-specific if startDate given, otherwise cumulative
+        const plSums = startDate
+            ? await prisma.journalItem.groupBy({
+                  by: ["accountId"],
+                  where: {
+                      ...baseWhere,
+                      journalEntry: {
+                          ...baseWhere.journalEntry,
+                          date: { gte: startDate, lte: endDate },
+                      },
+                  },
+                  _sum: { debit: true, credit: true },
+              })
+            : neracaSums; // fallback: same cumulative query
+
+        // Collect all unique account IDs from both queries
+        const allAccountIds = [
+            ...new Set([
+                ...neracaSums.map((s) => s.accountId),
+                ...plSums.map((s) => s.accountId),
+            ]),
+        ];
+
         const accounts = await prisma.account.findMany({
             where: {
-                id: { in: accountIds },
+                id: { in: allAccountIds },
                 OR: [{ clientId: null }, { clientId }],
             },
             select: { id: true, name: true, type: true },
         });
 
-        // raw balance = debit − credit
-        const rawBalances = new Map<string, number>();
-        for (const s of sums) {
-            rawBalances.set(
+        // Build balance maps
+        const neracaBalances = new Map<string, number>();
+        for (const s of neracaSums) {
+            neracaBalances.set(
                 s.accountId,
                 Number(s._sum.debit ?? 0) - Number(s._sum.credit ?? 0)
             );
         }
 
-        const val = (id: string, negate = false) => {
-            const raw = rawBalances.get(id) || 0;
+        const plBalances = new Map<string, number>();
+        for (const s of plSums) {
+            plBalances.set(
+                s.accountId,
+                Number(s._sum.debit ?? 0) - Number(s._sum.credit ?? 0)
+            );
+        }
+
+        const neracaVal = (id: string, negate = false) => {
+            const raw = neracaBalances.get(id) || 0;
+            return negate ? -raw : raw;
+        };
+
+        const plVal = (id: string, negate = false) => {
+            const raw = plBalances.get(id) || 0;
             return negate ? -raw : raw;
         };
 
@@ -579,21 +631,21 @@ export async function getFinancialReports(
             neraca: {
                 assets: accounts
                     .filter((a) => a.type === AccountType.Asset)
-                    .map((a) => ({ name: a.name, value: val(a.id) })),
+                    .map((a) => ({ name: a.name, value: neracaVal(a.id) })),
                 liabilities: accounts
                     .filter((a) => a.type === AccountType.Liability)
-                    .map((a) => ({ name: a.name, value: val(a.id, true) })),
+                    .map((a) => ({ name: a.name, value: neracaVal(a.id, true) })),
                 equity: accounts
                     .filter((a) => a.type === AccountType.Equity)
-                    .map((a) => ({ name: a.name, value: val(a.id, true) })),
+                    .map((a) => ({ name: a.name, value: neracaVal(a.id, true) })),
             },
             labaRugi: {
                 revenue: accounts
                     .filter((a) => a.type === AccountType.Revenue)
-                    .map((a) => ({ name: a.name, value: val(a.id, true) })),
+                    .map((a) => ({ name: a.name, value: plVal(a.id, true) })),
                 expenses: accounts
                     .filter((a) => a.type === AccountType.Expense)
-                    .map((a) => ({ name: a.name, value: val(a.id) })),
+                    .map((a) => ({ name: a.name, value: plVal(a.id) })),
             },
         };
 

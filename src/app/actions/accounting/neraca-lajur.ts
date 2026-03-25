@@ -173,17 +173,17 @@ export async function getNeracaLajur(
         // KEWAJIBAN section
         const utangSection = buildSubsection("UTANG", ACCOUNT_RANGES.utang, balances);
         const utangPajakSection = buildSubsection("UTANG PAJAK", ACCOUNT_RANGES.utangPajak, balances);
-        const utangAfiliasi = buildSubsection("UTANG AFFILIASI", ACCOUNT_RANGES.utangAfiliasi, balances);
+        const utangJPSection = buildSubsection("UTANG JANGKA PANJANG", ACCOUNT_RANGES.utangJangkaPanjang, balances);
         const cadanganSection = buildSubsection("CADANGAN", ACCOUNT_RANGES.cadangan, balances);
         const ekuitasSection = buildSubsection("EKUITAS", ACCOUNT_RANGES.ekuitas, balances);
 
         const kewajiban: NLSection = {
             label: "KEWAJIBAN DAN MODAL",
-            subsections: [utangSection, utangPajakSection, utangAfiliasi, cadanganSection, ekuitasSection],
+            subsections: [utangSection, utangPajakSection, utangJPSection, cadanganSection, ekuitasSection],
             total:
                 utangSection.total +
                 utangPajakSection.total +
-                utangAfiliasi.total +
+                utangJPSection.total +
                 cadanganSection.total +
                 ekuitasSection.total,
         };

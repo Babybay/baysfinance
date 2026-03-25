@@ -8,7 +8,7 @@
  */
 
 import { JournalStatus, Prisma } from "@prisma/client";
-import { validateJournalBalance } from "@/lib/accounting-helpers";
+import { validateJournalBalance, round2 } from "@/lib/accounting-helpers";
 
 // ── Account code mapping (from seed-accounts.ts) ────────────────────────────
 
@@ -106,12 +106,6 @@ async function generateRefNumber(tx: TxClient, date: Date): Promise<string> {
     );
     const seq = rows[0].counter;
     return `AJ-${dateStr}-${seq.toString().padStart(4, "0")}`;
-}
-
-// ── Round to 2 decimal places ────────────────────────────────────────────────
-
-function round2(n: number): number {
-    return Math.round(n * 100) / 100;
 }
 
 // ── Invoice Sent Journal ─────────────────────────────────────────────────────
@@ -212,6 +206,20 @@ export async function createPaymentReceivedJournal(
     invoice: InvoiceRef
 ): Promise<AutoJournalResult> {
     try {
+        // Duplicate check — idempotent if called twice for same payment
+        const existing = await (tx as any).journalEntry.findFirst({
+            where: {
+                clientId: invoice.clientId,
+                source: "auto_payment",
+                description: { contains: payment.id },
+                deletedAt: null,
+            },
+            select: { id: true, refNumber: true },
+        });
+        if (existing) {
+            return { success: true, journalEntryId: existing.id, refNumber: existing.refNumber };
+        }
+
         // Resolve accounts
         const codes = [ACCOUNT_CODES.BANK, ACCOUNT_CODES.PIUTANG_USAHA];
         const { accountMap, missing } = await resolveAccounts(tx, invoice.clientId, codes);
@@ -287,6 +295,17 @@ export async function createPaymentReversalJournal(
             };
         }
 
+        // Find the original payment journal to link the reversal
+        const originalJournal = await (tx as any).journalEntry.findFirst({
+            where: {
+                clientId: invoice.clientId,
+                source: "auto_payment",
+                description: { contains: payment.id },
+                deletedAt: null,
+            },
+            select: { id: true },
+        });
+
         const amount = round2(payment.jumlah);
 
         const items = [
@@ -307,6 +326,7 @@ export async function createPaymentReversalJournal(
                 totalDebit: amount,
                 totalCredit: amount,
                 source: "auto_payment_reversal",
+                relatedEntryId: originalJournal?.id || null,
                 items: {
                     create: items.map((item) => ({
                         accountId: item.accountId,

@@ -3,15 +3,15 @@ import { AccountingDocumentsView } from "./AccountingDocumentsView";
 import { getAccountingDocuments } from "@/app/actions/accounting-documents";
 import { getClients } from "@/app/actions/clients";
 import { AccountingDocument, Client } from "@/lib/data";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
 export default async function AccountingDocumentsPage() {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) redirect("/sign-in");
 
-    const role = (user.publicMetadata?.role as string) || "client";
-    const ownClientId = user.publicMetadata?.clientId as string | undefined;
+    const role = user.role.toLowerCase();
+    const ownClientId = user.clientId;
     const isClientRole = role === "client";
 
     const clientsRes = await getClients();

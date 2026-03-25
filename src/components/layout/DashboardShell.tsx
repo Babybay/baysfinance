@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserMenu, UserMenuCompact } from "@/components/auth/UserMenu";
 import { useI18n } from "@/lib/i18n";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
@@ -74,10 +74,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 <div className="border-t border-border px-4 py-3 shrink-0 space-y-3">
                     <LanguageSelector />
-                    <div className="flex items-center gap-3">
-                        <UserButton />
-                        <div className="text-sm font-medium text-foreground">{t.sidebar.myAccount}</div>
-                    </div>
+                    <UserMenu />
                 </div>
             </aside>
 
@@ -95,7 +92,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         <span className="font-serif text-foreground">Bay&apos;sConsult</span>
                     </div>
                     <div className="lg:hidden">
-                        <UserButton />
+                        <UserMenuCompact />
                     </div>
                 </header>
 

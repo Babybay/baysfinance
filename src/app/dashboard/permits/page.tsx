@@ -1,12 +1,12 @@
 import { PermitList } from "@/components/dashboard/PermitList";
 import { PermitCase } from "@/lib/data";
 import { getPermits, getPermitTypes } from "@/app/actions/permits";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 export default async function PermitsPage() {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
-    const clientId = user?.publicMetadata?.clientId as string | undefined;
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
+    const clientId = user?.clientId;
 
     const currentClientId = role === "client" ? clientId : undefined;
     const [permitsRes, typesRes] = await Promise.all([

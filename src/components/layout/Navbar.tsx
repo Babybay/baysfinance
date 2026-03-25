@@ -2,14 +2,16 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { useI18n } from "@/lib/i18n";
 import { Menu, X } from "lucide-react";
 
 export function Navbar() {
     const { t } = useI18n();
+    const { data: session } = useSession();
     const [mobileOpen, setMobileOpen] = useState(false);
 
     return (
@@ -42,20 +44,23 @@ export function Navbar() {
                 <div className="flex items-center justify-end space-x-3">
                     <LanguageSelector />
                     <nav className="hidden md:flex items-center gap-[12px]">
-                        <SignedOut>
-                            <Link href="/sign-in">
-                                <Button variant="transparent" size="default">{t.nav.signIn}</Button>
-                            </Link>
-                            <Link href="/sign-up">
-                                <Button variant="accent" size="default">{t.nav.signUp}</Button>
-                            </Link>
-                        </SignedOut>
-                        <SignedIn>
-                            <Link href="/dashboard">
-                                <Button variant="soft" size="default" className="mr-2">{t.nav.dashboard}</Button>
-                            </Link>
-                            <UserButton />
-                        </SignedIn>
+                        {!session ? (
+                            <>
+                                <Link href="/sign-in">
+                                    <Button variant="transparent" size="default">{t.nav.signIn}</Button>
+                                </Link>
+                                <Link href="/sign-up">
+                                    <Button variant="accent" size="default">{t.nav.signUp}</Button>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link href="/dashboard">
+                                    <Button variant="soft" size="default" className="mr-2">{t.nav.dashboard}</Button>
+                                </Link>
+                                <UserMenu />
+                            </>
+                        )}
                     </nav>
 
                     {/* Mobile menu button */}
@@ -110,19 +115,20 @@ export function Navbar() {
                         </Link>
 
                         <div className="border-t border-border pt-[16px] flex flex-col gap-[12px]">
-                            <SignedOut>
-                                <Link href="/sign-in" onClick={() => setMobileOpen(false)}>
-                                    <Button variant="soft" size="large" className="w-full">{t.nav.signIn}</Button>
-                                </Link>
-                                <Link href="/sign-up" onClick={() => setMobileOpen(false)}>
-                                    <Button variant="accent" size="large" className="w-full">{t.nav.signUp}</Button>
-                                </Link>
-                            </SignedOut>
-                            <SignedIn>
+                            {!session ? (
+                                <>
+                                    <Link href="/sign-in" onClick={() => setMobileOpen(false)}>
+                                        <Button variant="soft" size="large" className="w-full">{t.nav.signIn}</Button>
+                                    </Link>
+                                    <Link href="/sign-up" onClick={() => setMobileOpen(false)}>
+                                        <Button variant="accent" size="large" className="w-full">{t.nav.signUp}</Button>
+                                    </Link>
+                                </>
+                            ) : (
                                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
                                     <Button variant="accent" size="large" className="w-full">{t.nav.dashboard}</Button>
                                 </Link>
-                            </SignedIn>
+                            )}
                         </div>
                     </div>
                 </div>

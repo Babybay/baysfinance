@@ -1,12 +1,12 @@
 import { getRecurringInvoices } from "@/app/actions/recurring-invoices";
 import { getClients } from "@/app/actions/clients";
 import { RecurringInvoiceView } from "./RecurringInvoiceView";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
 export default async function RecurringInvoicesPage() {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
 
     if (role !== "admin") {
         redirect("/dashboard/invoices");

@@ -8,6 +8,8 @@ import {
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { createInvoiceSentJournal } from "@/lib/auto-journal";
+import { round2 } from "@/lib/accounting-helpers";
+import { TAX_CONFIG } from "@/lib/tax-config";
 
 // ─── GET RECURRING INVOICES ─────────────────────────────────────────────────
 
@@ -174,84 +176,97 @@ export async function generateRecurringInvoices() {
     });
 
     let generated = 0;
+    let failed = 0;
+    const results: { id: string; success: boolean; error?: string }[] = [];
 
     for (const recurring of dueRecurrings) {
         const client = recurring.client;
         if (!client) continue;
 
-        const subtotal = recurring.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
-        const ppn = Math.round(subtotal * 0.11);
-        const total = subtotal + ppn;
+        try {
+            const subtotal = recurring.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
+            const ppn = round2(subtotal * TAX_CONFIG.PPN_RATE);
+            const total = subtotal + ppn;
 
-        // Due date: 30 days from generation
-        const jatuhTempo = new Date(now);
-        jatuhTempo.setDate(jatuhTempo.getDate() + 30);
+            // Due date: 30 days from generation
+            const jatuhTempo = new Date(now);
+            jatuhTempo.setDate(jatuhTempo.getDate() + 30);
 
-        // Atomic invoice number generation inside transaction
-        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const counterKey = `INV-${dateStr}`;
+            // Atomic invoice number generation inside transaction
+            const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+            const counterKey = `INV-${dateStr}`;
 
-        await prisma.$transaction(async (tx) => {
-            const rows = await tx.$queryRaw<[{ counter: number }]>(
-                Prisma.sql`
-                    INSERT INTO permit_counters (id, counter)
-                    VALUES (${counterKey}, 1)
-                    ON CONFLICT (id) DO UPDATE
-                        SET counter = permit_counters.counter + 1
-                    RETURNING counter
-                `
-            );
-            const seq = rows[0].counter;
-            const nomorInvoice = `INV-${dateStr}-${seq.toString().padStart(3, "0")}`;
+            await prisma.$transaction(async (tx) => {
+                const rows = await tx.$queryRaw<[{ counter: number }]>(
+                    Prisma.sql`
+                        INSERT INTO permit_counters (id, counter)
+                        VALUES (${counterKey}, 1)
+                        ON CONFLICT (id) DO UPDATE
+                            SET counter = permit_counters.counter + 1
+                        RETURNING counter
+                    `
+                );
+                const seq = rows[0].counter;
+                const nomorInvoice = `INV-${dateStr}-${seq.toString().padStart(3, "0")}`;
 
-            const createdInvoice = await tx.invoice.create({
-                data: {
+                const createdInvoice = await tx.invoice.create({
+                    data: {
+                        nomorInvoice,
+                        clientId: recurring.clientId,
+                        clientName: client.nama,
+                        tanggal: new Date(),
+                        jatuhTempo,
+                        subtotal,
+                        ppn,
+                        total,
+                        status: InvoiceStatus.Terkirim,
+                        catatan: recurring.catatan || null,
+                        recurringInvoiceId: recurring.id,
+                        items: {
+                            create: recurring.items.map((item) => ({
+                                deskripsi: item.deskripsi,
+                                qty: item.qty,
+                                harga: item.harga,
+                                jumlah: item.qty * item.harga,
+                            })),
+                        },
+                    },
+                });
+
+                // Auto-journal for recurring invoice (Piutang/Pendapatan/PPN)
+                const journalResult = await createInvoiceSentJournal(tx, {
+                    id: createdInvoice.id,
                     nomorInvoice,
                     clientId: recurring.clientId,
-                    clientName: client.nama,
-                    tanggal: new Date(),
-                    jatuhTempo,
                     subtotal,
                     ppn,
                     total,
-                    status: InvoiceStatus.Terkirim,
-                    catatan: recurring.catatan || null,
-                    recurringInvoiceId: recurring.id,
-                    items: {
-                        create: recurring.items.map((item) => ({
-                            deskripsi: item.deskripsi,
-                            qty: item.qty,
-                            harga: item.harga,
-                            jumlah: item.qty * item.harga,
-                        })),
-                    },
-                },
+                    tanggal: new Date(),
+                });
+                if (!journalResult.success) {
+                    console.warn(`[generateRecurring] Auto-journal failed for ${nomorInvoice}:`, journalResult.error);
+                }
+
+                // Advance nextRunDate atomically within transaction
+                const nextRunDate = calculateNextRunDate(recurring.interval, recurring.nextRunDate);
+                await tx.recurringInvoice.update({
+                    where: { id: recurring.id },
+                    data: { nextRunDate },
+                });
             });
 
-            // Auto-journal for recurring invoice (Piutang/Pendapatan/PPN)
-            const journalResult = await createInvoiceSentJournal(tx, {
-                id: createdInvoice.id,
-                nomorInvoice,
-                clientId: recurring.clientId,
-                subtotal,
-                ppn,
-                total,
-                tanggal: new Date(),
+            generated++;
+            results.push({ id: recurring.id, success: true });
+        } catch (error) {
+            console.error(`[generateRecurring] Failed for recurring ${recurring.id}:`, error);
+            failed++;
+            results.push({
+                id: recurring.id,
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
             });
-            if (!journalResult.success) {
-                console.warn(`[generateRecurring] Auto-journal failed for ${nomorInvoice}:`, journalResult.error);
-            }
-
-            // Advance nextRunDate atomically within transaction
-            const nextRunDate = calculateNextRunDate(recurring.interval, recurring.nextRunDate);
-            await tx.recurringInvoice.update({
-                where: { id: recurring.id },
-                data: { nextRunDate },
-            });
-        });
-
-        generated++;
+        }
     }
 
-    return { generated };
+    return { generated, failed, results };
 }

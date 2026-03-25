@@ -1,26 +1,43 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
+
+export interface AuthUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    clientId?: string;
+    organisationId?: string;
+}
 
 /**
- * Asserts that the currently authenticated Clerk user can access data
+ * Returns the currently authenticated user from the session.
+ * Replaces `currentUser()` from Clerk — all pages/actions should use this.
+ */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+    const session = await auth();
+    if (!session?.user) return null;
+    return session.user as AuthUser;
+}
+
+/**
+ * Asserts that the currently authenticated user can access data
  * for the given clientId.
  *
  * Rules:
  *  - Admins and staff can access any client.
- *  - Client-role users can only access their own clientId
- *    (stored in Clerk publicMetadata.clientId).
+ *  - Client-role users can only access their own clientId.
  *
  * Throws "UNAUTHENTICATED" if not logged in.
  * Throws "FORBIDDEN" if a client-role user tries to access another tenant.
  */
 export async function assertCanAccessClient(clientId: string): Promise<void> {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error("UNAUTHENTICATED");
 
-    const role = (user.publicMetadata?.role as string) || "client";
-    if (role === "admin" || role === "staff") return;
+    const role = user.role;
+    if (role === "Admin" || role === "Staff") return;
 
-    const ownClientId = user.publicMetadata?.clientId as string | undefined;
-    if (!ownClientId || ownClientId !== clientId) {
+    if (!user.clientId || user.clientId !== clientId) {
         throw new Error("FORBIDDEN");
     }
 }
@@ -30,10 +47,9 @@ export async function assertCanAccessClient(clientId: string): Promise<void> {
  * Returns false (not throwing) when unauthenticated.
  */
 export async function isAdminOrStaff(): Promise<boolean> {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) return false;
-    const role = (user.publicMetadata?.role as string) || "client";
-    return role === "admin" || role === "staff";
+    return user.role === "Admin" || user.role === "Staff";
 }
 
 /**
@@ -41,9 +57,9 @@ export async function isAdminOrStaff(): Promise<boolean> {
  * or null if the user is admin/staff or unauthenticated.
  */
 export async function getOwnClientId(): Promise<string | null> {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) return null;
-    return (user.publicMetadata?.clientId as string) || null;
+    return user.clientId || null;
 }
 
 /** Re-usable handler: converts auth errors to the standard action return shape. */

@@ -16,6 +16,7 @@ interface ReportsViewProps {
 
 export function ReportsView({ clients }: ReportsViewProps) {
     const [selectedClient, setSelectedClient] = useState("");
+    const [startDate, setStartDate] = useState(`${new Date().getFullYear()}-01-01`);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [reportData, setReportData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,11 @@ export function ReportsView({ clients }: ReportsViewProps) {
     const fetchReport = async () => {
         if (!selectedClient) return;
         setLoading(true);
-        const res = await getFinancialReports(selectedClient, new Date(endDate));
+        const res = await getFinancialReports(
+            selectedClient,
+            new Date(endDate),
+            new Date(startDate)
+        );
         if (res.success) {
             setReportData(res.data);
         }
@@ -32,7 +37,7 @@ export function ReportsView({ clients }: ReportsViewProps) {
 
     useEffect(() => {
         fetchReport();
-    }, [selectedClient, endDate]);
+    }, [selectedClient, startDate, endDate]);
 
     if (!selectedClient) {
         return (
@@ -48,10 +53,13 @@ export function ReportsView({ clients }: ReportsViewProps) {
                                     options={clients.map(c => ({ value: c.id, label: c.nama }))}
                                     placeholder="Pilih Klien..."
                                 />
-
                             </div>
                             <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Per Tanggal</label>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dari Tanggal</label>
+                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sampai Tanggal</label>
                                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                             </div>
                         </div>
@@ -90,21 +98,31 @@ export function ReportsView({ clients }: ReportsViewProps) {
                                     options={clients.map(c => ({ value: c.id, label: c.nama }))}
                                     placeholder="Pilih Klien..."
                                 />
-
                             </div>
                             <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Per Tanggal</label>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dari Tanggal</label>
+                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sampai Tanggal</label>
                                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex gap-2 w-full md:w-auto">
-                            <Button variant="soft" className="gap-2 flex-1 md:flex-none">
+                            <Button variant="soft" className="gap-2 flex-1 md:flex-none" onClick={() => window.print()}>
                                 <Printer className="h-4 w-4" />
                                 Cetak
                             </Button>
-                            <Button variant="dark" className="gap-2 flex-1 md:flex-none">
+                            <Button
+                                variant="dark"
+                                className="gap-2 flex-1 md:flex-none"
+                                onClick={() => {
+                                    const params = new URLSearchParams({ clientId: selectedClient, startDate, endDate });
+                                    window.open(`/api/accounting/reports/excel?${params}`, '_blank');
+                                }}
+                            >
                                 <Download className="h-4 w-4" />
-                                PDF
+                                Excel
                             </Button>
                         </div>
                     </div>

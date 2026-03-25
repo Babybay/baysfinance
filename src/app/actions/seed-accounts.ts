@@ -1,147 +1,24 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { AccountType } from "@prisma/client";
 import { isAdminOrStaff } from "@/lib/auth-helpers";
+import { COA_TEMPLATES, getTemplate } from "@/lib/coa-templates";
 
-const defaultAccounts: { code: string; name: string; type: AccountType }[] = [
-    // ─── ASET ────────────────────────────────────────────────────────────────
-
-    // Kas
-    { code: "100", name: "Petty Cash", type: AccountType.Asset },
-    { code: "101", name: "General Cashier", type: AccountType.Asset },
-
-    // Bank
-    { code: "110", name: "PT Bank for Cashier", type: AccountType.Asset },
-    { code: "111", name: "Bank BNI Giro", type: AccountType.Asset },
-    { code: "112", name: "Bank BNI Taplus", type: AccountType.Asset },
-    { code: "113", name: "Bank BCA", type: AccountType.Asset },
-    { code: "114", name: "Bank BPR Lestari", type: AccountType.Asset },
-
-    // Piutang
-    { code: "120", name: "Piutang Usaha", type: AccountType.Asset },
-    { code: "121", name: "Piutang Lain Lain", type: AccountType.Asset },
-    { code: "122", name: "Piutang Affiliasi/Owner", type: AccountType.Asset },
-
-    // Persediaan
-    { code: "130", name: "Inv - Food Inventory", type: AccountType.Asset },
-    { code: "131", name: "Inv - Beverages Inventory", type: AccountType.Asset },
-    { code: "132", name: "Inv - Supplies Guest", type: AccountType.Asset },
-    { code: "133", name: "Inv - Supplies Paper", type: AccountType.Asset },
-    { code: "134", name: "Inv - Supplies Cleaning", type: AccountType.Asset },
-    { code: "135", name: "Inv - Supplies Chemical", type: AccountType.Asset },
-    { code: "136", name: "Inv - Supplies Kitchen", type: AccountType.Asset },
-    { code: "137", name: "Inv - Supplies Minibar", type: AccountType.Asset },
-    { code: "138", name: "Inv - Fuel, Gas, Lubricants", type: AccountType.Asset },
-    { code: "139", name: "Inv - Bottles & Container", type: AccountType.Asset },
-    { code: "140", name: "Inv - Others", type: AccountType.Asset },
-
-    // Aset Tetap
-    { code: "210", name: "Gedung", type: AccountType.Asset },
-    { code: "211", name: "Inventaris", type: AccountType.Asset },
-    { code: "212", name: "Akumulasi Penyusutan Gedung", type: AccountType.Asset },
-    { code: "213", name: "Akumulasi Penyusutan Inventaris", type: AccountType.Asset },
-
-    // Aset Lain-lain
-    { code: "220", name: "Sewa Tanah dan Bangunan", type: AccountType.Asset },
-    { code: "221", name: "Akumulasi Amortisasi Sewa Tanah dan Bangunan", type: AccountType.Asset },
-    { code: "222", name: "Biaya Pra Operasi", type: AccountType.Asset },
-    { code: "223", name: "Biaya Dibayar Dimuka", type: AccountType.Asset },
-
-    // ─── KEWAJIBAN ───────────────────────────────────────────────────────────
-
-    // Utang
-    { code: "300", name: "Utang Usaha", type: AccountType.Liability },
-    { code: "310", name: "Utang Lain Lain", type: AccountType.Liability },
-
-    // Utang Pajak
-    { code: "320", name: "PB 1/PHR", type: AccountType.Liability },
-    { code: "321", name: "Pajak Badan", type: AccountType.Liability },
-
-    // Utang Affiliasi
-    { code: "400", name: "Utang Affiliasi/Pemilik", type: AccountType.Liability },
-
-    // Cadangan
-    { code: "410", name: "Cadangan Lost & Breakage", type: AccountType.Liability },
-
-    // ─── EKUITAS ─────────────────────────────────────────────────────────────
-
-    { code: "510", name: "Modal Disetor", type: AccountType.Equity },
-    { code: "511", name: "Cadangan", type: AccountType.Equity },
-    { code: "512", name: "Prive", type: AccountType.Equity },
-    { code: "513", name: "Saldo Laba", type: AccountType.Equity },
-    { code: "514", name: "Laba Rugi Tahun Berjalan", type: AccountType.Equity },
-
-    // ─── PENDAPATAN ──────────────────────────────────────────────────────────
-
-    // Pendapatan Usaha
-    { code: "600", name: "Food Restaurant", type: AccountType.Revenue },
-    { code: "601", name: "Beverage Restaurant", type: AccountType.Revenue },
-    { code: "602", name: "Food Banquet", type: AccountType.Revenue },
-    { code: "603", name: "Beverage Banquet", type: AccountType.Revenue },
-    { code: "604", name: "Others Revenue", type: AccountType.Revenue },
-    { code: "605", name: "Discount & Allowance", type: AccountType.Revenue },
-    { code: "606", name: "Pajak PB 1", type: AccountType.Revenue },
-
-    // Pendapatan Non Operasional
-    { code: "900", name: "Bunga Bank", type: AccountType.Revenue },
-    { code: "901", name: "Tip Box", type: AccountType.Revenue },
-    { code: "902", name: "Pendapatan Lainnya", type: AccountType.Revenue },
-
-    // ─── BEBAN ───────────────────────────────────────────────────────────────
-
-    // Beban Pokok Penjualan
-    { code: "620", name: "Cost of Sales - Food", type: AccountType.Expense },
-    { code: "621", name: "Cost of Sales - Beverage", type: AccountType.Expense },
-    { code: "622", name: "Cost of Sales - Beverage for Food", type: AccountType.Expense },
-    { code: "623", name: "Cost of Sales - Food to Beverage", type: AccountType.Expense },
-    { code: "624", name: "Cost of Sales - Other", type: AccountType.Expense },
-
-    // Beban Operasional
-    { code: "700", name: "Gaji dan Upah", type: AccountType.Expense },
-    { code: "701", name: "Tunjangan Hari Raya", type: AccountType.Expense },
-    { code: "702", name: "Tunjangan Kesehatan", type: AccountType.Expense },
-    { code: "703", name: "Tunjangan Seragam", type: AccountType.Expense },
-    { code: "704", name: "Listrik/PLN", type: AccountType.Expense },
-    { code: "705", name: "Telepon", type: AccountType.Expense },
-    { code: "706", name: "Air/PAM", type: AccountType.Expense },
-    { code: "707", name: "Internet", type: AccountType.Expense },
-    { code: "708", name: "BBM/Transportasi", type: AccountType.Expense },
-    { code: "709", name: "Cleaning Supplies", type: AccountType.Expense },
-    { code: "710", name: "Rumah Tangga", type: AccountType.Expense },
-    { code: "711", name: "Pemeliharaan Inventaris", type: AccountType.Expense },
-    { code: "712", name: "Pest Control", type: AccountType.Expense },
-    { code: "713", name: "Food & Beverage Testing", type: AccountType.Expense },
-    { code: "714", name: "Advertising", type: AccountType.Expense },
-    { code: "715", name: "Printing & Stationery", type: AccountType.Expense },
-    { code: "716", name: "Menu & Beverage List", type: AccountType.Expense },
-    { code: "717", name: "Ekspedisi dan Materai", type: AccountType.Expense },
-    { code: "718", name: "Promosi", type: AccountType.Expense },
-    { code: "719", name: "Entertainment/Complimentary", type: AccountType.Expense },
-    { code: "720", name: "Welcome Drink/Snack", type: AccountType.Expense },
-    { code: "721", name: "Credit Card Commission", type: AccountType.Expense },
-    { code: "722", name: "Banten", type: AccountType.Expense },
-    { code: "723", name: "Sewa Tanah dan Bangunan", type: AccountType.Expense },
-    { code: "724", name: "Penyusutan Aset Tetap dan Inventaris", type: AccountType.Expense },
-    { code: "725", name: "Amortisasi Biaya Pra Operasi", type: AccountType.Expense },
-    { code: "726", name: "Beban Provision for Lost & Breakage", type: AccountType.Expense },
-    { code: "727", name: "Management Fee", type: AccountType.Expense },
-    { code: "728", name: "Consultant Fee", type: AccountType.Expense },
-    { code: "729", name: "Lainnya/Others", type: AccountType.Expense },
-
-    // Beban Non Operasional
-    { code: "910", name: "Administrasi Bank", type: AccountType.Expense },
-    { code: "911", name: "Selisih Kas", type: AccountType.Expense },
-    { code: "912", name: "Beban Lainnya/Others", type: AccountType.Expense },
-    { code: "913", name: "CS Event", type: AccountType.Expense },
-];
-
-export async function seedAccounts(clientId?: string, force: boolean = false) {
+export async function seedAccounts(
+    clientId?: string,
+    force: boolean = false,
+    templateId: string = "hotel-restoran"
+) {
     try {
         // Auth: only admin/staff can seed accounts
         const admin = await isAdminOrStaff();
         if (!admin) {
             return { success: false, error: "Akses ditolak. Hanya admin yang dapat melakukan operasi ini." };
+        }
+
+        const template = getTemplate(templateId);
+        if (!template) {
+            return { success: false, error: `Template "${templateId}" tidak ditemukan.` };
         }
 
         const resolvedClientId = clientId || null;
@@ -187,7 +64,7 @@ export async function seedAccounts(clientId?: string, force: boolean = false) {
         }
 
         await prisma.$transaction(
-            defaultAccounts.map((acc) =>
+            template.accounts.map((acc) =>
                 prisma.account.create({
                     data: {
                         code: acc.code,
@@ -201,8 +78,8 @@ export async function seedAccounts(clientId?: string, force: boolean = false) {
         );
 
         const msg = skipped > 0
-            ? `${defaultAccounts.length} akun dibuat. ${skipped} akun lama dinonaktifkan (memiliki transaksi jurnal).`
-            : `${defaultAccounts.length} akun berhasil dibuat.`;
+            ? `${template.accounts.length} akun (${template.name}) dibuat. ${skipped} akun lama dinonaktifkan (memiliki transaksi jurnal).`
+            : `${template.accounts.length} akun (${template.name}) berhasil dibuat.`;
 
         return { success: true, message: msg };
     } catch (error: unknown) {
@@ -210,4 +87,15 @@ export async function seedAccounts(clientId?: string, force: boolean = false) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         return { success: false, error: `Gagal seed akun: ${msg}` };
     }
+}
+
+/** Return available templates for the UI (no auth required for listing). */
+export async function getCoaTemplates() {
+    return COA_TEMPLATES.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        icon: t.icon,
+        accountCount: t.accounts.length,
+    }));
 }

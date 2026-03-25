@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { assertCanAccessClient, handleAuthError } from "@/lib/auth-helpers";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { ingestTemplateFile } from "@/lib/ingestion/template-ingestion";
 import type { IngestionResult } from "@/lib/ingestion/template-ingestion";
 
@@ -15,8 +15,8 @@ export async function importTemplateFile(
 ): Promise<{ success: boolean; data?: IngestionResult; error?: string }> {
     try {
         await assertCanAccessClient(clientId);
-        const user = await currentUser();
-        const importedBy = user?.fullName || user?.username || "Unknown";
+        const user = await getCurrentUser();
+        const importedBy = user?.name || "Unknown";
 
         const result = await ingestTemplateFile(fileBuffer, clientId, fileName, importedBy);
 
@@ -47,15 +47,15 @@ export async function importBatchTemplates(
     files: BatchFileInput[],
 ): Promise<{ success: boolean; data?: BatchResult; error?: string }> {
     try {
-        const user = await currentUser();
+        const user = await getCurrentUser();
         if (!user) return { success: false, error: "Sesi tidak valid." };
 
-        const role = (user.publicMetadata?.role as string) || "client";
+        const role = user.role.toLowerCase();
         if (role !== "admin" && role !== "staff") {
             return { success: false, error: "Batch upload hanya tersedia untuk admin/staff." };
         }
 
-        const importedBy = user.fullName || user.username || "Unknown";
+        const importedBy = user.name || "Unknown";
 
         // Load all clients for auto-matching by company name
         const clients = await prisma.client.findMany({

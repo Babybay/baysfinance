@@ -1,12 +1,12 @@
 import { getClientDetail } from "@/app/actions/clients";
 import { ClientDetailView } from "./ClientDetailView";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
     const isAdmin = role === "admin";
 
     if (!isAdmin) {

@@ -5,7 +5,7 @@ import { s3Client, BUCKET_NAME } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { AccDocType, AccDocModule } from "@prisma/client";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { assertCanAccessClient, handleAuthError, isAdminOrStaff } from "@/lib/auth-helpers";
 import { importDocumentEntries } from "@/app/actions/import-accounting";
 import type { GeneratedEntry } from "@/lib/journal-generator";
@@ -83,7 +83,7 @@ export async function getAccountingDocuments(
 
 export async function uploadAccountingDocument(formData: FormData) {
     try {
-        const user = await currentUser();
+        const user = await getCurrentUser();
         if (!user) return { success: false, error: "Sesi tidak valid." };
 
         const admin = await isAdminOrStaff();
@@ -116,7 +116,7 @@ export async function uploadAccountingDocument(formData: FormData) {
         }
 
         // Upload to R2
-        const key = `accounting-docs/${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const key = `accounting-docs/${clientId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
         const arrayBuffer = await file.arrayBuffer();
 
         await s3Client.send(
@@ -140,7 +140,7 @@ export async function uploadAccountingDocument(formData: FormData) {
                 fileUrl,
                 fileType: ext,
                 fileSize: file.size,
-                uploadedBy: user.fullName || user.emailAddresses[0]?.emailAddress || "Unknown",
+                uploadedBy: user.name || user.email || "Unknown",
                 clientId,
             },
         });

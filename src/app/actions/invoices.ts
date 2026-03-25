@@ -8,6 +8,8 @@ import {
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { createInvoiceSentJournal } from "@/lib/auto-journal";
+import { round2 } from "@/lib/accounting-helpers";
+import { TAX_CONFIG } from "@/lib/tax-config";
 
 // ─── VALID STATUS TRANSITIONS ───────────────────────────────────────────────
 
@@ -72,7 +74,7 @@ export async function createInvoice(data: {
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
         const subtotal = data.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
-        const ppn = Math.round(subtotal * 0.11);
+        const ppn = round2(subtotal * TAX_CONFIG.PPN_RATE);
         const total = subtotal + ppn;
 
         // Atomic invoice number generation (prevents race conditions)

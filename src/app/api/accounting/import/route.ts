@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import * as XLSX from "xlsx";
 import { detectFromHeaders, extractHeaders } from "@/lib/document-detector";
 import { mapColumns } from "@/lib/column-mapper";
@@ -11,7 +11,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export async function POST(req: NextRequest) {
     try {
-        const user = await currentUser();
+        const user = await getCurrentUser();
         if (!user) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }

@@ -11,11 +11,14 @@ async function main() {
     console.log("🌱 Seeding database with realistic data...");
 
     // ── Users ────────────────────────────────────────────────────────────────
+    const bcrypt = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash("admin123", 12);
+
     const adminUser = {
         id: "admin",
-        clerkId: "user_2pXG", // Mock Clerk ID
-        name: "Admin Antigravity",
+        name: "Admin BaysConsult",
         email: "admin@baysfinance.com",
+        passwordHash,
         role: "Admin" as any,
         isActive: true,
     };

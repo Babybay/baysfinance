@@ -3,7 +3,7 @@ import { JournalEntriesListView } from "./JournalEntriesListView";
 import { getJournalEntries, getAccounts } from "@/app/actions/accounting";
 import { getClients } from "@/app/actions/clients";
 import { JournalEntry, Account, Client } from "@/lib/data";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 
 const PAGE_SIZE = 20;
@@ -13,11 +13,11 @@ export default async function JournalPage({
 }: {
     searchParams: Promise<{ page?: string; clientId?: string }>;
 }) {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) redirect("/sign-in");
 
-    const role = (user.publicMetadata?.role as string) || "client";
-    const ownClientId = user.publicMetadata?.clientId as string | undefined;
+    const role = user.role.toLowerCase();
+    const ownClientId = user.clientId;
 
     const { page: pageParam, clientId: clientIdParam } = await searchParams;
     const page = Math.max(1, parseInt(pageParam || "1", 10));

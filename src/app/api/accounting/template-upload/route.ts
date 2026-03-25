@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { ingestTemplateFile } from "@/lib/ingestion/template-ingestion";
 
 export const maxDuration = 120; // 2 minutes for large templates
 
 export async function POST(req: NextRequest) {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const importedBy = user.fullName || user.username || "Unknown";
+    const importedBy = user.name || "Unknown";
 
     const formData = await req.formData();
     const clientId = formData.get("clientId") as string;
@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check role-based access
-    const role = (user.publicMetadata?.role as string) || "client";
+    const role = user.role.toLowerCase();
     if (role === "client") {
-        const ownClientId = user.publicMetadata?.clientId as string | undefined;
+        const ownClientId = user.clientId;
         if (!ownClientId || ownClientId !== clientId) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }

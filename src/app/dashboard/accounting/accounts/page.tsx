@@ -1,14 +1,14 @@
 import React from "react";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { AccountsView } from "./AccountsView";
 import { getAccounts } from "@/app/actions/accounting";
 import { Account } from "@/lib/data";
 
 export default async function AccountsPage() {
-    const user = await currentUser();
-    const role = (user?.publicMetadata?.role as string) || "client";
+    const user = await getCurrentUser();
+    const role = user?.role?.toLowerCase() || "client";
     const clientId = role === "client"
-        ? (user?.publicMetadata?.clientId as string | undefined)
+        ? user?.clientId
         : undefined;
 
     const res = await getAccounts(clientId, role !== "client");

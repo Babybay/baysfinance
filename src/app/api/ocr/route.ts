@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { processOcrText } from "@/lib/ocr-processor";
+import { ocrLimiter } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/bmp"];
+const OCR_TIMEOUT_MS = 30_000; // 30 seconds
 
 export async function POST(req: NextRequest) {
     try {
-        const user = await currentUser();
+        const user = await getCurrentUser();
         if (!user) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Rate limit: 30 OCR requests per hour per user
+        const rateCheck = ocrLimiter.check(user.id);
+        if (!rateCheck.success) {
+            return NextResponse.json(
+                { success: false, error: "Terlalu banyak permintaan OCR. Coba lagi nanti." },
+                { status: 429, headers: { "Retry-After": String(Math.ceil(rateCheck.retryAfterMs / 1000)) } },
+            );
         }
 
         const formData = await req.formData();
@@ -79,15 +90,24 @@ export async function POST(req: NextRequest) {
             try {
                 const Tesseract = await import("tesseract.js");
                 const worker = await Tesseract.createWorker("ind+eng");
-                const { data } = await worker.recognize(buffer);
+                // Timeout protection — prevent worker from hanging on corrupted images
+                const { data } = await Promise.race([
+                    worker.recognize(buffer),
+                    new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error("OCR_TIMEOUT")), OCR_TIMEOUT_MS)
+                    ),
+                ]);
                 rawText = data.text || "";
                 ocrConfidence = Math.round(data.confidence);
                 wordCount = data.words?.length || 0;
                 await worker.terminate();
             } catch (ocrErr) {
+                const msg = ocrErr instanceof Error && ocrErr.message === "OCR_TIMEOUT"
+                    ? "OCR timeout — file terlalu besar atau rusak. Coba gambar yang lebih kecil."
+                    : "Gagal memproses OCR. Pastikan file berupa gambar yang jelas.";
                 console.error("[api/ocr] tesseract error:", ocrErr);
                 return NextResponse.json(
-                    { success: false, error: "Gagal memproses OCR. Pastikan file berupa gambar yang jelas." },
+                    { success: false, error: msg },
                     { status: 500 },
                 );
             }

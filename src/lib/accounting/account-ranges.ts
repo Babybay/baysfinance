@@ -4,40 +4,55 @@
  * These ranges define the account classification used across all financial
  * reports (Neraca Lajur, Neraca, Arus Kas, CALK, etc.).
  *
- * They follow the standard hotel/restaurant chart of accounts structure
- * mandated for Indonesian tax reporting purposes.
+ * Ranges are designed to encompass all CoA templates (Jasa Konsultan,
+ * Hotel & Restoran, Perdagangan, Manufaktur, Konstruksi, Startup/Tech).
  *
- * To customise per-client in the future, accept a config object in the
- * functions that consume these ranges instead of importing this constant.
+ * Code structure:
+ *   100-109  Kas                    300-319  Utang Usaha
+ *   110-119  Bank                   320-329  Utang Pajak
+ *   120-129  Piutang                400-409  Utang Jangka Panjang
+ *   130-149  Persediaan             410-419  Cadangan / Uang Muka Pelanggan
+ *   210-219  Aset Tetap             510-514  Ekuitas
+ *   220-229  Aset Lain-Lain         600-609  Pendapatan Usaha
+ *                                   620-629  HPP / Beban Pokok
+ *                                   700-729  Beban Operasional
+ *                                   900-919  Pendapatan & Beban Non-Operasional
  */
 export type CodeRange = [number, number];
 
 export const ACCOUNT_RANGES = {
     // ── ASET ─────────────────────────────────────────────────────────────────
-    kas: [[100, 101]] as CodeRange[],
-    bank: [[110, 114]] as CodeRange[],
-    piutang: [[120, 122]] as CodeRange[],
-    persediaan: [[130, 140]] as CodeRange[],
-    asetTetap: [[210, 213]] as CodeRange[],   // includes akum. penyusutan (212, 213)
-    asetLainLain: [[220, 223]] as CodeRange[], // includes akum. amortisasi (221)
+    kas: [[100, 109]] as CodeRange[],
+    bank: [[110, 119]] as CodeRange[],
+    piutang: [[120, 129]] as CodeRange[],
+    persediaan: [[130, 149]] as CodeRange[],
+    asetTetap: [[210, 219]] as CodeRange[],   // includes akum. penyusutan
+    asetLainLain: [[220, 229]] as CodeRange[], // includes akum. amortisasi, prepaid
 
     // ── KEWAJIBAN & MODAL ────────────────────────────────────────────────────
-    utang: [[300, 310]] as CodeRange[],
-    utangPajak: [[320, 321]] as CodeRange[],   // 321 = Utang Pajak Penghasilan
-    utangAfiliasi: [[400, 400]] as CodeRange[],
-    cadangan: [[410, 410]] as CodeRange[],
-    ekuitas: [[510, 514]] as CodeRange[],      // 514 = Laba Tahun Berjalan
+    utang: [[300, 319]] as CodeRange[],
+    utangPajak: [[320, 329]] as CodeRange[],
+    utangJangkaPanjang: [[400, 409]] as CodeRange[],
+    cadangan: [[410, 419]] as CodeRange[],
+    ekuitas: [[510, 514]] as CodeRange[],
 
     // ── LABA RUGI ────────────────────────────────────────────────────────────
-    pendapatan: [[600, 606], [900, 902]] as CodeRange[],
-    beban: [[620, 624], [700, 729], [910, 913]] as CodeRange[],
+    pendapatan: [[600, 609], [900, 902]] as CodeRange[],
+    hpp: [[620, 629]] as CodeRange[],
+    bebanOperasional: [[700, 729]] as CodeRange[],
+    bebanNonOperasional: [[910, 919]] as CodeRange[],
+    beban: [[620, 629], [700, 729], [910, 919]] as CodeRange[],
 } as const;
 
 /**
- * Contra-asset accounts — always shown as negative (parentheses) in reports.
- * These hold accumulated depreciation / amortisation balances.
+ * Default contra-asset codes (accumulated depreciation/amortisation).
+ * Template-specific overrides are in CoaTemplate.contraAssetCodes.
+ *
+ * These codes should be shown as negative (parentheses) in reports.
  */
-export const CONTRA_ASSET_CODES = new Set(["212", "213", "221"]);
+export const CONTRA_ASSET_CODES = new Set([
+    "212", "213", "214", "215", "216", "221",
+]);
 
 /** Parse the numeric prefix of an account code. */
 export function codeToNumber(code: string): number {

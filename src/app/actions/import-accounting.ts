@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { JournalStatus, Prisma } from "@prisma/client";
 import { validateJournalBalance } from "@/lib/accounting-helpers";
 import { assertCanAccessClient, handleAuthError } from "@/lib/auth-helpers";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import type { DocumentType } from "@/lib/document-detector";
 import type { GeneratedEntry } from "@/lib/journal-generator";
 import { SOURCE_LABELS } from "@/lib/journal-generator";
@@ -26,8 +26,8 @@ export async function importDocumentEntries(
     try {
         await assertCanAccessClient(clientId);
 
-        const user = await currentUser();
-        const importedBy = user?.fullName || user?.username || "Unknown";
+        const user = await getCurrentUser();
+        const importedBy = user?.name || "Unknown";
 
         if (!entries || entries.length === 0) {
             return { success: false, imported: 0, skipped: 0, errors: ["Tidak ada data untuk diimpor."] };

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Inter, JetBrains_Mono } from "next/font/google";
-import { ClerkProvider } from '@clerk/nextjs'
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
 
@@ -35,11 +35,11 @@ export default function RootLayout({
       <body
         className={`${dmSerif.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <ClerkProvider>
+        <SessionProvider>
           <I18nProvider>
             {children}
           </I18nProvider>
-        </ClerkProvider>
+        </SessionProvider>
       </body>
     </html>
   );

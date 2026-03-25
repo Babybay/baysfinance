@@ -201,3 +201,42 @@ body {
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
+
+/* ─── Print Styles ─── */
+@media print {
+  /* Hide sidebar, header, and navigation */
+  nav, header, aside,
+  [data-sidebar], [data-shell-sidebar],
+  .dashboard-sidebar, .dashboard-header {
+    display: none !important;
+  }
+
+  /* Make main content full width */
+  main, [data-shell-content] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide interactive elements */
+  button, select, input, .no-print {
+    display: none !important;
+  }
+
+  /* Show printable content only */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Clean backgrounds for printing */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Avoid page breaks inside cards */
+  .card, table {
+    page-break-inside: avoid;
+  }
+}

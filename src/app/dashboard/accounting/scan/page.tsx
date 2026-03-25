@@ -1,16 +1,16 @@
 import React from "react";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { ScanPageView } from "./ScanPageView";
 import { getClients } from "@/app/actions/clients";
 import type { Client } from "@/lib/data";
 
 export default async function ScanPage() {
-    const user = await currentUser();
+    const user = await getCurrentUser();
     if (!user) redirect("/sign-in");
 
-    const role = (user.publicMetadata?.role as string) || "client";
-    const ownClientId = user.publicMetadata?.clientId as string | undefined;
+    const role = user.role.toLowerCase();
+    const ownClientId = user.clientId;
 
     const clientsRes = await getClients();
     const clients = (clientsRes.success ? clientsRes.data : []) as unknown as Client[];
