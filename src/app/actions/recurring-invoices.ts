@@ -8,7 +8,7 @@ import {
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { createInvoiceSentJournal } from "@/lib/auto-journal";
-import { round2 } from "@/lib/accounting-helpers";
+import { round2, roundRupiah } from "@/lib/accounting-helpers";
 import { TAX_CONFIG } from "@/lib/tax-config";
 
 // ─── GET RECURRING INVOICES ─────────────────────────────────────────────────
@@ -184,8 +184,25 @@ export async function generateRecurringInvoices() {
         if (!client) continue;
 
         try {
+            // Idempotency: skip if an invoice was already generated for this period
+            const periodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+            const existingInvoice = await prisma.invoice.findFirst({
+                where: {
+                    recurringInvoiceId: recurring.id,
+                    tanggal: {
+                        gte: new Date(now.getFullYear(), now.getMonth(), 1),
+                        lt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+                    },
+                },
+                select: { id: true },
+            });
+            if (existingInvoice) {
+                console.log(`[generateRecurring] Skipping ${recurring.id} — invoice already exists for ${periodKey}`);
+                continue;
+            }
+
             const subtotal = recurring.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
-            const ppn = round2(subtotal * TAX_CONFIG.PPN_RATE);
+            const ppn = roundRupiah(subtotal * TAX_CONFIG.PPN_RATE);
             const total = subtotal + ppn;
 
             // Due date: 30 days from generation
@@ -253,7 +270,7 @@ export async function generateRecurringInvoices() {
                     where: { id: recurring.id },
                     data: { nextRunDate },
                 });
-            });
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
             generated++;
             results.push({ id: recurring.id, success: true });

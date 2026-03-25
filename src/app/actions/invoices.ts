@@ -4,11 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { InvoiceStatus, Prisma } from "@prisma/client";
 import {
     assertCanAccessClient,
+    getCurrentUser,
     handleAuthError,
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
+import { writeAuditLog } from "@/lib/audit";
 import { createInvoiceSentJournal } from "@/lib/auto-journal";
-import { round2 } from "@/lib/accounting-helpers";
+import { round2, roundRupiah } from "@/lib/accounting-helpers";
 import { TAX_CONFIG } from "@/lib/tax-config";
 
 // ─── VALID STATUS TRANSITIONS ───────────────────────────────────────────────
@@ -70,11 +72,12 @@ export async function createInvoice(data: {
             }
         }
 
+        const user = await getCurrentUser();
         const client = await prisma.client.findUnique({ where: { id: data.clientId } });
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
         const subtotal = data.items.reduce((sum, item) => sum + item.qty * item.harga, 0);
-        const ppn = round2(subtotal * TAX_CONFIG.PPN_RATE);
+        const ppn = roundRupiah(subtotal * TAX_CONFIG.PPN_RATE);
         const total = subtotal + ppn;
 
         // Atomic invoice number generation (prevents race conditions)
@@ -107,6 +110,7 @@ export async function createInvoice(data: {
                     total,
                     status: InvoiceStatus.Draft,
                     catatan: data.catatan || null,
+                    createdBy: user?.id,
                     items: {
                         create: data.items.map((item) => ({
                             deskripsi: item.deskripsi,
@@ -118,6 +122,14 @@ export async function createInvoice(data: {
                 },
                 include: { items: true },
             });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        writeAuditLog({
+            action: "CREATE",
+            model: "Invoice",
+            recordId: invoice.id,
+            clientId: data.clientId,
+            after: { nomorInvoice: invoice.nomorInvoice, total },
         });
 
         return { success: true, data: invoice };
@@ -176,6 +188,15 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
             }
 
             return { invoice, journalRefNumber };
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        writeAuditLog({
+            action: "STATUS_CHANGE",
+            model: "Invoice",
+            recordId: id,
+            clientId: result.invoice.clientId,
+            before: { status: existing.status },
+            after: { status },
         });
 
         return { success: true, data: result.invoice, journalRefNumber: result.journalRefNumber };

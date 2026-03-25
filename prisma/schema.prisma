@@ -125,6 +125,8 @@ model Invoice {
   total              Float
   status             InvoiceStatus
   catatan            String?
+  createdBy          String?
+  updatedByUser      String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   deletedAt          DateTime?
@@ -166,6 +168,7 @@ model Payment {
   metodePembayaran String?
   buktiUrl         String?
   catatan          String?
+  createdBy        String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
@@ -395,6 +398,8 @@ model JournalEntry {
   clientId       String
   totalDebit     Decimal       @default(0) @db.Decimal(18, 2)
   totalCredit    Decimal       @default(0) @db.Decimal(18, 2)
+  createdBy      String?
+  updatedByUser  String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   deletedAt      DateTime?
@@ -523,6 +528,39 @@ model FixedAsset {
   @@index([clientId, source])
   @@index([importBatchId])
   @@map("fixed_assets")
+}
+
+model AccountBalance {
+  id          String   @id @default(cuid())
+  clientId    String
+  accountId   String
+  debitTotal  Decimal  @default(0) @db.Decimal(18, 2)
+  creditTotal Decimal  @default(0) @db.Decimal(18, 2)
+  balance     Decimal  @default(0) @db.Decimal(18, 2)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([clientId, accountId])
+  @@index([clientId])
+  @@map("account_balances")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  model      String
+  recordId   String
+  userId     String
+  userName   String
+  clientId   String?
+  before     Json?
+  after      Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([model, recordId])
+  @@index([userId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("audit_logs")
 }
 
 model FinancialReportSnapshot {

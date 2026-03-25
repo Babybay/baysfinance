@@ -7,6 +7,34 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/bmp"];
 const OCR_TIMEOUT_MS = 30_000; // 30 seconds
 
+// Magic byte signatures for supported file types
+const MAGIC_BYTES: { type: string; bytes: number[]; offset?: number }[] = [
+    { type: "jpeg", bytes: [0xFF, 0xD8, 0xFF] },
+    { type: "png", bytes: [0x89, 0x50, 0x4E, 0x47] },
+    { type: "webp", bytes: [0x52, 0x49, 0x46, 0x46], }, // RIFF header (WebP)
+    { type: "bmp", bytes: [0x42, 0x4D] },
+    { type: "pdf", bytes: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+];
+
+function detectFileType(buffer: Buffer): string | null {
+    for (const sig of MAGIC_BYTES) {
+        const offset = sig.offset ?? 0;
+        if (buffer.length < offset + sig.bytes.length) continue;
+        const match = sig.bytes.every((b, i) => buffer[offset + i] === b);
+        if (match) {
+            // WebP needs additional check: bytes 8-11 should be "WEBP"
+            if (sig.type === "webp") {
+                if (buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+                    return "webp";
+                }
+                continue;
+            }
+            return sig.type;
+        }
+    }
+    return null;
+}
+
 export async function POST(req: NextRequest) {
     try {
         const user = await getCurrentUser();
@@ -38,15 +66,17 @@ export async function POST(req: NextRequest) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isImage = IMAGE_TYPES.includes(file.type);
 
-        if (!isPdf && !isImage) {
+        // Validate actual file content using magic bytes (not MIME type which can be spoofed)
+        const detectedType = detectFileType(buffer);
+        if (!detectedType) {
             return NextResponse.json(
-                { success: false, error: "Format file tidak didukung. Gunakan JPG, PNG, WebP, BMP, atau PDF." },
+                { success: false, error: "Format file tidak didukung atau file rusak. Gunakan JPG, PNG, WebP, BMP, atau PDF." },
                 { status: 400 },
             );
         }
+        const isPdf = detectedType === "pdf";
+        const isImage = ["jpeg", "png", "webp", "bmp"].includes(detectedType);
 
         let rawText = "";
         let ocrConfidence = 0;

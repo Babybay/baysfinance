@@ -43,6 +43,9 @@ export interface BatchResult {
     failCount: number;
 }
 
+const BATCH_MAX_FILES = 20;
+const BATCH_MAX_TOTAL_BYTES = 50 * 1024 * 1024; // 50 MB
+
 export async function importBatchTemplates(
     files: BatchFileInput[],
 ): Promise<{ success: boolean; data?: BatchResult; error?: string }> {
@@ -53,6 +56,18 @@ export async function importBatchTemplates(
         const role = user.role.toLowerCase();
         if (role !== "admin" && role !== "staff") {
             return { success: false, error: "Batch upload hanya tersedia untuk admin/staff." };
+        }
+
+        // Validate batch size limits
+        if (files.length === 0) {
+            return { success: false, error: "Tidak ada file yang diunggah." };
+        }
+        if (files.length > BATCH_MAX_FILES) {
+            return { success: false, error: `Maksimal ${BATCH_MAX_FILES} file per batch. Anda mengunggah ${files.length} file.` };
+        }
+        const totalBytes = files.reduce((sum, f) => sum + f.fileBuffer.length, 0);
+        if (totalBytes > BATCH_MAX_TOTAL_BYTES) {
+            return { success: false, error: `Total ukuran file melebihi batas 50 MB (${(totalBytes / 1024 / 1024).toFixed(1)} MB).` };
         }
 
         const importedBy = user.name || "Unknown";
@@ -144,6 +159,10 @@ export async function getTemplateImportHistory(
 }> {
     try {
         if (clientId) await assertCanAccessClient(clientId);
+
+        // Clamp pagination bounds
+        page = Math.max(1, Math.floor(page));
+        pageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100);
 
         const where = {
             ...(clientId ? { clientId } : {}),

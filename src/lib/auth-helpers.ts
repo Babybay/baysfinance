@@ -24,21 +24,38 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  * for the given clientId.
  *
  * Rules:
- *  - Admins and staff can access any client.
+ *  - Admins and staff can access clients within their own organisation.
  *  - Client-role users can only access their own clientId.
  *
  * Throws "UNAUTHENTICATED" if not logged in.
- * Throws "FORBIDDEN" if a client-role user tries to access another tenant.
+ * Throws "FORBIDDEN" if a client-role user tries to access another tenant,
+ *   or if an admin/staff tries to access a client outside their org.
  */
 export async function assertCanAccessClient(clientId: string): Promise<void> {
     const user = await getCurrentUser();
     if (!user) throw new Error("UNAUTHENTICATED");
 
     const role = user.role;
-    if (role === "Admin" || role === "Staff") return;
 
-    if (!user.clientId || user.clientId !== clientId) {
-        throw new Error("FORBIDDEN");
+    // Client-role: strict match on their own clientId
+    if (role !== "Admin" && role !== "Staff") {
+        if (!user.clientId || user.clientId !== clientId) {
+            throw new Error("FORBIDDEN");
+        }
+        return;
+    }
+
+    // Admin/Staff: verify client belongs to the same organisation
+    if (user.organisationId) {
+        const { prisma } = await import("@/lib/prisma");
+        const client = await prisma.client.findUnique({
+            where: { id: clientId },
+            select: { organisationId: true },
+        });
+        if (!client) throw new Error("FORBIDDEN");
+        if (client.organisationId && client.organisationId !== user.organisationId) {
+            throw new Error("FORBIDDEN");
+        }
     }
 }
 

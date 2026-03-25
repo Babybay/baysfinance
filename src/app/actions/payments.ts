@@ -1,11 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus, Prisma } from "@prisma/client";
 import {
     assertCanAccessClient,
+    getCurrentUser,
     handleAuthError,
 } from "@/lib/auth-helpers";
+import { writeAuditLog } from "@/lib/audit";
 import {
     createPaymentReceivedJournal,
     createPaymentReversalJournal,
@@ -104,12 +106,15 @@ export async function recordPayment(data: {
             };
         }
 
+        const user = await getCurrentUser();
+
         // Single atomic transaction: create payment + journal + auto-Lunas
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create payment
             const payment = await tx.payment.create({
                 data: {
                     invoiceId: data.invoiceId,
+                    createdBy: user?.id,
                     jumlah: data.jumlah,
                     tanggalBayar: new Date(data.tanggalBayar),
                     metodePembayaran: data.metodePembayaran,
@@ -154,6 +159,14 @@ export async function recordPayment(data: {
                 autoLunas,
                 journalRefNumber: journalResult.refNumber || null,
             };
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        writeAuditLog({
+            action: "CREATE",
+            model: "Payment",
+            recordId: result.payment.id,
+            clientId: invoice.clientId,
+            after: { jumlah: data.jumlah, invoiceId: data.invoiceId, autoLunas: result.autoLunas },
         });
 
         return { success: true, data: result };
@@ -217,7 +230,7 @@ export async function deletePayment(paymentId: string) {
                     });
                 }
             }
-        });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
         return { success: true };
     } catch (error) {

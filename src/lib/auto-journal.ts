@@ -9,6 +9,7 @@
 
 import { JournalStatus, Prisma } from "@prisma/client";
 import { validateJournalBalance, round2 } from "@/lib/accounting-helpers";
+import { updateAccountBalances } from "@/lib/account-balance";
 
 // ── Account code mapping (from seed-accounts.ts) ────────────────────────────
 
@@ -185,6 +186,8 @@ export async function createInvoiceSentJournal(
             },
         });
 
+        await updateAccountBalances(tx, invoice.clientId, items);
+
         return { success: true, journalEntryId: entry.id, refNumber };
     } catch (error) {
         console.error("[createInvoiceSentJournal]", error);
@@ -265,6 +268,8 @@ export async function createPaymentReceivedJournal(
             },
         });
 
+        await updateAccountBalances(tx, invoice.clientId, items);
+
         return { success: true, journalEntryId: entry.id, refNumber };
     } catch (error) {
         console.error("[createPaymentReceivedJournal]", error);
@@ -306,6 +311,12 @@ export async function createPaymentReversalJournal(
             select: { id: true },
         });
 
+        if (!originalJournal) {
+            console.warn(
+                `[createPaymentReversalJournal] Original journal not found for payment ${payment.id} — reversal will be created without link.`
+            );
+        }
+
         const amount = round2(payment.jumlah);
 
         const items = [
@@ -336,6 +347,8 @@ export async function createPaymentReversalJournal(
                 },
             },
         });
+
+        await updateAccountBalances(tx, invoice.clientId, items);
 
         return { success: true, journalEntryId: entry.id, refNumber };
     } catch (error) {

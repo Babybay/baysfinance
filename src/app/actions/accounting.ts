@@ -5,9 +5,12 @@ import { AccountType, JournalStatus, Prisma } from "@prisma/client";
 import { validateJournalBalance } from "@/lib/accounting-helpers";
 import {
     assertCanAccessClient,
+    getCurrentUser,
     handleAuthError,
     isAdminOrStaff,
 } from "@/lib/auth-helpers";
+import { writeAuditLog } from "@/lib/audit";
+import { updateAccountBalances } from "@/lib/account-balance";
 
 // ── CHART OF ACCOUNTS ────────────────────────────────────────────────────────
 
@@ -41,27 +44,19 @@ export async function getAccounts(clientId?: string, includeInactive: boolean = 
             orderBy: { code: "asc" },
         });
 
-        // Compute balances from posted journal entries (only meaningful with client context)
+        // Read cached balances (updated transactionally when journals are posted)
         const balanceMap = new Map<string, number>();
         if (clientId && accounts.length > 0) {
-            const balances = await prisma.journalItem.groupBy({
-                by: ["accountId"],
+            const cachedBalances = await prisma.accountBalance.findMany({
                 where: {
+                    clientId,
                     accountId: { in: accounts.map((a) => a.id) },
-                    journalEntry: {
-                        clientId,
-                        status: JournalStatus.Posted,
-                        deletedAt: null,
-                    },
                 },
-                _sum: { debit: true, credit: true },
+                select: { accountId: true, balance: true },
             });
 
-            for (const b of balances) {
-                balanceMap.set(
-                    b.accountId,
-                    Number(b._sum.debit ?? 0) - Number(b._sum.credit ?? 0)
-                );
+            for (const b of cachedBalances) {
+                balanceMap.set(b.accountId, Number(b.balance));
             }
         }
 
@@ -250,6 +245,7 @@ export async function createJournalEntry(data: {
     try {
         // C1: authorise
         await assertCanAccessClient(data.clientId);
+        const user = await getCurrentUser();
 
         // Double-entry validation
         const validation = validateJournalBalance(data.items);
@@ -279,7 +275,7 @@ export async function createJournalEntry(data: {
             const seq = rows[0].counter;
             const refNumber = `${prefix}${seq.toString().padStart(4, "0")}`;
 
-            return tx.journalEntry.create({
+            const created = await tx.journalEntry.create({
                 data: {
                     refNumber,
                     date: data.date,
@@ -288,6 +284,7 @@ export async function createJournalEntry(data: {
                     clientId: data.clientId,
                     totalDebit,
                     totalCredit,
+                    createdBy: user?.id,
                     items: {
                         create: data.items.map((item) => ({
                             accountId: item.accountId,
@@ -298,6 +295,20 @@ export async function createJournalEntry(data: {
                 },
                 include: { items: true },
             });
+
+            // Update materialized balance cache
+            await updateAccountBalances(tx, data.clientId, data.items);
+
+            return created;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+        // Audit log (fire-and-forget)
+        writeAuditLog({
+            action: "CREATE",
+            model: "JournalEntry",
+            recordId: entry.id,
+            clientId: data.clientId,
+            after: { refNumber: entry.refNumber, totalDebit, totalCredit },
         });
 
         // Convert Decimal → number before crossing the server/client boundary (M6)

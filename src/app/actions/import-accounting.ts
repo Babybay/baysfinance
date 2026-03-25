@@ -236,6 +236,10 @@ export async function getImportHistory(
     try {
         await assertCanAccessClient(clientId);
 
+        // Clamp pagination bounds
+        page = Math.max(1, Math.floor(page));
+        pageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100);
+
         const skip = (page - 1) * pageSize;
 
         const [batches, total] = await prisma.$transaction([

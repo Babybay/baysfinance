@@ -237,7 +237,7 @@ export async function closeFiscalPeriod(data: {
                     totalExpenses,
                 },
             };
-        });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
         console.error("[closeFiscalPeriod]", error);
         return handleAuthError(error);

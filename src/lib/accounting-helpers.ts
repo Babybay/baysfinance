@@ -6,6 +6,16 @@ export function round2(n: number): number {
     return Number(n.toFixed(2));
 }
 
+/**
+ * Rounds to the nearest whole Rupiah.
+ * Indonesian tax invoices use whole numbers (no sen).
+ * Use this for PPN calculations and invoice totals to prevent
+ * floating-point accumulation errors across many line items.
+ */
+export function roundRupiah(n: number): number {
+    return Math.round(n);
+}
+
 export interface JournalEntryItemInput {
     debit: number;
     credit: number;
