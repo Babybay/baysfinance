@@ -57,6 +57,11 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
         clientId: "",
         jatuhTempo: "",
         catatan: "",
+        namaBank: "Bank BCA",
+        nomorRekening: "",
+        atasNama: "Bay'sConsult",
+        penandaTangan: "",
+        jabatanPenandaTangan: "Managing Partner",
         items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] as InvoiceItem[],
     });
 
@@ -81,6 +86,11 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             clientId: form.clientId,
             jatuhTempo: form.jatuhTempo,
             catatan: form.catatan,
+            namaBank: form.namaBank,
+            nomorRekening: form.nomorRekening,
+            atasNama: form.atasNama,
+            penandaTangan: form.penandaTangan,
+            jabatanPenandaTangan: form.jabatanPenandaTangan,
             items: form.items.map(item => ({
                 deskripsi: item.deskripsi,
                 qty: item.qty,
@@ -91,7 +101,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
         if (res.success) {
             router.refresh();
             setModalOpen(false);
-            setForm({ clientId: "", jatuhTempo: "", catatan: "", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
+            setForm({ clientId: "", jatuhTempo: "", catatan: "", namaBank: "Bank BCA", nomorRekening: "", atasNama: "Bay'sConsult", penandaTangan: "", jabatanPenandaTangan: "Managing Partner", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
             toast.success("Invoice berhasil dibuat");
         } else {
             toast.error(res.error || "Gagal membuat invoice");
@@ -345,6 +355,26 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                     </div>
 
                     <Textarea label="Catatan" value={form.catatan} onChange={(e) => setForm({ ...form, catatan: e.target.value })} placeholder="Catatan tambahan..." />
+
+                    {/* Bank Account / Payment Destination */}
+                    <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">Tujuan Pembayaran</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <Input label="Nama Bank" value={form.namaBank} onChange={(e) => setForm({ ...form, namaBank: e.target.value })} placeholder="Bank BCA" />
+                            <Input label="No. Rekening" value={form.nomorRekening} onChange={(e) => setForm({ ...form, nomorRekening: e.target.value })} placeholder="123-456-7890" />
+                            <Input label="Atas Nama" value={form.atasNama} onChange={(e) => setForm({ ...form, atasNama: e.target.value })} placeholder="Bay'sConsult" />
+                        </div>
+                    </div>
+
+                    {/* Signer / Penanda Tangan */}
+                    <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">Penanda Tangan</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Input label="Nama Lengkap" value={form.penandaTangan} onChange={(e) => setForm({ ...form, penandaTangan: e.target.value })} placeholder="Nama penanda tangan" />
+                            <Input label="Jabatan" value={form.jabatanPenandaTangan} onChange={(e) => setForm({ ...form, jabatanPenandaTangan: e.target.value })} placeholder="Managing Partner" />
+                        </div>
+                    </div>
+
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
                         <Button type="button" variant="soft" onClick={() => setModalOpen(false)}>Batal</Button>
                         <Button type="submit" variant="accent">Buat Invoice</Button>
@@ -394,6 +424,15 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
 
                         {viewInvoice.catatan && (
                             <div><p className="text-xs text-muted-foreground mb-1">Catatan</p><p className="text-sm text-foreground">{viewInvoice.catatan}</p></div>
+                        )}
+
+                        {(viewInvoice.namaBank || viewInvoice.nomorRekening || viewInvoice.atasNama) && (
+                            <div className="bg-surface rounded-[8px] p-3">
+                                <p className="text-xs text-muted-foreground font-medium mb-1">Tujuan Pembayaran</p>
+                                <p className="text-sm text-foreground">{viewInvoice.namaBank}</p>
+                                {viewInvoice.nomorRekening && <p className="text-sm text-foreground">No. Rek: {viewInvoice.nomorRekening}</p>}
+                                {viewInvoice.atasNama && <p className="text-sm text-foreground">a.n. {viewInvoice.atasNama}</p>}
+                            </div>
                         )}
 
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">

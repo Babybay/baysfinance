@@ -125,6 +125,11 @@ model Invoice {
   total              Float
   status             InvoiceStatus
   catatan            String?
+  namaBank           String?
+  nomorRekening      String?
+  atasNama           String?
+  penandaTangan      String?
+  jabatanPenandaTangan String?
   createdBy          String?
   updatedByUser      String?
   createdAt          DateTime          @default(now())

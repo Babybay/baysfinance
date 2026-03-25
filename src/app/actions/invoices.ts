@@ -54,6 +54,11 @@ export async function createInvoice(data: {
     clientId: string;
     jatuhTempo: string;
     catatan: string;
+    namaBank?: string;
+    nomorRekening?: string;
+    atasNama?: string;
+    penandaTangan?: string;
+    jabatanPenandaTangan?: string;
     items: { deskripsi: string; qty: number; harga: number; jumlah: number }[];
 }) {
     try {
@@ -113,6 +118,11 @@ export async function createInvoice(data: {
                     total,
                     status: InvoiceStatus.Draft,
                     catatan: data.catatan || null,
+                    namaBank: data.namaBank || null,
+                    nomorRekening: data.nomorRekening || null,
+                    atasNama: data.atasNama || null,
+                    penandaTangan: data.penandaTangan || null,
+                    jabatanPenandaTangan: data.jabatanPenandaTangan || null,
                     createdBy: user?.id,
                     items: {
                         create: data.items.map((item) => ({

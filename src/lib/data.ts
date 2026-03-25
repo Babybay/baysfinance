@@ -50,6 +50,11 @@ export interface Invoice {
     total: number;
     status: InvoiceStatus;
     catatan: string;
+    namaBank?: string | null;
+    nomorRekening?: string | null;
+    atasNama?: string | null;
+    penandaTangan?: string | null;
+    jabatanPenandaTangan?: string | null;
 }
 
 export interface InvoiceItem {
