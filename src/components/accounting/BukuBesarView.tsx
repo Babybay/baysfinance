@@ -5,16 +5,17 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Download, Layers, ChevronDown, ChevronRight } from "lucide-react";
-import { Client } from "@/lib/data";
+import Link from "next/link";
 import {
     getBukuBesar,
     type BukuBesarData,
     type BukuBesarAccount,
 } from "@/app/actions/accounting/buku-besar";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 
 interface BukuBesarViewProps {
-    clients: Client[];
     accounts: { id: string; code: string; name: string }[];
+    initialAccount?: string;
 }
 
 function formatRp(amount: number): string {
@@ -117,7 +118,16 @@ function AccountLedger({
                                 >
                                     <td className="p-3 text-sm">{formatDate(tx.date)}</td>
                                     <td className="p-3 text-sm font-mono text-accent">
-                                        {tx.refNumber}
+                                        {tx.refNumber ? (
+                                            <Link
+                                                href={`/dashboard/accounting/journal?ref=${encodeURIComponent(tx.refNumber)}`}
+                                                className="hover:underline hover:text-accent/80 transition-colors"
+                                            >
+                                                {tx.refNumber}
+                                            </Link>
+                                        ) : (
+                                            " - "
+                                        )}
                                     </td>
                                     <td className="p-3 text-sm text-muted-foreground">
                                         {tx.description}
@@ -180,12 +190,11 @@ function AccountLedger({
     );
 }
 
-export function BukuBesarView({ clients, accounts }: BukuBesarViewProps) {
+export function BukuBesarView({ accounts, initialAccount = "" }: BukuBesarViewProps) {
+    const { selectedClientId: selectedClient, clients } = useSelectedClient();
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const [selectedClient, setSelectedClient] = useState("");
-    const [selectedAccount, setSelectedAccount] = useState("");
+    const [selectedAccount, setSelectedAccount] = useState(initialAccount);
     const [startDate, setStartDate] = useState(
         startOfYear.toISOString().split("T")[0]
     );
@@ -254,21 +263,7 @@ export function BukuBesarView({ clients, accounts }: BukuBesarViewProps) {
         <div className="space-y-6">
             {/* Filters */}
             <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Klien
-                        </label>
-                        <Select
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(e.target.value)}
-                            options={clients.map((c) => ({
-                                value: c.id,
-                                label: c.nama,
-                            }))}
-                            placeholder="Pilih Klien..."
-                        />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             Akun (Opsional)

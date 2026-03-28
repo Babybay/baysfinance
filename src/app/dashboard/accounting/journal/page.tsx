@@ -1,57 +1,27 @@
 import React from "react";
 import { JournalEntriesListView } from "./JournalEntriesListView";
-import { getJournalEntries, getAccounts } from "@/app/actions/accounting";
-import { getClients } from "@/app/actions/clients";
-import { JournalEntry, Account, Client } from "@/lib/data";
-import { getCurrentUser } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
-
-const PAGE_SIZE = 20;
+import { getAccounts } from "@/app/actions/accounting";
+import { Account } from "@/lib/data";
 
 export default async function JournalPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; clientId?: string }>;
+    searchParams: Promise<{ page?: string; ref?: string }>;
 }) {
-    const user = await getCurrentUser();
-    if (!user) redirect("/sign-in");
-
-    const role = user.role.toLowerCase();
-    const ownClientId = user.clientId;
-
-    const { page: pageParam, clientId: clientIdParam } = await searchParams;
+    const { page: pageParam, ref: refParam } = await searchParams;
     const page = Math.max(1, parseInt(pageParam || "1", 10));
 
-    // For client-role users, always scope to their own clientId.
-    // Admin users must pick a client via the UI (clientId param from URL/state).
-    const resolvedClientId =
-        role === "admin" || role === "staff"
-            ? (clientIdParam ?? "")
-            : (ownClientId ?? "");
-
-    const [entriesRes, clientsRes, accountsRes] = await Promise.all([
-        resolvedClientId
-            ? getJournalEntries(resolvedClientId, page, PAGE_SIZE)
-            : Promise.resolve({ success: true, data: [], total: 0, page, pageSize: PAGE_SIZE }),
-        getClients(),
-        resolvedClientId ? getAccounts(resolvedClientId) : getAccounts(),
-    ]);
-
-    const initialEntries = (entriesRes.success ? entriesRes.data : []) as unknown as JournalEntry[];
-    const total = (entriesRes as { total?: number }).total ?? 0;
-    const clients = (clientsRes.success ? clientsRes.data : []) as unknown as Client[];
+    const accountsRes = await getAccounts();
     const accounts = (accountsRes.success ? accountsRes.data : []) as unknown as Account[];
 
     return (
         <JournalEntriesListView
-            initialEntries={initialEntries}
-            clients={clients}
+            initialEntries={[]}
             accounts={accounts}
-            total={total}
+            total={0}
             page={page}
-            pageSize={PAGE_SIZE}
-            defaultClientId={resolvedClientId}
-            isClientRole={role === "client"}
+            pageSize={20}
+            initialSearch={refParam || ""}
         />
     );
 }

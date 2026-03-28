@@ -7,28 +7,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { formatIDR, Client } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useRoles } from "@/lib/hooks/useRoles";
 import type { IngestionResult } from "@/lib/ingestion/template-ingestion";
 
 interface TemplateUploadViewProps {
-    clients: Client[];
-    defaultClientId: string;
-    isClientRole: boolean;
     mode: "single" | "batch";
 }
 
 type Stage = "upload" | "processing" | "result";
 
 export function TemplateUploadView({
-    clients,
-    defaultClientId,
-    isClientRole,
     mode,
 }: TemplateUploadViewProps) {
     const { t } = useI18n();
+    const { selectedClientId, clients } = useSelectedClient();
+    const { isClient } = useRoles();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const [clientId, setClientId] = useState(defaultClientId);
+    const clientId = selectedClientId;
     const [stage, setStage] = useState<Stage>("upload");
     const [isDragOver, setIsDragOver] = useState(false);
     const [error, setError] = useState("");
@@ -212,25 +208,6 @@ export function TemplateUploadView({
 
     return (
         <div className="space-y-6">
-            {/* Client selector — only for single mode */}
-            {mode === "single" && !isClientRole && (
-                <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-foreground">
-                        {ti?.selectClient ?? "Pilih Klien"}
-                    </label>
-                    <select
-                        value={clientId}
-                        onChange={(e) => { setClientId(e.target.value); resetState(); }}
-                        className="rounded-md border border-border bg-card px-3 py-2 text-sm"
-                    >
-                        <option value="">{ti?.chooseClient ?? "— Pilih klien —"}</option>
-                        {clients.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nama}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
             {/* Batch mode info */}
             {mode === "batch" && stage === "upload" && (
                 <div className="rounded-lg border border-info-border bg-info-bg p-4">

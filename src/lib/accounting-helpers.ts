@@ -22,6 +22,67 @@ export interface JournalEntryItemInput {
     accountId?: string;
 }
 
+/**
+ * Account direction: Asset & Expense have normal debit balance;
+ * Liability, Equity & Revenue have normal credit balance.
+ *
+ * Returns warnings (not errors) when journal items go against the normal
+ * direction for their account type. This catches common data-entry mistakes
+ * like crediting an expense account or debiting a revenue account.
+ */
+export type AccountTypeString = "Asset" | "Liability" | "Equity" | "Revenue" | "Expense";
+
+const NORMAL_DEBIT_TYPES = new Set<AccountTypeString>(["Asset", "Expense"]);
+
+export interface DirectionWarning {
+    accountId: string;
+    accountName: string;
+    accountType: AccountTypeString;
+    side: "debit" | "credit";
+    amount: number;
+    message: string;
+}
+
+export function validateAccountDirections(
+    items: { accountId: string; debit: number; credit: number }[],
+    accountTypeMap: Map<string, { name: string; type: AccountTypeString }>
+): DirectionWarning[] {
+    const warnings: DirectionWarning[] = [];
+
+    for (const item of items) {
+        const acct = accountTypeMap.get(item.accountId);
+        if (!acct) continue;
+
+        const isNormalDebit = NORMAL_DEBIT_TYPES.has(acct.type);
+
+        // Asset/Expense credited (unusual — normally debited)
+        if (isNormalDebit && item.credit > 0 && item.debit === 0) {
+            warnings.push({
+                accountId: item.accountId,
+                accountName: acct.name,
+                accountType: acct.type,
+                side: "credit",
+                amount: item.credit,
+                message: `Akun ${acct.name} (${acct.type}) di-kredit — akun ini normalnya bersaldo debit.`,
+            });
+        }
+
+        // Liability/Equity/Revenue debited (unusual — normally credited)
+        if (!isNormalDebit && item.debit > 0 && item.credit === 0) {
+            warnings.push({
+                accountId: item.accountId,
+                accountName: acct.name,
+                accountType: acct.type,
+                side: "debit",
+                amount: item.debit,
+                message: `Akun ${acct.name} (${acct.type}) di-debit — akun ini normalnya bersaldo kredit.`,
+            });
+        }
+    }
+
+    return warnings;
+}
+
 export function validateJournalBalance(items: JournalEntryItemInput[]): { isValid: boolean; error?: string } {
     if (!items || items.length < 2) {
         return { isValid: false, error: "Jurnal minimal harus memiliki 2 baris akun." };

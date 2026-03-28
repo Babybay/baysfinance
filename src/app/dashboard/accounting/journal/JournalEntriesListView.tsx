@@ -1,44 +1,69 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Plus, Search, BookOpen, Trash2, Save, ChevronRight, Hash, ChevronLeft } from "lucide-react";
-import { JournalEntry, Account, Client, formatIDR } from "@/lib/data";
-import { createJournalEntry } from "@/app/actions/accounting";
+import { JournalEntry, Account, formatIDR } from "@/lib/data";
+import { createJournalEntry, getJournalEntries } from "@/app/actions/accounting";
 import { seedAccounts } from "@/app/actions/seed-accounts";
 import { useRouter } from "next/navigation";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useRoles } from "@/lib/hooks/useRoles";
+import { useToast } from "@/components/ui/Toast";
 
 interface JournalEntriesListViewProps {
     initialEntries: JournalEntry[];
-    clients: Client[];
     accounts: Account[];
     total: number;
     page: number;
     pageSize: number;
-    defaultClientId: string;
-    isClientRole: boolean;
+    initialSearch?: string;
 }
 
 export function JournalEntriesListView({
     initialEntries,
-    clients,
     accounts,
     total,
     page,
     pageSize,
-    defaultClientId,
-    isClientRole,
+    initialSearch = "",
 }: JournalEntriesListViewProps) {
-    const [entries] = useState<JournalEntry[]>(initialEntries);
-    const [search, setSearch] = useState("");
+    const { selectedClientId: defaultClientId, clients } = useSelectedClient();
+    const { isClient: isClientRole } = useRoles();
+    const toast = useToast();
+    const [entries, setEntries] = useState<JournalEntry[]>(initialEntries);
+    const [currentTotal, setCurrentTotal] = useState(total);
+    const [currentPage, setCurrentPage] = useState(page);
+    const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState(initialSearch);
     const [modalOpen, setModalOpen] = useState(false);
     const router = useRouter();
 
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const totalPages = Math.max(1, Math.ceil(currentTotal / pageSize));
+
+    // Fetch entries when selected client or page changes
+    const fetchEntries = useCallback(async () => {
+        if (!defaultClientId) {
+            setEntries([]);
+            setCurrentTotal(0);
+            return;
+        }
+        setLoading(true);
+        const res = await getJournalEntries(defaultClientId, currentPage, pageSize);
+        if (res.success) {
+            setEntries(res.data as unknown as JournalEntry[]);
+            setCurrentTotal(res.total);
+        }
+        setLoading(false);
+    }, [defaultClientId, currentPage, pageSize]);
+
+    useEffect(() => {
+        fetchEntries();
+    }, [fetchEntries]);
 
     // L2: reference is no longer generated client-side — the server always generates it atomically
     const [form, setForm] = useState({
@@ -50,6 +75,13 @@ export function JournalEntriesListView({
             { accountId: "", description: "", debit: 0, credit: 0 },
         ],
     });
+
+    // Sync form clientId with global selection
+    useEffect(() => {
+        if (defaultClientId) {
+            setForm((prev) => ({ ...prev, clientId: defaultClientId }));
+        }
+    }, [defaultClientId]);
 
     const totalDebit = form.items.reduce((sum, item) => sum + item.debit, 0);
     const totalCredit = form.items.reduce((sum, item) => sum + item.credit, 0);
@@ -96,7 +128,7 @@ export function JournalEntriesListView({
 
         if (res.success) {
             setModalOpen(false);
-            router.refresh();
+            fetchEntries();
             setForm({
                 date: new Date().toISOString().split("T")[0],
                 clientId: defaultClientId,
@@ -107,14 +139,12 @@ export function JournalEntriesListView({
                 ],
             });
         } else {
-            alert(res.error || "Gagal menyimpan jurnal");
+            toast.error(res.error || "Gagal menyimpan jurnal");
         }
     };
 
     const goToPage = (p: number) => {
-        const url = new URL(window.location.href);
-        url.searchParams.set("page", String(p));
-        router.push(url.toString());
+        setCurrentPage(p);
     };
 
     const filtered = entries.filter(
@@ -179,7 +209,7 @@ export function JournalEntriesListView({
                                                         onClick={async () => {
                                                             const res = await seedAccounts();
                                                             if (res.success) router.refresh();
-                                                            else alert(res.error);
+                                                            else toast.error(res.error || "Gagal seed akun");
                                                         }}
                                                         className="text-accent underline border-l border-border pl-2"
                                                     >

@@ -4,20 +4,13 @@ import React, { useState } from "react";
 import { FileSpreadsheet, FolderUp, History, Upload, ScanLine } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { Client } from "@/lib/data";
 import { ImportView } from "./ImportView";
 import { TemplateUploadView } from "./TemplateUploadView";
 import { DocumentScanView } from "./DocumentScanView";
 
-interface ImportTabsViewProps {
-    clients: Client[];
-    defaultClientId: string;
-    isClientRole: boolean;
-}
-
 type Tab = "template" | "batch" | "document" | "scan";
 
-export function ImportTabsView({ clients, defaultClientId, isClientRole }: ImportTabsViewProps) {
+export function ImportTabsView() {
     const { t } = useI18n();
     const [activeTab, setActiveTab] = useState<Tab>("template");
 
@@ -89,37 +82,19 @@ export function ImportTabsView({ clients, defaultClientId, isClientRole }: Impor
 
             {/* Tab content */}
             {activeTab === "template" && (
-                <TemplateUploadView
-                    clients={clients}
-                    defaultClientId={defaultClientId}
-                    isClientRole={isClientRole}
-                    mode="single"
-                />
+                <TemplateUploadView mode="single" />
             )}
 
             {activeTab === "batch" && (
-                <TemplateUploadView
-                    clients={clients}
-                    defaultClientId={defaultClientId}
-                    isClientRole={isClientRole}
-                    mode="batch"
-                />
+                <TemplateUploadView mode="batch" />
             )}
 
             {activeTab === "document" && (
-                <ImportView
-                    clients={clients}
-                    defaultClientId={defaultClientId}
-                    isClientRole={isClientRole}
-                />
+                <ImportView />
             )}
 
             {activeTab === "scan" && (
-                <DocumentScanView
-                    clients={clients}
-                    defaultClientId={defaultClientId}
-                    isClientRole={isClientRole}
-                />
+                <DocumentScanView />
             )}
         </div>
     );

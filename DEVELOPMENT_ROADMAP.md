@@ -2,7 +2,7 @@
 
 Dokumen ini berisi rekomendasi pengembangan fitur berdasarkan hasil **audit profesional** terhadap module accounting BaysConsult. Temuan dikelompokkan berdasarkan prioritas dan effort, dengan referensi file yang perlu diubah.
 
-> **Terakhir diperbarui:** 26 Maret 2026
+> **Terakhir diperbarui:** 28 Maret 2026
 > **Auditor:** Senior Finance & Technology Consultant
 > **Status:** Living document — update setelah setiap item selesai
 
@@ -26,8 +26,8 @@ Dokumen ini berisi rekomendasi pengembangan fitur berdasarkan hasil **audit prof
 | Phase | Items | Status | Effort |
 |-------|-------|--------|--------|
 | Phase 1 — Critical Bugs | 4 item | ✅ Selesai | ~15 jam |
-| Phase 2 — Data Integrity | 6 item | 🔴 Belum | ~19 jam |
-| Phase 3 — UX/UI | 6 item | 🟡 Partial | ~22 jam |
+| Phase 2 — Data Integrity | 6 item | ✅ Selesai | ~19 jam |
+| Phase 3 — UX/UI | 6 item | ✅ Selesai | ~22 jam |
 | Phase 4 — Feature Completeness | 5 item | 🔴 Belum | ~48 jam |
 | Phase 5 — Professional Polish | 4 item | 🔴 Belum | ~24 jam |
 | **Total** | **25 item** | | **~128 jam** |
@@ -196,7 +196,7 @@ for (const asset of assets) {
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 3 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Sistem hanya validasi total debit = total credit, tapi tidak validasi apakah arah sesuai tipe akun (Aset/Beban normal debit, Liabilitas/Ekuitas/Pendapatan normal credit). User bisa membuat jurnal yang secara teknis balanced tapi secara akuntansi salah.
@@ -232,7 +232,7 @@ export function validateAccountDirections(
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 2 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Akun aktif dengan saldo nol tidak muncul di Neraca Lajur. Standar pelaporan mengharuskan semua akun aktif ditampilkan.
@@ -249,7 +249,7 @@ Akun aktif dengan saldo nol tidak muncul di Neraca Lajur. Standar pelaporan meng
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 2 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 `neraca-lajur.ts:200` hardcode akun pajak `"321"`. Seharusnya menggunakan `PPH_RATES` dari `tax-config.ts` yang sudah ada.
@@ -266,7 +266,7 @@ Akun aktif dengan saldo nol tidak muncul di Neraca Lajur. Standar pelaporan meng
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 1 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai (Phase 1.3) |
 
 **Problem:**
 `createInvoiceReversalJournal()` menggunakan `date: new Date()`. Ini merusak period matching di laporan keuangan.
@@ -290,7 +290,7 @@ date: invoice.tanggal,
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 1 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Jika `pphType` tidak ada di `PPH_RATES`, withholding diam-diam di-skip. User tidak tahu potongan pajak tidak terhitung.
@@ -312,7 +312,7 @@ if (data.pphType && !PPH_RATES[data.pphType]) {
 |---|---|
 | **Severity** | 🟠 High |
 | **Effort** | 2 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai (Phase 1.4) |
 
 **Problem:**
 `runMonthlyDepreciation()` bisa dijalankan berkali-kali untuk periode yang sama, menghasilkan jurnal duplikat.
@@ -344,7 +344,7 @@ if (existing) {
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 6 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Setiap sub-page punya pola pemilihan klien berbeda:
@@ -374,7 +374,7 @@ Buat **global client selector** di accounting layout (`layout.tsx`) yang:
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 3 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Mix antara `alert()`, `toast`, dan diam-diam gagal.
@@ -404,7 +404,7 @@ Mix antara `alert()`, `toast`, dan diam-diam gagal.
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 2 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 13 tab tanpa grouping. CoA (yang harus di-setup pertama) ada di posisi terakhir. Mobile user tidak tahu ada tab tersembunyi.
@@ -431,7 +431,7 @@ Untuk mobile, gabungkan laporan dalam satu dropdown "Laporan ▾" yang expandabl
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 4 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Documents dan Expenses load **semua data sekaligus**. Dengan 500+ record, halaman menjadi lambat.
@@ -452,7 +452,7 @@ Documents dan Expenses load **semua data sekaligus**. Dengan 500+ record, halama
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 8 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai |
 
 **Problem:**
 Di Buku Besar, Neraca, dan Laporan Keuangan, user tidak bisa klik angka untuk melihat jurnal pembentuknya. Ini fitur **wajib** di software akuntansi profesional.
@@ -476,7 +476,7 @@ Di Buku Besar, Neraca, dan Laporan Keuangan, user tidak bisa klik angka untuk me
 |---|---|
 | **Severity** | 🟡 Medium |
 | **Effort** | 1 jam |
-| **Status** | ⬜ Belum |
+| **Status** | ✅ Selesai (sudah ada sebelumnya) |
 
 **Problem:**
 Neraca tidak menampilkan validasi `Aset = Liabilitas + Ekuitas`. Jika ada selisih karena bug, user tidak akan tahu.

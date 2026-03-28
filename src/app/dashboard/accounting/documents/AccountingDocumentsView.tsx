@@ -13,7 +13,10 @@ import {
     ScanLine, Loader2, CheckCircle2, AlertTriangle, Receipt,
     ArrowRight, CircleDot,
 } from "lucide-react";
-import { AccountingDocument, Client, formatIDR } from "@/lib/data";
+import { AccountingDocument, formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useRoles } from "@/lib/hooks/useRoles";
+import { useToast } from "@/components/ui/Toast";
 import { AccDocType, AccDocModule } from "@prisma/client";
 import {
     getAccountingDocuments,
@@ -110,25 +113,16 @@ function getOcrStatusBadge(status: string | null) {
 
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
 
-interface AccountingDocumentsViewProps {
-    initialDocuments: AccountingDocument[];
-    clients: Client[];
-    defaultClientId: string;
-    isClientRole: boolean;
-}
-
-export function AccountingDocumentsView({
-    initialDocuments,
-    clients,
-    defaultClientId,
-    isClientRole,
-}: AccountingDocumentsViewProps) {
+export function AccountingDocumentsView() {
+    const { selectedClientId: globalClientId } = useSelectedClient();
+    const { isClient: isClientRole } = useRoles();
+    const toast = useToast();
     const router = useRouter();
-    const [documents, setDocuments] = useState<AccountingDocument[]>(initialDocuments);
+    const [documents, setDocuments] = useState<AccountingDocument[]>([]);
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("");
     const [filterModule, setFilterModule] = useState("");
-    const [selectedClientId, setSelectedClientId] = useState(defaultClientId);
+    const selectedClientId = globalClientId;
 
     // Modals
     const [uploadOpen, setUploadOpen] = useState(false);
@@ -186,7 +180,7 @@ export function AccountingDocumentsView({
         if (selectedFiles.length === 0) return;
         setIsUploading(true);
 
-        const clientIdToUse = isClientRole ? defaultClientId : selectedClientId;
+        const clientIdToUse = selectedClientId;
 
         for (const file of selectedFiles) {
             const formData = new FormData();
@@ -200,7 +194,7 @@ export function AccountingDocumentsView({
 
             const res = await uploadAccountingDocument(formData);
             if (!res.success) {
-                alert(`Gagal upload ${file.name}: ${res.error}`);
+                toast.error(`Gagal upload ${file.name}: ${res.error}`);
             }
         }
 
@@ -226,7 +220,7 @@ export function AccountingDocumentsView({
             setDetailDoc(null);
             router.refresh();
         } else {
-            alert(res.error || "Gagal menghapus dokumen.");
+            toast.error(res.error || "Gagal menghapus dokumen.");
         }
     };
 
@@ -282,7 +276,7 @@ export function AccountingDocumentsView({
                             : d
                     )
                 );
-                alert(`Scan gagal: ${result.error || "Unknown error"}`);
+                toast.error(`Scan gagal: ${result.error || "Unknown error"}`);
             }
         } catch (err) {
             setDocuments((prev) =>
@@ -292,7 +286,7 @@ export function AccountingDocumentsView({
                         : d
                 )
             );
-            alert("Scan gagal. Silakan coba lagi.");
+            toast.error("Scan gagal. Silakan coba lagi.");
         } finally {
             setScanningIds((prev) => {
                 const next = new Set(prev);
@@ -334,27 +328,10 @@ export function AccountingDocumentsView({
                 )}
             </div>
 
-            {/* Client Selector (admin only) */}
-            {!isClientRole && (
-                <div className="bg-card rounded-[12px] border border-border p-4">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pilih Klien</label>
-                    <select
-                        className="mt-1.5 w-full max-w-md bg-surface border border-border rounded-[8px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
-                        value={selectedClientId}
-                        onChange={(e) => setSelectedClientId(e.target.value)}
-                    >
-                        <option value="">Pilih Klien...</option>
-                        {clients.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nama} — {c.npwp}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
             {!selectedClientId ? (
                 <div className="bg-card rounded-[12px] border border-border p-12 text-center">
                     <FolderOpen className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-40" />
-                    <p className="text-muted-foreground">Pilih klien untuk melihat dokumen akuntansi.</p>
+                    <p className="text-muted-foreground">Pilih klien di atas untuk melihat dokumen akuntansi.</p>
                 </div>
             ) : (
                 <>

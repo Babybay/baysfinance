@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { Client } from "@/lib/data";
 import { getImportHistory, rollbackImportBatch } from "@/app/actions/import-accounting";
+import { useToast } from "@/components/ui/Toast";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/document-detector";
 import type { DocumentType } from "@/lib/document-detector";
 
@@ -36,6 +37,7 @@ export function ImportHistoryView({
     initialTotal,
 }: Props) {
     const { t, locale } = useI18n();
+    const toast = useToast();
     const ti = t?.accounting?.import;
 
     const [clientId, setClientId] = useState(defaultClientId);
@@ -74,7 +76,7 @@ export function ImportHistoryView({
                 // Reload history
                 await loadHistory(clientId);
             } else {
-                alert(res.error || "Gagal membatalkan import.");
+                toast.error(res.error || "Gagal membatalkan import.");
             }
         } finally {
             setRollingBack(null);

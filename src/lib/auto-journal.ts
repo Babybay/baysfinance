@@ -513,10 +513,14 @@ export async function createExpenseJournal(
         let pphAccountCode: string | null = null;
         if (expense.pphType && expense.pphAmount && expense.pphAmount > 0) {
             const pphConfig = PPH_RATES[expense.pphType];
-            if (pphConfig) {
-                pphAccountCode = pphConfig.accountCode;
-                requiredCodes.push(pphAccountCode);
+            if (!pphConfig) {
+                return {
+                    success: false,
+                    error: `Tipe PPh "${expense.pphType}" tidak valid. Pilihan: ${Object.keys(PPH_RATES).join(", ")}`,
+                };
             }
+            pphAccountCode = pphConfig.accountCode;
+            requiredCodes.push(pphAccountCode);
         }
 
         const { accountMap, missing } = await resolveAccounts(tx, expense.clientId, requiredCodes);

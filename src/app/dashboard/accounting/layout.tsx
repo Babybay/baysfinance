@@ -1,58 +1,17 @@
-"use client";
-
 import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { BookOpen, BarChart3, Wallet, FileSpreadsheet, TableProperties, Scale, FileText, Upload, MinusCircle, TrendingDown, Clock, Calculator, PieChart } from "lucide-react";
+import { getClients } from "@/app/actions/clients";
+import { AccountingLayoutClient } from "./AccountingLayoutClient";
 
-export default function AccountingLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-
-    const tabs = [
-        { id: "journal", label: "Jurnal Umum", href: "/dashboard/accounting/journal", icon: BookOpen },
-        { id: "buku-besar", label: "Buku Besar", href: "/dashboard/accounting/buku-besar", icon: FileSpreadsheet },
-        { id: "neraca-lajur", label: "Neraca Lajur", href: "/dashboard/accounting/neraca-lajur", icon: TableProperties },
-        { id: "neraca", label: "Neraca", href: "/dashboard/accounting/neraca", icon: Scale },
-        { id: "ekuitas", label: "Ekuitas", href: "/dashboard/accounting/ekuitas", icon: PieChart },
-        { id: "expenses", label: "Beban", href: "/dashboard/accounting/expenses", icon: MinusCircle },
-        { id: "depreciation", label: "Penyusutan", href: "/dashboard/accounting/depreciation", icon: Calculator },
-        { id: "reports", label: "Laporan Keuangan", href: "/dashboard/accounting/reports", icon: BarChart3 },
-        { id: "aging", label: "Aging", href: "/dashboard/accounting/aging", icon: Clock },
-        { id: "fiscal-close", label: "Tutup Buku", href: "/dashboard/accounting/fiscal-close", icon: TrendingDown },
-        { id: "documents", label: "Dokumen", href: "/dashboard/accounting/documents", icon: FileText },
-        { id: "import", label: "Import", href: "/dashboard/accounting/import", icon: Upload },
-        { id: "accounts", label: "Chart of Accounts", href: "/dashboard/accounting/accounts", icon: Wallet },
-    ];
+export default async function AccountingLayout({ children }: { children: React.ReactNode }) {
+    const clientsRes = await getClients();
+    const clients = (clientsRes.success ? clientsRes.data : []).map((c: any) => ({
+        id: c.id,
+        nama: c.nama,
+    }));
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-serif text-foreground">Accounting</h1>
-                <p className="text-muted-foreground">Kelola pembukuan dan laporan keuangan klien secara otomatis.</p>
-            </div>
-
-            <div className="border-b border-border">
-                <div className="flex overflow-x-auto gap-8 scrollbar-hide">
-                    {tabs.map((tab) => {
-                        const isActive = pathname.startsWith(tab.href);
-                        return (
-                            <Link
-                                key={tab.id}
-                                href={tab.href}
-                                className={`flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${isActive ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
-                                    }`}
-                            >
-                                <tab.icon className="h-4 w-4" />
-                                {tab.label}
-                            </Link>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {children}
-            </div>
-        </div>
+        <AccountingLayoutClient clients={clients}>
+            {children}
+        </AccountingLayoutClient>
     );
 }

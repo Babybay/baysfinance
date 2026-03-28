@@ -7,18 +7,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { formatIDR, Client } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useRoles } from "@/lib/hooks/useRoles";
 import { importDocumentEntries } from "@/app/actions/import-accounting";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/document-detector";
 import type { DocumentType } from "@/lib/document-detector";
 import type { GeneratedEntry } from "@/lib/journal-generator";
 import { OcrScanner } from "@/components/dashboard/OcrScanner";
 
-interface ImportViewProps {
-    clients: Client[];
-    defaultClientId: string;
-    isClientRole: boolean;
-}
+interface ImportViewProps {}
 
 type ImportStage = "upload" | "detection" | "preview" | "importing" | "result";
 
@@ -50,12 +48,14 @@ const DOC_TYPES: DocumentType[] = [
 
 type ImportMode = "spreadsheet" | "scan";
 
-export function ImportView({ clients, defaultClientId, isClientRole }: ImportViewProps) {
+export function ImportView({}: ImportViewProps) {
     const { t, locale } = useI18n();
+    const { selectedClientId } = useSelectedClient();
+    const { isClient } = useRoles();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [mode, setMode] = useState<ImportMode>("spreadsheet");
-    const [clientId, setClientId] = useState(defaultClientId);
+    const clientId = selectedClientId;
     const [stage, setStage] = useState<ImportStage>("upload");
     const [fileName, setFileName] = useState("");
     const [file, setFile] = useState<File | null>(null);
@@ -240,25 +240,6 @@ export function ImportView({ clients, defaultClientId, isClientRole }: ImportVie
             {/* OCR Scan mode */}
             {mode === "scan" && (
                 <OcrScanner />
-            )}
-
-            {/* Client selector */}
-            {mode === "spreadsheet" && !isClientRole && (
-                <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-foreground">
-                        {ti?.selectClient ?? "Pilih Klien"}
-                    </label>
-                    <select
-                        value={clientId}
-                        onChange={(e) => { setClientId(e.target.value); resetState(); }}
-                        className="rounded-md border border-border bg-card px-3 py-2 text-sm"
-                    >
-                        <option value="">{ti?.chooseClient ?? "— Pilih klien —"}</option>
-                        {clients.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nama}</option>
-                        ))}
-                    </select>
-                </div>
             )}
 
             {/* Upload Stage */}

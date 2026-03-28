@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
-import { Client, formatIDR } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import {
     getInvoiceAging,
     type AgingData,
@@ -204,12 +204,8 @@ function BucketSection({
 
 // ── Main View ────────────────────────────────────────────────────────────────
 
-interface AgingReportViewProps {
-    clients: Client[];
-}
-
-export function AgingReportView({ clients }: AgingReportViewProps) {
-    const [selectedClient, setSelectedClient] = useState("");
+export function AgingReportView() {
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [data, setData] = useState<AgingData | null>(null);
     const [loading, setLoading] = useState(false);
     const toast = useToast();
@@ -243,26 +239,6 @@ export function AgingReportView({ clients }: AgingReportViewProps) {
                     <p className="text-sm text-muted-foreground mt-1">
                         Analisis umur piutang berdasarkan jatuh tempo invoice
                     </p>
-                </div>
-            </div>
-
-            {/* Filter */}
-            <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Filter Klien
-                        </label>
-                        <Select
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(e.target.value)}
-                            options={clients.map((c) => ({
-                                value: c.id,
-                                label: c.nama,
-                            }))}
-                            placeholder="Semua Klien"
-                        />
-                    </div>
                 </div>
             </div>
 

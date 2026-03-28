@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { AccountType, JournalStatus, Prisma } from "@prisma/client";
-import { validateJournalBalance } from "@/lib/accounting-helpers";
+import { validateJournalBalance, validateAccountDirections, type AccountTypeString } from "@/lib/accounting-helpers";
 import {
     assertCanAccessClient,
     getCurrentUser,
@@ -264,6 +264,21 @@ export async function createJournalEntry(data: {
         const counterKey = `JV-${dateStr}`;
         const prefix = `JV-${dateStr}-`;
 
+        // Direction warnings (non-blocking) — fetch account types
+        let directionWarnings: string[] = [];
+        try {
+            const accountIds = [...new Set(data.items.map((i) => i.accountId))];
+            const accts = await prisma.account.findMany({
+                where: { id: { in: accountIds } },
+                select: { id: true, name: true, type: true },
+            });
+            const typeMap = new Map(accts.map((a) => [a.id, { name: a.name, type: a.type as AccountTypeString }]));
+            const warnings = validateAccountDirections(data.items, typeMap);
+            directionWarnings = warnings.map((w) => w.message);
+        } catch {
+            // Non-critical — don't block journal creation
+        }
+
         const entry = await prisma.$transaction(async (tx) => {
             // Block posting to closed fiscal periods
             const closedPeriod = await tx.fiscalPeriodClose.findFirst({
@@ -340,6 +355,7 @@ export async function createJournalEntry(data: {
                     credit: Number(i.credit),
                 })),
             },
+            ...(directionWarnings.length > 0 && { warnings: directionWarnings }),
         };
     } catch (error) {
         if (error instanceof Error && error.message.startsWith("CLOSED_PERIOD:")) {

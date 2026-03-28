@@ -9,6 +9,7 @@ import type { DocumentType } from "./document-detector";
 import type { ParsedDocRow } from "./document-parser";
 import type { ColumnMapping } from "./import-helpers";
 import { getAccountMappings } from "./column-mapper";
+import { PPH_RATES, STANDARD_ACCOUNTS } from "./tax-config";
 
 export interface GeneratedEntry {
     date: string; // ISO YYYY-MM-DD
@@ -298,7 +299,7 @@ function generateFromPayroll(rows: ParsedDocRow[]): GenerationResult {
 
     // Credit: deductions
     if (totalBPJS > 0) items.push({ accountCode: "310", accountName: "Utang Lain Lain (BPJS)", debit: 0, credit: round2(totalBPJS) });
-    if (totalPPh > 0) items.push({ accountCode: "321", accountName: "Pajak Badan (PPh 21)", debit: 0, credit: round2(totalPPh) });
+    if (totalPPh > 0) items.push({ accountCode: PPH_RATES.PPh21.accountCode, accountName: "Pajak Badan (PPh 21)", debit: 0, credit: round2(totalPPh) });
 
     // Net payable
     const netPayable = totalNet || round2(grossTotal - totalBPJS - totalPPh);
@@ -391,10 +392,10 @@ function generateFromTaxReport(rows: ParsedDocRow[]): GenerationResult {
         const items: GeneratedEntry["items"] = [];
 
         if (pph > 0) {
-            items.push({ accountCode: "321", accountName: "Pajak Badan (PPh)", debit: pph, credit: 0 });
+            items.push({ accountCode: PPH_RATES.PPh21.accountCode, accountName: "Pajak Badan (PPh)", debit: pph, credit: 0 });
             items.push({ accountCode: "111", accountName: "Bank BNI Giro", debit: 0, credit: pph });
         } else if (ppn > 0) {
-            items.push({ accountCode: "320", accountName: "PB 1/PHR (PPN)", debit: ppn, credit: 0 });
+            items.push({ accountCode: STANDARD_ACCOUNTS.PPN_KELUARAN, accountName: "PB 1/PHR (PPN)", debit: ppn, credit: 0 });
             items.push({ accountCode: "111", accountName: "Bank BNI Giro", debit: 0, credit: ppn });
         }
 

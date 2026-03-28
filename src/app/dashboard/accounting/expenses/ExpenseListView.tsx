@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -8,13 +9,15 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Plus, Search, Receipt, Trash2, Download } from "lucide-react";
-import { formatIDR, Client } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 import {
     createExpense,
     deleteExpense,
+    getExpenses,
     getExpenseAccountOptions,
     getBankAccountOptions,
 } from "@/app/actions/expenses";
@@ -39,10 +42,7 @@ interface ExpenseItem {
     clientName?: string;
 }
 
-interface ExpenseListViewProps {
-    initialExpenses: ExpenseItem[];
-    clients: Client[];
-}
+const PAGE_SIZE = 50;
 
 const pphOptions = [
     { value: "", label: "Tanpa PPh" },
@@ -52,13 +52,44 @@ const pphOptions = [
     })),
 ];
 
-export function ExpenseListView({ initialExpenses, clients }: ExpenseListViewProps) {
-    const [expenses, setExpenses] = useState<ExpenseItem[]>(initialExpenses);
+export function ExpenseListView() {
+    const { selectedClientId, clients } = useSelectedClient();
+    const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+    const [totalExpenseCount, setTotalExpenseCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loadingData, setLoadingData] = useState(false);
     const [search, setSearch] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const { isAdmin, isLoaded: roleLoaded } = useRoles();
     const router = useRouter();
     const toast = useToast();
+
+    const totalPages = Math.max(1, Math.ceil(totalExpenseCount / PAGE_SIZE));
+
+    // Fetch expenses on client/page change
+    const fetchExpenses = useCallback(async () => {
+        if (!selectedClientId) {
+            setExpenses([]);
+            setTotalExpenseCount(0);
+            return;
+        }
+        setLoadingData(true);
+        const res = await getExpenses(selectedClientId, currentPage, PAGE_SIZE);
+        if (res.success) {
+            setExpenses(res.data as unknown as ExpenseItem[]);
+            setTotalExpenseCount(res.total);
+        }
+        setLoadingData(false);
+    }, [selectedClientId, currentPage]);
+
+    useEffect(() => {
+        fetchExpenses();
+    }, [fetchExpenses]);
+
+    // Reset page when client changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedClientId]);
 
     // Account options
     const [expenseAccounts, setExpenseAccounts] = useState<{ code: string; name: string }[]>([]);
@@ -110,7 +141,6 @@ export function ExpenseListView({ initialExpenses, clients }: ExpenseListViewPro
             catatan: form.catatan || undefined,
         });
         if (res.success) {
-            router.refresh();
             setModalOpen(false);
             setForm({
                 clientId: "", tanggal: new Date().toISOString().split("T")[0],
@@ -118,6 +148,7 @@ export function ExpenseListView({ initialExpenses, clients }: ExpenseListViewPro
                 metodePembayaran: "Transfer", expenseAccountCode: "",
                 bankAccountCode: "110", pphType: "", catatan: "",
             });
+            fetchExpenses();
             toast.success("Beban berhasil dicatat");
         } else {
             toast.error(res.error || "Gagal mencatat beban");
@@ -127,8 +158,7 @@ export function ExpenseListView({ initialExpenses, clients }: ExpenseListViewPro
     const handleDelete = async (id: string) => {
         const res = await deleteExpense(id);
         if (res.success) {
-            setExpenses(expenses.filter((e) => e.id !== id));
-            router.refresh();
+            fetchExpenses();
             toast.success("Beban berhasil dihapus");
         } else {
             toast.error(res.error || "Gagal menghapus beban");
@@ -268,6 +298,33 @@ export function ExpenseListView({ initialExpenses, clients }: ExpenseListViewPro
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                        <p className="text-sm text-muted-foreground">
+                            Halaman {currentPage} dari {totalPages} ({totalExpenseCount} data)
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="soft"
+                                disabled={currentPage <= 1}
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                className="gap-1"
+                            >
+                                <ChevronLeft className="h-4 w-4" /> Prev
+                            </Button>
+                            <Button
+                                variant="soft"
+                                disabled={currentPage >= totalPages}
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                className="gap-1"
+                            >
+                                Next <ChevronRightIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Create Expense Modal */}

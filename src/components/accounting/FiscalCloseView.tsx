@@ -3,19 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Lock, CheckCircle2, AlertTriangle } from "lucide-react";
-import { Client, formatIDR } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import { closeFiscalPeriod, getFiscalCloses } from "@/app/actions/accounting/fiscal-close";
 import { useToast } from "@/components/ui/Toast";
 
-interface FiscalCloseViewProps {
-    clients: Client[];
-}
-
-export function FiscalCloseView({ clients }: FiscalCloseViewProps) {
-    const [selectedClient, setSelectedClient] = useState("");
+export function FiscalCloseView() {
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [periodLabel, setPeriodLabel] = useState(String(new Date().getFullYear()));
     const [periodStart, setPeriodStart] = useState(`${new Date().getFullYear()}-01-01`);
     const [periodEnd, setPeriodEnd] = useState(`${new Date().getFullYear()}-12-31`);
@@ -70,16 +66,7 @@ export function FiscalCloseView({ clients }: FiscalCloseViewProps) {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Klien</label>
-                            <Select
-                                value={selectedClient}
-                                onChange={(e) => setSelectedClient(e.target.value)}
-                                options={clients.map((c) => ({ value: c.id, label: c.nama }))}
-                                placeholder="Pilih Klien..."
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Label Periode</label>
                             <Input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} placeholder="2025" />

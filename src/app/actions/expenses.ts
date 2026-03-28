@@ -18,20 +18,31 @@ const log = createLogger("expenses");
 
 // ─── GET EXPENSES ───────────────────────────────────────────────────────────
 
-export async function getExpenses(clientId?: string) {
+export async function getExpenses(clientId?: string, page = 1, pageSize = 50) {
     try {
         if (clientId) {
             await assertCanAccessClient(clientId);
         } else {
             const admin = await isAdminOrStaff();
-            if (!admin) return { success: false, data: [], error: "Akses ditolak." };
+            if (!admin) return { success: false, data: [], total: 0, error: "Akses ditolak." };
         }
 
-        const expenses = await prisma.expense.findMany({
-            where: clientId ? { clientId } : undefined,
-            include: { client: { select: { nama: true } } },
-            orderBy: { tanggal: "desc" },
-        });
+        page = Math.max(1, Math.floor(page));
+        pageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100);
+        const skip = (page - 1) * pageSize;
+
+        const where = clientId ? { clientId } : undefined;
+
+        const [expenses, total] = await prisma.$transaction([
+            prisma.expense.findMany({
+                where,
+                include: { client: { select: { nama: true } } },
+                orderBy: { tanggal: "desc" },
+                skip,
+                take: pageSize,
+            }),
+            prisma.expense.count({ where }),
+        ]);
 
         return {
             success: true,
@@ -43,10 +54,13 @@ export async function getExpenses(clientId?: string) {
                 netAmount: e.netAmount ? Number(e.netAmount) : null,
                 clientName: e.client.nama,
             })),
+            total,
+            page,
+            pageSize,
         };
     } catch (error) {
         log.error({ err: error }, "getExpenses failed");
-        return { ...handleAuthError(error), data: [] };
+        return { ...handleAuthError(error), data: [], total: 0 };
     }
 }
 
@@ -88,8 +102,13 @@ export async function createExpense(data: {
         let pphAmount: number | null = null;
         let netAmount = data.jumlah;
 
-        if (data.pphType && PPH_RATES[data.pphType]) {
-            pphRate = PPH_RATES[data.pphType].rate;
+        if (data.pphType) {
+            const pphConfig = PPH_RATES[data.pphType];
+            if (!pphConfig) {
+                const validTypes = Object.keys(PPH_RATES).join(", ");
+                return { success: false, error: `Tipe PPh "${data.pphType}" tidak valid. Pilihan: ${validTypes}` };
+            }
+            pphRate = pphConfig.rate;
             pphAmount = roundRupiah(data.jumlah * pphRate);
             netAmount = data.jumlah - pphAmount;
         }

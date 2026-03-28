@@ -3,19 +3,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Download, TableProperties, CheckCircle2, AlertTriangle } from "lucide-react";
-import { Client } from "@/lib/data";
+import Link from "next/link";
 import {
     getNeracaLajur,
     type NeracaLajurData,
     type NLSection,
     type NLSubsection,
 } from "@/app/actions/accounting/neraca-lajur";
-
-interface NeracaLajurViewProps {
-    clients: Client[];
-}
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 
@@ -56,7 +52,11 @@ function SubsectionRows({ sub }: { sub: NLSubsection }) {
             {/* Account rows */}
             {sub.accounts.map((acct) => (
                 <tr key={acct.code} className="border-b border-border hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-2 text-sm pl-16">{acct.name}</td>
+                    <td className="px-4 py-2 text-sm pl-16">
+                        <Link href={`/dashboard/accounting/buku-besar?account=${encodeURIComponent(acct.code)}`} className="hover:underline hover:text-accent transition-colors">
+                            {acct.name}
+                        </Link>
+                    </td>
                     <td className="px-4 py-2 text-sm font-mono text-muted-foreground">{acct.code}</td>
                     <td className="px-4 py-2 text-sm text-right font-medium tabular-nums">
                         {formatRp(acct.balance)}
@@ -116,11 +116,10 @@ function SectionBlock({ section }: { section: NLSection }) {
 
 // ── Main View ─────────────────────────────────────────────────────────────────
 
-export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
+export function NeracaLajurView() {
+    const { selectedClientId: selectedClient, clients } = useSelectedClient();
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const [selectedClient, setSelectedClient] = useState("");
     const [startDate, setStartDate] = useState(startOfYear.toISOString().split("T")[0]);
     const [endDate, setEndDate] = useState(now.toISOString().split("T")[0]);
     const [data, setData] = useState<NeracaLajurData | null>(null);
@@ -182,18 +181,7 @@ export function NeracaLajurView({ clients }: NeracaLajurViewProps) {
         <div className="space-y-6">
             {/* Filters */}
             <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Klien
-                        </label>
-                        <Select
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(e.target.value)}
-                            options={clients.map((c) => ({ value: c.id, label: c.nama }))}
-                            placeholder="Pilih Klien..."
-                        />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             Dari Tanggal

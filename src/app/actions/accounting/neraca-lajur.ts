@@ -9,6 +9,7 @@ import {
     inRanges,
     type CodeRange,
 } from "@/lib/accounting/account-ranges";
+import { STANDARD_ACCOUNTS } from "@/lib/tax-config";
 
 /** Maximum allowed date range for report queries. */
 const MAX_RANGE_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
@@ -59,14 +60,29 @@ function balanceDir(type: AccountType): 1 | -1 {
 function buildSubsection(
     label: string,
     ranges: CodeRange[],
-    balances: Map<string, { name: string; balance: number }>
+    balances: Map<string, { name: string; balance: number }>,
+    allAccounts?: Map<string, string> // code → name (all active accounts)
 ): NLSubsection {
     const accounts: NLAccount[] = [];
+    const seen = new Set<string>();
+
+    // Include accounts with transactions
     for (const [code, { name, balance }] of balances) {
-        if (inRanges(code, ranges) && balance !== 0) {
+        if (inRanges(code, ranges)) {
             accounts.push({ code, name, balance });
+            seen.add(code);
         }
     }
+
+    // Include zero-balance accounts from the master list
+    if (allAccounts) {
+        for (const [code, name] of allAccounts) {
+            if (!seen.has(code) && inRanges(code, ranges)) {
+                accounts.push({ code, name, balance: 0 });
+            }
+        }
+    }
+
     accounts.sort((a, b) => codeToNumber(a.code) - codeToNumber(b.code));
     const total = accounts.reduce((sum, a) => sum + a.balance, 0);
     return { label, accounts, total };
@@ -150,13 +166,19 @@ export async function getNeracaLajur(
             balances.set(acct.code, { name: acct.name, balance });
         }
 
+        // Build master account code → name map for zero-balance inclusion
+        const allAccountCodes = new Map<string, string>();
+        for (const a of accounts) {
+            allAccountCodes.set(a.code, a.name);
+        }
+
         // ASET section
-        const kasSection = buildSubsection("KAS", ACCOUNT_RANGES.kas, balances);
-        const bankSection = buildSubsection("BANK", ACCOUNT_RANGES.bank, balances);
-        const piutangSection = buildSubsection("PIUTANG", ACCOUNT_RANGES.piutang, balances);
-        const persediaanSection = buildSubsection("PERSEDIAAN", ACCOUNT_RANGES.persediaan, balances);
-        const asetTetapSection = buildSubsection("ASET TETAP", ACCOUNT_RANGES.asetTetap, balances);
-        const asetLainSection = buildSubsection("ASET LAIN-LAIN", ACCOUNT_RANGES.asetLainLain, balances);
+        const kasSection = buildSubsection("KAS", ACCOUNT_RANGES.kas, balances, allAccountCodes);
+        const bankSection = buildSubsection("BANK", ACCOUNT_RANGES.bank, balances, allAccountCodes);
+        const piutangSection = buildSubsection("PIUTANG", ACCOUNT_RANGES.piutang, balances, allAccountCodes);
+        const persediaanSection = buildSubsection("PERSEDIAAN", ACCOUNT_RANGES.persediaan, balances, allAccountCodes);
+        const asetTetapSection = buildSubsection("ASET TETAP", ACCOUNT_RANGES.asetTetap, balances, allAccountCodes);
+        const asetLainSection = buildSubsection("ASET LAIN-LAIN", ACCOUNT_RANGES.asetLainLain, balances, allAccountCodes);
 
         const aset: NLSection = {
             label: "ASET",
@@ -171,11 +193,11 @@ export async function getNeracaLajur(
         };
 
         // KEWAJIBAN section
-        const utangSection = buildSubsection("UTANG", ACCOUNT_RANGES.utang, balances);
-        const utangPajakSection = buildSubsection("UTANG PAJAK", ACCOUNT_RANGES.utangPajak, balances);
-        const utangJPSection = buildSubsection("UTANG JANGKA PANJANG", ACCOUNT_RANGES.utangJangkaPanjang, balances);
-        const cadanganSection = buildSubsection("CADANGAN", ACCOUNT_RANGES.cadangan, balances);
-        const ekuitasSection = buildSubsection("EKUITAS", ACCOUNT_RANGES.ekuitas, balances);
+        const utangSection = buildSubsection("UTANG", ACCOUNT_RANGES.utang, balances, allAccountCodes);
+        const utangPajakSection = buildSubsection("UTANG PAJAK", ACCOUNT_RANGES.utangPajak, balances, allAccountCodes);
+        const utangJPSection = buildSubsection("UTANG JANGKA PANJANG", ACCOUNT_RANGES.utangJangkaPanjang, balances, allAccountCodes);
+        const cadanganSection = buildSubsection("CADANGAN", ACCOUNT_RANGES.cadangan, balances, allAccountCodes);
+        const ekuitasSection = buildSubsection("EKUITAS", ACCOUNT_RANGES.ekuitas, balances, allAccountCodes);
 
         const kewajiban: NLSection = {
             label: "KEWAJIBAN DAN MODAL",
@@ -189,15 +211,15 @@ export async function getNeracaLajur(
         };
 
         // LABA RUGI section
-        const pendapatanSection = buildSubsection("PENDAPATAN", ACCOUNT_RANGES.pendapatan, balances);
-        const bebanSection = buildSubsection("BEBAN", ACCOUNT_RANGES.beban, balances);
+        const pendapatanSection = buildSubsection("PENDAPATAN", ACCOUNT_RANGES.pendapatan, balances, allAccountCodes);
+        const bebanSection = buildSubsection("BEBAN", ACCOUNT_RANGES.beban, balances, allAccountCodes);
 
         const totalPendapatan = pendapatanSection.total;
         const totalBeban = bebanSection.total;
         const labaRugiSebelumPajak = totalPendapatan - totalBeban;
 
-        // Pajak = balance of account 321
-        const pajak321 = balances.get("321")?.balance || 0;
+        // Pajak = balance of PPN Masukan account (centralized in tax-config)
+        const pajak321 = balances.get(STANDARD_ACCOUNTS.PPN_MASUKAN)?.balance || 0;
         const labaRugiSetelahPajak = labaRugiSebelumPajak - Math.abs(pajak321);
 
         const labaRugi: NLSection = {

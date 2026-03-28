@@ -3,19 +3,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Download, Scale, CheckCircle2, AlertTriangle } from "lucide-react";
-import { Client } from "@/lib/data";
+import Link from "next/link";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import {
     getNeraca,
     type NeracaData,
     type NeracaGroup,
     type NeracaAccount,
 } from "@/app/actions/accounting/neraca";
-
-interface NeracaViewProps {
-    clients: Client[];
-}
 
 function formatRp(amount: number): string {
     if (amount === 0) return " - ";
@@ -42,8 +38,13 @@ function AccountRow({ account }: { account: NeracaAccount }) {
     return (
         <tr className="border-b border-border/50 hover:bg-muted/20 transition-colors">
             <td className="px-4 py-2 text-sm pl-12">
-                <span className="text-muted-foreground font-mono text-xs mr-2">{account.code}</span>
-                {account.name}
+                <Link
+                    href={`/dashboard/accounting/buku-besar?account=${encodeURIComponent(account.code)}`}
+                    className="hover:underline hover:text-accent transition-colors"
+                >
+                    <span className="text-muted-foreground font-mono text-xs mr-2">{account.code}</span>
+                    {account.name}
+                </Link>
             </td>
             <td className="px-4 py-2 text-sm text-right font-medium tabular-nums">
                 {formatRp(account.balance)}
@@ -139,9 +140,9 @@ function SideTable({
 
 // ── Main View ─────────────────────────────────────────────────────────────────
 
-export function NeracaView({ clients }: NeracaViewProps) {
+export function NeracaView() {
     const now = new Date();
-    const [selectedClient, setSelectedClient] = useState("");
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [endDate, setEndDate] = useState(now.toISOString().split("T")[0]);
     const [data, setData] = useState<NeracaData | null>(null);
     const [loading, setLoading] = useState(false);
@@ -178,18 +179,7 @@ export function NeracaView({ clients }: NeracaViewProps) {
         <div className="space-y-6">
             {/* Filters */}
             <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Klien
-                        </label>
-                        <Select
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(e.target.value)}
-                            options={clients.map((c) => ({ value: c.id, label: c.nama }))}
-                            placeholder="Pilih Klien..."
-                        />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             Per Tanggal

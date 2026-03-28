@@ -2,21 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, PieChart, Printer, Download, Banknote } from "lucide-react";
-import { Client, formatIDR } from "@/lib/data";
+import { BarChart3, TrendingUp, TrendingDown, Printer, Download, Banknote } from "lucide-react";
+import { formatIDR } from "@/lib/data";
 import { getFinancialReports } from "@/app/actions/accounting";
 import { getCashFlowReport } from "@/app/actions/accounting/cash-flow";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useToast } from "@/components/ui/Toast";
 
-interface ReportsViewProps {
-    clients: Client[];
-}
-
-export function ReportsView({ clients }: ReportsViewProps) {
-    const [selectedClient, setSelectedClient] = useState("");
+export function ReportsView() {
+    const toast = useToast();
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [startDate, setStartDate] = useState(`${new Date().getFullYear()}-01-01`);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [reportData, setReportData] = useState<any>(null);
@@ -31,7 +28,9 @@ export function ReportsView({ clients }: ReportsViewProps) {
             getCashFlowReport(selectedClient, new Date(startDate), new Date(endDate)),
         ]);
         if (res.success) setReportData(res.data);
+        else if ("error" in res && res.error) toast.error(res.error);
         if (cfRes.success) setCashFlowData(cfRes.data);
+        else if ("error" in cfRes && cfRes.error) toast.error(cfRes.error as string);
         setLoading(false);
     };
 
@@ -41,34 +40,9 @@ export function ReportsView({ clients }: ReportsViewProps) {
 
     if (!selectedClient) {
         return (
-            <div className="space-y-6">
-                <Card className="rounded-xl border-border">
-                    <CardContent className="p-4">
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pilih Klien</label>
-                                <Select
-                                    value={selectedClient}
-                                    onChange={(e) => setSelectedClient(e.target.value)}
-                                    options={clients.map(c => ({ value: c.id, label: c.nama }))}
-                                    placeholder="Pilih Klien..."
-                                />
-                            </div>
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dari Tanggal</label>
-                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                            </div>
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sampai Tanggal</label>
-                                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <div className="p-20 text-center bg-muted/20 border border-dashed border-border rounded-xl">
-                    <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground">Pilih klien dan tanggal untuk melihat laporan keuangan.</p>
-                </div>
+            <div className="p-20 text-center bg-muted/20 border border-dashed border-border rounded-xl">
+                <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">Pilih klien di atas untuk melihat laporan keuangan.</p>
             </div>
         );
     }
@@ -90,15 +64,6 @@ export function ReportsView({ clients }: ReportsViewProps) {
                 <CardContent className="p-4 bg-muted/30">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
-                            <div className="flex-1 space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Klien</label>
-                                <Select
-                                    value={selectedClient}
-                                    onChange={(e) => setSelectedClient(e.target.value)}
-                                    options={clients.map(c => ({ value: c.id, label: c.nama }))}
-                                    placeholder="Pilih Klien..."
-                                />
-                            </div>
                             <div className="flex-1 space-y-1.5">
                                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Dari Tanggal</label>
                                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

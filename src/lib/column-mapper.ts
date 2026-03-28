@@ -7,6 +7,7 @@
 import Fuse from "fuse.js";
 import type { DocumentType } from "./document-detector";
 import type { ColumnMapping } from "./import-helpers";
+import { PPH_RATES, STANDARD_ACCOUNTS } from "./tax-config";
 
 // ── Column schemas per document type ────────────────────────────────────────
 
@@ -283,7 +284,7 @@ const PAYROLL_ACCOUNT_MAPPINGS: ColumnMapping[] = [
     { column: "TUNJANGAN", accountCode: "701", accountName: "Tunjangan Hari Raya", side: "debit" },
     { column: "LEMBUR", accountCode: "700", accountName: "Gaji dan Upah (Lembur)", side: "debit" },
     { column: "BPJS", accountCode: "310", accountName: "Utang Lain Lain (BPJS)", side: "credit" },
-    { column: "PPH 21", accountCode: "321", accountName: "Pajak Badan (PPh 21)", side: "credit" },
+    { column: "PPH 21", accountCode: PPH_RATES.PPh21.accountCode, accountName: "Pajak Badan (PPh 21)", side: "credit" },
     { column: "TOTAL", accountCode: "300", accountName: "Utang Usaha (Gaji)", side: "credit" },
 ];
 
@@ -294,6 +295,6 @@ const PETTY_CASH_ACCOUNT_MAPPINGS: ColumnMapping[] = [
 
 const TAX_REPORT_ACCOUNT_MAPPINGS: ColumnMapping[] = [
     { column: "DPP", accountCode: "604", accountName: "Others Revenue (DPP)", side: "credit" },
-    { column: "PPN", accountCode: "320", accountName: "PB 1/PHR (PPN)", side: "credit" },
-    { column: "PPH", accountCode: "321", accountName: "Pajak Badan (PPh)", side: "debit" },
+    { column: "PPN", accountCode: STANDARD_ACCOUNTS.PPN_KELUARAN, accountName: "PB 1/PHR (PPN)", side: "credit" },
+    { column: "PPH", accountCode: PPH_RATES.PPh21.accountCode, accountName: "Pajak Badan (PPh)", side: "debit" },
 ];

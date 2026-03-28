@@ -7,7 +7,9 @@ import {
     BookOpen, CreditCard, FileText, Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Client, formatIDR } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
+import { useRoles } from "@/lib/hooks/useRoles";
 import { AccDocType, AccDocModule } from "@prisma/client";
 import { uploadAccountingDocument, postScannedEntries } from "@/app/actions/accounting-documents";
 import type { GeneratedEntry } from "@/lib/journal-generator";
@@ -105,16 +107,14 @@ function getModuleForType(docType: string): AccDocModule {
 
 // ─── COMPONENT ───────────────────────────────────────────────────────────────
 
-interface DocumentScanViewProps {
-    clients: Client[];
-    defaultClientId: string;
-    isClientRole: boolean;
-}
+interface DocumentScanViewProps {}
 
-export function DocumentScanView({ clients, defaultClientId, isClientRole }: DocumentScanViewProps) {
+export function DocumentScanView({}: DocumentScanViewProps) {
+    const { selectedClientId } = useSelectedClient();
+    const { isClient } = useRoles();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [clientId, setClientId] = useState(defaultClientId);
+    const clientId = selectedClientId;
     const [stage, setStage] = useState<ScanStage>("upload");
     const [error, setError] = useState("");
     const [isDragOver, setIsDragOver] = useState(false);
@@ -268,22 +268,6 @@ export function DocumentScanView({ clients, defaultClientId, isClientRole }: Doc
     if (stage === "upload") {
         return (
             <div className="space-y-6">
-                {!isClientRole && (
-                    <div className="bg-card rounded-[12px] border border-border p-4">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pilih Klien</label>
-                        <select
-                            className="mt-1.5 w-full max-w-md bg-surface border border-border rounded-[8px] px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
-                            value={clientId}
-                            onChange={(e) => setClientId(e.target.value)}
-                        >
-                            <option value="">Pilih Klien...</option>
-                            {clients.map((c) => (
-                                <option key={c.id} value={c.id}>{c.nama} — {c.npwp}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
                 <div className="bg-card rounded-[12px] border border-border p-4">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tipe Dokumen</label>
                     <select

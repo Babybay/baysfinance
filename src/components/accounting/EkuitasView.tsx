@@ -3,18 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Download, TrendingUp } from "lucide-react";
-import { Client } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import {
     getEkuitas,
     type EkuitasData,
     type EkuitasRow,
 } from "@/app/actions/accounting/ekuitas";
-
-interface EkuitasViewProps {
-    clients: Client[];
-}
 
 function formatRp(amount: number): string {
     if (amount === 0) return " - ";
@@ -70,10 +65,10 @@ function MatrixRow({ row }: { row: EkuitasRow }) {
     );
 }
 
-export function EkuitasView({ clients }: EkuitasViewProps) {
+export function EkuitasView() {
     const now = new Date();
     const yearStart = `${now.getFullYear()}-01-01`;
-    const [selectedClient, setSelectedClient] = useState("");
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [startDate, setStartDate] = useState(yearStart);
     const [endDate, setEndDate] = useState(now.toISOString().split("T")[0]);
     const [data, setData] = useState<EkuitasData | null>(null);
@@ -109,18 +104,7 @@ export function EkuitasView({ clients }: EkuitasViewProps) {
         <div className="space-y-6">
             {/* Filters */}
             <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                            Klien
-                        </label>
-                        <Select
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(e.target.value)}
-                            options={clients.map((c) => ({ value: c.id, label: c.nama }))}
-                            placeholder="Pilih Klien..."
-                        />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                             Tanggal Mulai

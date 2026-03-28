@@ -5,17 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Calculator, CheckCircle2, AlertTriangle, Building2 } from "lucide-react";
-import { Client, formatIDR } from "@/lib/data";
+import { formatIDR } from "@/lib/data";
+import { useSelectedClient } from "@/lib/hooks/useSelectedClient";
 import { runMonthlyDepreciation, getFixedAssets } from "@/app/actions/accounting/depreciation";
 import { useToast } from "@/components/ui/Toast";
 
-interface DepreciationViewProps {
-    clients: Client[];
-}
-
-export function DepreciationView({ clients }: DepreciationViewProps) {
+export function DepreciationView() {
     const now = new Date();
-    const [selectedClient, setSelectedClient] = useState("");
+    const { selectedClientId: selectedClient } = useSelectedClient();
     const [period, setPeriod] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
     const [running, setRunning] = useState(false);
     const [assets, setAssets] = useState<any[]>([]);
@@ -76,16 +73,7 @@ export function DepreciationView({ clients }: DepreciationViewProps) {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Klien</label>
-                            <Select
-                                value={selectedClient}
-                                onChange={(e) => setSelectedClient(e.target.value)}
-                                options={clients.map((c) => ({ value: c.id, label: c.nama }))}
-                                placeholder="Pilih Klien..."
-                            />
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Periode</label>
                             <Select
