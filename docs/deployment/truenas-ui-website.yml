@@ -1,4 +1,11 @@
 services:
+  migrate:
+    image: ghcr.io/babybay/website-migrate:latest
+    container_name: website-migrate
+    restart: "no"
+    environment:
+      DATABASE_URL: "REPLACE_WITH_NEON_POOLED_DATABASE_URL"
+
   website:
     image: ghcr.io/babybay/website:latest
     container_name: website
