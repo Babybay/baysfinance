@@ -1,24 +1,23 @@
 "use server";
 
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client, BUCKET_NAME } from "@/lib/s3";
+import { s3Client, BUCKET_NAME, buildStorageUrl, extractStorageKey } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { AccDocType, AccDocModule } from "@prisma/client";
+import { AccDocType, AccDocModule, Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { assertCanAccessClient, handleAuthError, isAdminOrStaff } from "@/lib/auth-helpers";
+import { assertCanAccessClient, handleAuthError } from "@/lib/auth-helpers";
 import { importDocumentEntries } from "@/app/actions/import-accounting";
 import type { GeneratedEntry } from "@/lib/journal-generator";
 import type { DocumentType } from "@/lib/document-detector";
 
 const BUCKET = BUCKET_NAME;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
-
-function extractR2Key(fileUrl: string): string {
-    return fileUrl.replace(`${PUBLIC_URL}/`, "");
-}
 
 // ─── GET ACCOUNTING DOCUMENTS ────────────────────────────────────────────────
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export async function getAccountingDocuments(
     clientId: string,
@@ -33,7 +32,7 @@ export async function getAccountingDocuments(
     try {
         await assertCanAccessClient(clientId);
 
-        const where: any = {
+        const where: Prisma.AccountingDocumentWhereInput = {
             clientId,
             deletedAt: null,
         };
@@ -86,8 +85,6 @@ export async function uploadAccountingDocument(formData: FormData) {
         const user = await getCurrentUser();
         if (!user) return { success: false, error: "Sesi tidak valid." };
 
-        const admin = await isAdminOrStaff();
-
         const file = formData.get("file") as File;
         const documentName = formData.get("documentName") as string;
         const documentType = formData.get("documentType") as string;
@@ -115,7 +112,7 @@ export async function uploadAccountingDocument(formData: FormData) {
             return { success: false, error: "Tipe file tidak diizinkan. Hanya PDF, JPG, dan PNG." };
         }
 
-        // Upload to R2
+        // Upload to TrueNAS/MinIO-compatible object storage. Neon stores only URL/metadata.
         const key = `accounting-docs/${clientId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
         const arrayBuffer = await file.arrayBuffer();
 
@@ -128,7 +125,7 @@ export async function uploadAccountingDocument(formData: FormData) {
             })
         );
 
-        const fileUrl = `${PUBLIC_URL}/${key}`;
+        const fileUrl = buildStorageUrl(key);
 
         const document = await prisma.accountingDocument.create({
             data: {
@@ -174,7 +171,7 @@ export async function updateAccountingDocument(
 
         await assertCanAccessClient(existing.clientId);
 
-        const updateData: any = { ...data };
+        const updateData: Prisma.AccountingDocumentUpdateInput = { ...data };
         if (data.documentDate) {
             updateData.documentDate = new Date(data.documentDate);
         }
@@ -204,10 +201,10 @@ export async function deleteAccountingDocument(id: string) {
 
         await assertCanAccessClient(document.clientId);
 
-        // Delete from R2
+        // Delete from object storage
         if (document.fileUrl) {
             try {
-                const key = extractR2Key(document.fileUrl);
+                const key = extractStorageKey(document.fileUrl);
                 await s3Client.send(
                     new DeleteObjectCommand({
                         Bucket: BUCKET,
@@ -215,7 +212,7 @@ export async function deleteAccountingDocument(id: string) {
                     })
                 );
             } catch (e) {
-                console.error("[deleteAccountingDocument] R2 cleanup failed:", e);
+                console.error("[deleteAccountingDocument] object storage cleanup failed:", e);
             }
         }
 
@@ -267,11 +264,11 @@ export async function postScannedEntries(
                 where: { id: documentId },
                 data: {
                     ocrStatus: "posted",
-                    ocrData: {
+                    ocrData: toPrismaJson({
                         ...(existingData?.ocrData as Record<string, unknown> || {}),
                         postedBatchId: result.batchId,
                         postedAt: new Date().toISOString(),
-                    } as any,
+                    }),
                 },
             });
         }

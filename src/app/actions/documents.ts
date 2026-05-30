@@ -1,7 +1,7 @@
 "use server";
 
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client, BUCKET_NAME } from "@/lib/s3";
+import { s3Client, BUCKET_NAME, buildStorageUrl, extractStorageKey } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { DocumentKategori } from "@prisma/client";
@@ -12,12 +12,6 @@ import {
 } from "@/lib/auth-helpers";
 
 const BUCKET = BUCKET_NAME;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL!; // e.g. https://pub-xxx.r2.dev
-
-// Ekstrak R2 key dari full URL
-function extractR2Key(fileUrl: string): string {
-    return fileUrl.replace(`${PUBLIC_URL}/`, "");
-}
 
 // ─── GET ALL DOCUMENTS ───────────────────────────────────────────────────────
 
@@ -90,10 +84,10 @@ export async function uploadDocument(formData: FormData) {
         });
         if (!client) return { success: false, error: "Klien tidak ditemukan" };
 
-        // Build unique R2 key
+        // Build unique object storage key. Neon stores only this URL/metadata.
         const key = `documents/${clientId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
-        // Upload ke R2
+        // Upload to TrueNAS/MinIO-compatible object storage
         const arrayBuffer = await file.arrayBuffer();
         await s3Client.send(
             new PutObjectCommand({
@@ -104,7 +98,7 @@ export async function uploadDocument(formData: FormData) {
             })
         );
 
-        const fileUrl = `${PUBLIC_URL}/${key}`;
+        const fileUrl = buildStorageUrl(key);
 
         const document = await prisma.document.create({
             data: {
@@ -169,9 +163,9 @@ export async function deleteDocument(id: string) {
 
         await assertCanAccessClient(document.clientId);
 
-        // Hapus dari R2 jika ada fileUrl
+        // Hapus dari object storage jika ada fileUrl
         if (document.fileUrl) {
-            const key = extractR2Key(document.fileUrl);
+            const key = extractStorageKey(document.fileUrl);
             await s3Client.send(
                 new DeleteObjectCommand({
                     Bucket: BUCKET,
@@ -208,7 +202,7 @@ export async function hardDeleteDocument(id: string) {
         if (!document) return { success: false, error: "Dokumen tidak ditemukan" };
 
         if (document.fileUrl) {
-            const key = extractR2Key(document.fileUrl);
+            const key = extractStorageKey(document.fileUrl);
             await s3Client.send(
                 new DeleteObjectCommand({
                     Bucket: BUCKET,

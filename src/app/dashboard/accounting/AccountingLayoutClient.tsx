@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
     BookOpen, BarChart3, Wallet, FileSpreadsheet, TableProperties,
     Scale, FileText, Upload, MinusCircle, TrendingDown, Clock,
-    Calculator, PieChart, Building2,
+    Calculator, PieChart, Building2, ClipboardCheck,
 } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { useRoles } from "@/lib/hooks/useRoles";
@@ -47,6 +47,7 @@ const TAB_GROUPS: TabGroup[] = [
             { id: "neraca", label: "Neraca", href: "/dashboard/accounting/neraca", icon: Scale },
             { id: "ekuitas", label: "Ekuitas", href: "/dashboard/accounting/ekuitas", icon: PieChart },
             { id: "reports", label: "Laporan Keuangan", href: "/dashboard/accounting/reports", icon: BarChart3 },
+            { id: "annual-tax", label: "SPT Tahunan", href: "/dashboard/accounting/annual-tax", icon: ClipboardCheck },
         ],
     },
     {

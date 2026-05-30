@@ -1,0 +1,24 @@
+services:
+  website:
+    image: ghcr.io/babybay/website:latest
+    container_name: website
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      AUTH_URL: "http://192.168.18.19:8080"
+      AUTH_SECRET: "REPLACE_WITH_AUTH_SECRET"
+      DATABASE_URL: "REPLACE_WITH_NEON_POOLED_DATABASE_URL"
+      DIRECT_URL: ""
+      MINIO_ENDPOINT: "http://192.168.18.19:9000"
+      MINIO_ACCESS_KEY_ID: "minioadmin"
+      MINIO_SECRET_ACCESS_KEY: "REPLACE_WITH_MINIO_SECRET_KEY"
+      MINIO_BUCKET_NAME: "website-docs"
+      MINIO_PUBLIC_URL: "http://192.168.18.19:9000/website-docs"
+      MINIO_HOSTNAME: "192.168.18.19"
+      MINIO_REGION: "us-east-1"
+      CRON_SECRET: "REPLACE_WITH_CRON_SECRET"
+      OCR_SERVICE_URL: "http://host.docker.internal:8100"
+    ports:
+      - "8080:3000"

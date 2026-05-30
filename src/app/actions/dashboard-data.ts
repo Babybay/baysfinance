@@ -3,6 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import type { Invoice, TaxDeadline, Client } from "@prisma/client";
 
+type DeadlineWithClient = TaxDeadline & {
+    client?: { nama: string } | null;
+};
+
 export interface PermitSummary {
     total: number;
     byStatus: Record<string, number>;
@@ -26,36 +30,38 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
     try {
         let clients: Client[] = [];
         let invoices: Invoice[] = [];
-        let rawDeadlines: any[] = [];
+        let rawDeadlines: DeadlineWithClient[] = [];
 
         if (role === "admin") {
-            // Fetch all for admin
-            clients = await prisma.client.findMany({
-                orderBy: { createdAt: "desc" }
-            });
-            invoices = await prisma.invoice.findMany({
-                where: { client: { deletedAt: null } },
-                orderBy: { tanggal: "desc" },
-                take: 50 // Increased for monthly revenue calculation
-            });
-            rawDeadlines = await prisma.taxDeadline.findMany({
-                where: { client: { deletedAt: null } },
-                include: { client: true },
-                orderBy: { tanggalBatas: "asc" }
-            });
+            [clients, invoices, rawDeadlines] = await Promise.all([
+                prisma.client.findMany({
+                    orderBy: { createdAt: "desc" },
+                }),
+                prisma.invoice.findMany({
+                    where: { client: { deletedAt: null } },
+                    orderBy: { tanggal: "desc" },
+                    take: 50,
+                }),
+                prisma.taxDeadline.findMany({
+                    where: { client: { deletedAt: null } },
+                    include: { client: { select: { nama: true } } },
+                    orderBy: { tanggalBatas: "asc" },
+                }),
+            ]);
         } else if (clientId) {
-            // Fetch only for specific client
-            clients = await prisma.client.findMany({ where: { id: clientId } });
-            invoices = await prisma.invoice.findMany({
-                where: { clientId },
-                orderBy: { tanggal: "desc" },
-                take: 50
-            });
-            rawDeadlines = await prisma.taxDeadline.findMany({
-                where: { clientId },
-                include: { client: true },
-                orderBy: { tanggalBatas: "asc" }
-            });
+            [clients, invoices, rawDeadlines] = await Promise.all([
+                prisma.client.findMany({ where: { id: clientId } }),
+                prisma.invoice.findMany({
+                    where: { clientId },
+                    orderBy: { tanggal: "desc" },
+                    take: 50,
+                }),
+                prisma.taxDeadline.findMany({
+                    where: { clientId },
+                    include: { client: { select: { nama: true } } },
+                    orderBy: { tanggalBatas: "asc" },
+                }),
+            ]);
         }
 
         const deadlines = rawDeadlines.map(d => ({
@@ -64,31 +70,56 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
         }));
 
         // --- Enhanced data for admin ---
-        let permitSummary: PermitSummary = { total: 0, byStatus: {} };
+        const permitSummary: PermitSummary = { total: 0, byStatus: {} };
         let monthlyRevenue: MonthlyRevenue[] = [];
         let recentActivity: RecentActivity[] = [];
         let documentCount = 0;
         let importBatchCount = 0;
 
         if (role === "admin") {
-            // Permit summary
-            try {
-                const permits = await prisma.permitCase.findMany({
-                    select: { status: true },
-                });
-                permitSummary.total = permits.length;
-                for (const p of permits) {
-                    permitSummary.byStatus[p.status] = (permitSummary.byStatus[p.status] || 0) + 1;
-                }
-            } catch { /* permits table may not exist yet */ }
-
             // Monthly revenue (last 6 months)
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-            const paidInvoices = invoices.filter(
-                (i) => i.status === "Lunas" && new Date(i.tanggal) >= sixMonthsAgo
-            );
+            const [
+                permitStatusGroups,
+                paidInvoices,
+                documentCountResult,
+                importBatchCountResult,
+                recentPermits,
+                recentImports,
+            ] = await Promise.all([
+                prisma.permitCase.groupBy({
+                    by: ["status"],
+                    _count: { _all: true },
+                }).catch(() => []),
+                prisma.invoice.findMany({
+                    where: {
+                        status: "Lunas",
+                        tanggal: { gte: sixMonthsAgo },
+                        client: { deletedAt: null },
+                    },
+                    select: { tanggal: true, total: true },
+                    orderBy: { tanggal: "asc" },
+                }),
+                prisma.document.count().catch(() => 0),
+                prisma.importBatch.count().catch(() => 0),
+                prisma.permitCase.findMany({
+                    include: { client: { select: { nama: true } }, permitType: true },
+                    orderBy: { updatedAt: "desc" },
+                    take: 5,
+                }).catch(() => []),
+                prisma.importBatch.findMany({
+                    orderBy: { createdAt: "desc" },
+                    take: 3,
+                }).catch(() => []),
+            ]);
+
+            for (const group of permitStatusGroups) {
+                const count = group._count._all;
+                permitSummary.total += count;
+                permitSummary.byStatus[group.status] = count;
+            }
 
             const revenueByMonth: Record<string, { revenue: number; count: number }> = {};
             for (const inv of paidInvoices) {
@@ -107,15 +138,8 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                     invoiceCount: data.count,
                 }));
 
-            // Document count
-            try {
-                documentCount = await prisma.document.count();
-            } catch { /* */ }
-
-            // Import batch count
-            try {
-                importBatchCount = await prisma.importBatch.count();
-            } catch { /* */ }
+            documentCount = documentCountResult;
+            importBatchCount = importBatchCountResult;
 
             // Recent activity (composite from multiple sources)
             const activities: RecentActivity[] = [];
@@ -142,40 +166,25 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                 });
             }
 
-            // Recent permits
-            try {
-                const recentPermits = await prisma.permitCase.findMany({
-                    include: { client: true, permitType: true },
-                    orderBy: { updatedAt: "desc" },
-                    take: 5,
+            for (const p of recentPermits) {
+                activities.push({
+                    id: p.id,
+                    type: "permit",
+                    description: `${p.caseId} — ${p.client?.nama || "Unknown"}`,
+                    timestamp: p.updatedAt.toISOString(),
+                    meta: p.status,
                 });
-                for (const p of recentPermits) {
-                    activities.push({
-                        id: p.id,
-                        type: "permit",
-                        description: `${p.caseId} — ${p.client?.nama || "Unknown"}`,
-                        timestamp: p.updatedAt.toISOString(),
-                        meta: p.status,
-                    });
-                }
-            } catch { /* */ }
+            }
 
-            // Recent imports
-            try {
-                const recentImports = await prisma.importBatch.findMany({
-                    orderBy: { createdAt: "desc" },
-                    take: 3,
+            for (const ib of recentImports) {
+                activities.push({
+                    id: ib.id,
+                    type: "import",
+                    description: `Import: ${ib.fileName}`,
+                    timestamp: ib.createdAt.toISOString(),
+                    meta: `${ib.entriesCount} entries`,
                 });
-                for (const ib of recentImports) {
-                    activities.push({
-                        id: ib.id,
-                        type: "import",
-                        description: `Import: ${ib.fileName}`,
-                        timestamp: ib.createdAt.toISOString(),
-                        meta: `${ib.entriesCount} entries`,
-                    });
-                }
-            } catch { /* */ }
+            }
 
             // Sort all by timestamp desc
             recentActivity = activities

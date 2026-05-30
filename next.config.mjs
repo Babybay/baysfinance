@@ -1,12 +1,16 @@
 /** @type {import('next').NextConfig} */
+const storageHostname = process.env.MINIO_HOSTNAME || process.env.R2_HOSTNAME;
+
 const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'pub-5d46654b7ae246ccababc4ece9ce8590.r2.dev',
-      },
-    ],
+    remotePatterns: storageHostname
+      ? [
+          {
+            protocol: 'https',
+            hostname: storageHostname,
+          },
+        ]
+      : [],
   },
   output: 'standalone',
   serverExternalPackages: ['tesseract.js', 'pdf-parse'],

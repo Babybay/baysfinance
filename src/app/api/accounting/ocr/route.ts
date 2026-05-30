@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { s3Client, BUCKET_NAME } from "@/lib/s3";
+import { s3Client, BUCKET_NAME, extractStorageKey } from "@/lib/s3";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { classifyOcrText } from "@/lib/ocr-document-classifier";
 import { parseOcrDocument } from "@/lib/ocr-document-parser";
 import { mapOcrToJournalEntries } from "@/lib/ocr-journal-mapper";
 
 // PaddleOCR Python service URL
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://localhost:8100";
-const PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
 
 // ─── OCR API — sends document to PaddleOCR service for processing ────────────
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export async function POST(req: NextRequest) {
     let documentId: string | undefined;
@@ -56,10 +60,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Generate a presigned URL so the OCR service can access the file
-        const r2Key = doc.fileUrl.replace(`${PUBLIC_URL}/`, "");
+        const storageKey = extractStorageKey(doc.fileUrl);
         const presignedUrl = await getSignedUrl(
             s3Client,
-            new GetObjectCommand({ Bucket: BUCKET_NAME, Key: r2Key }),
+            new GetObjectCommand({ Bucket: BUCKET_NAME, Key: storageKey }),
             { expiresIn: 600 },
         );
 
@@ -102,16 +106,16 @@ export async function POST(req: NextRequest) {
         }));
 
         // 4) Auto-update document type/module if confidence > 70%
-        const updateData: Record<string, unknown> = {
+        const updateData: Prisma.AccountingDocumentUpdateInput = {
             ocrStatus: "done",
-            ocrData: {
+            ocrData: toPrismaJson({
                 ...parsedData,
                 classification,
                 ocrEntries: ocrResult.entries,
                 processingTimeMs: ocrResult.processing_time_ms,
                 pageCount: ocrResult.page_count,
                 journalEntries: suggestedEntries,
-            },
+            }),
         };
 
         if (classification.confidence >= 70) {
@@ -121,7 +125,7 @@ export async function POST(req: NextRequest) {
 
         await prisma.accountingDocument.update({
             where: { id: documentId },
-            data: updateData as any,
+            data: updateData,
         });
 
         return NextResponse.json({

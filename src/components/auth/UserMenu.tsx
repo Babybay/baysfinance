@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, ChevronDown } from "lucide-react";
 
 export function UserMenu() {
     const { data: session } = useSession();
@@ -34,7 +34,9 @@ export function UserMenu() {
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen(!open)}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors w-full"
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-foreground transition-colors ${
+                    open ? "bg-surface" : "hover:bg-surface"
+                }`}
             >
                 <div className="h-8 w-8 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-bold shrink-0">
                     {initials}
@@ -58,7 +60,7 @@ export function UserMenu() {
                     <div className="p-1">
                         <button
                             onClick={() => signOut({ callbackUrl: "/sign-in" })}
-                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left rounded-lg hover:bg-muted/50 transition-colors text-error"
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left rounded-lg hover:bg-error-muted transition-colors text-error"
                         >
                             <LogOut className="h-4 w-4" />
                             Keluar
@@ -86,7 +88,7 @@ export function UserMenuCompact() {
     return (
         <button
             onClick={() => signOut({ callbackUrl: "/sign-in" })}
-            className="h-8 w-8 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-bold"
+            className="h-8 w-8 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-bold transition-colors hover:bg-accent-muted"
             title="Keluar"
         >
             {initials}

@@ -24,6 +24,7 @@
 # misc
 .DS_Store
 *.pem
+creds.txt
 Thumbs.db
 
 # debug
@@ -34,6 +35,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!.env.truenas.example
 
 # vercel
 .vercel
@@ -44,6 +47,8 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+/.claude/
+/.agents/
 
 /tmp/
 
@@ -51,8 +56,15 @@ next-env.d.ts
 
 DEVELOPMENT_ROADMAP.md
 
+# Docker
+n8n_data/
+
 # debug/test artifacts
 tsc_output*.txt
 ts-errors.txt
 test-*.js
 inspect-db.js
+
+# client source documents / workbooks
+docs/*.xls
+docs/*.xlsx

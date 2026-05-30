@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { authLimiter, apiLimiter } from "@/lib/rate-limit";
 
-const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/api/auth", "/api/webhooks"];
+const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/api/auth", "/api/health", "/api/webhooks"];
 
 function isPublic(pathname: string): boolean {
     return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
