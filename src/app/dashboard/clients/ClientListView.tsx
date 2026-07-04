@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Plus, Search, Edit2, Trash2, Eye, Users, ShieldAlert, Download } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Users, ShieldAlert, Download } from "lucide-react";
 import { exportToCsv, csvDate } from "@/lib/csv-export";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { createClient, updateClient, deleteClient } from "@/app/actions/clients";
@@ -48,7 +47,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                 setClients(clients.map(c => c.id === editingClient.id ? res.data as Client : c));
                 router.refresh(); // Sync server state
             } else {
-                toast.error(res.error || "Gagal memperbarui klien");
+                toast.error(res.error || "Gagal memperbarui sub-account");
             }
         } else {
             const res = await createClient(form);
@@ -56,7 +55,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                 setClients([res.data as Client, ...clients]);
                 router.refresh();
             } else {
-                toast.error(res.error || "Gagal menambahkan klien");
+                toast.error(res.error || "Gagal menambahkan sub-account");
             }
         }
         closeModal();
@@ -68,7 +67,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             setClients(clients.filter((c) => c.id !== id));
             router.refresh();
         } else {
-            toast.error(res.error || "Gagal menghapus klien");
+            toast.error(res.error || "Gagal menghapus sub-account");
         }
         setDeleteConfirm(null);
     };
@@ -118,7 +117,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             <div className="flex flex-col items-center justify-center py-20 bg-card rounded-[16px] border border-border">
                 <ShieldAlert className="h-12 w-12 text-error mb-4" />
                 <h2 className="font-serif text-xl text-foreground">Akses Dibatasi</h2>
-                <p className="text-muted-foreground mt-2 text-center max-w-md">Halaman ini hanya dapat diakses oleh Admin (Advisor).</p>
+                <p className="text-muted-foreground mt-2 text-center max-w-md">Halaman ini hanya dapat diakses oleh user agency.</p>
             </div>
         );
     }
@@ -128,8 +127,8 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Manajemen Klien</h1>
-                    <p className="text-sm text-muted-foreground mt-1">{clients.length} klien terdaftar</p>
+                    <h1 className="text-2xl font-bold text-foreground">Sub-account Management</h1>
+                    <p className="text-sm text-muted-foreground mt-1">{clients.length} client workspace under your agency</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {filtered.length > 0 && (
@@ -146,7 +145,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                                     { key: "status", label: "Status" },
                                     { key: "createdAt", label: "Terdaftar", format: csvDate },
                                 ],
-                                "klien"
+                                "sub-accounts"
                             )}
                             className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors"
                         >
@@ -154,7 +153,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                         </button>
                     )}
                     <button onClick={openAdd} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
-                        <Plus className="h-4 w-4 mr-2" /> Tambah Klien
+                        <Plus className="h-4 w-4 mr-2" /> New Sub-account
                     </button>
                 </div>
             </div>
@@ -202,7 +201,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                                 <tr>
                                     <td colSpan={7} className="text-center py-12 text-muted-foreground">
                                         <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                                        <p>Tidak ada klien ditemukan</p>
+                                        <p>Tidak ada sub-account ditemukan</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -247,7 +246,7 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
             </div>
 
             {/* Add/Edit Modal */}
-            <Modal isOpen={modalOpen} onClose={closeModal} title={editingClient ? "Edit Klien" : "Tambah Klien Baru"} size="lg">
+            <Modal isOpen={modalOpen} onClose={closeModal} title={editingClient ? "Edit Sub-account" : "Create New Sub-account"} size="lg">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input label="Nama Lengkap / Badan Usaha" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} required placeholder="PT Contoh Indonesia" />
@@ -260,15 +259,15 @@ export function ClientListView({ initialClients }: { initialClients: Client[] })
                     <Input label="Alamat" value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} placeholder="Jl. Contoh No. 1, Jakarta" />
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
                         <Button type="button" variant="soft" onClick={closeModal}>Batal</Button>
-                        <Button type="submit" variant="accent">{editingClient ? "Simpan Perubahan" : "Tambah Klien"}</Button>
+                        <Button type="submit" variant="accent">{editingClient ? "Simpan Perubahan" : "Create Sub-account"}</Button>
                     </div>
                 </form>
             </Modal>
 
             {/* Delete Confirmation */}
-            <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Hapus Klien" size="sm">
+            <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Sub-account" size="sm">
                 <p className="text-sm text-muted-foreground mb-6">
-                    Apakah Anda yakin ingin menghapus klien ini? Tindakan ini tidak dapat dibatalkan.
+                    Apakah Anda yakin ingin menghapus sub-account ini? Data terkait akan mengikuti aturan soft-delete.
                 </p>
                 <div className="flex justify-end gap-3">
                     <Button variant="soft" onClick={() => setDeleteConfirm(null)}>Batal</Button>

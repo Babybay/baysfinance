@@ -68,6 +68,7 @@ model Client {
   recurring          RecurringInvoice[]
   deadlines          TaxDeadline[]
   fiscalPeriodCloses FiscalPeriodClose[]
+  annualTaxBatches   AnnualTaxBatch[]
 
   @@map("clients")
 }
@@ -90,6 +91,7 @@ model TaxDeadline {
   updatedByUser User?             @relation("DeadlineUpdater", fields: [updatedBy], references: [id])
 
   @@index([clientId, status])
+  @@index([status, tanggalBatas])
   @@map("tax_deadlines")
 }
 
@@ -146,8 +148,10 @@ model Invoice {
   client             Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   recurringInvoice   RecurringInvoice? @relation(fields: [recurringInvoiceId], references: [id])
   payments           Payment[]
+  autoJournals       JournalEntry[]    @relation("InvoiceAutoJournals")
 
   @@index([clientId, status])
+  @@index([status, jatuhTempo])
   @@map("invoices")
 }
 
@@ -412,16 +416,19 @@ model JournalEntry {
   importBatchId  String?
   source         String?
   relatedEntryId String?
+  invoiceId      String?
   client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   importBatch    ImportBatch?  @relation(fields: [importBatchId], references: [id])
   relatedEntry   JournalEntry? @relation("JournalReversal", fields: [relatedEntryId], references: [id])
   reversals      JournalEntry[] @relation("JournalReversal")
+  invoice        Invoice?      @relation("InvoiceAutoJournals", fields: [invoiceId], references: [id])
   items          JournalItem[]
   fiscalClose    FiscalPeriodClose?
 
   @@index([clientId, status])
   @@index([clientId, date])
   @@index([clientId, source, date])
+  @@index([invoiceId, source])
   @@map("journal_entries")
 }
 
@@ -578,6 +585,30 @@ model AccountBalance {
   @@map("account_balances")
 }
 
+model NotificationLog {
+  id          String   @id @default(cuid())
+  type        String   // "deadline_h3", "deadline_h1", "invoice_overdue_7", "permit_status_change"
+  referenceId String   // ID of the related record (deadlineId, invoiceId, permitCaseId)
+  clientId    String
+  payload     Json?    // notification data sent to n8n
+  createdAt   DateTime @default(now())
+
+  @@unique([type, referenceId])
+  @@index([clientId])
+  @@index([createdAt])
+  @@map("notification_logs")
+}
+
+model RateLimitBucket {
+  id          String   @id // `${limiterName}:${key}:${windowIndex}`
+  count       Int      @default(1)
+  windowStart DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([windowStart])
+  @@map("rate_limit_buckets")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   action     String
@@ -608,6 +639,151 @@ model FinancialReportSnapshot {
 
   @@unique([clientId, period, reportType])
   @@map("financial_report_snapshots")
+}
+
+model AnnualTaxBatch {
+  id          String                  @id @default(cuid())
+  clientId    String
+  taxYear     Int
+  status      AnnualTaxBatchStatus    @default(Draft)
+  companyName String?
+  npwp        String?
+  kpp         String?
+  createdBy   String?
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  deletedAt   DateTime?
+  client      Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  workbooks   AnnualTaxWorkbook[]
+  sections    AnnualTaxSection[]
+  issues      AnnualTaxValidationIssue[]
+  exports     AnnualTaxExport[]
+
+  @@unique([clientId, taxYear])
+  @@index([clientId, taxYear, status])
+  @@map("annual_tax_batches")
+}
+
+model AnnualTaxWorkbook {
+  id            String             @id @default(cuid())
+  batchId       String
+  fileName      String
+  fileUrl       String?
+  fileSize      Int
+  checksum      String?
+  sheetCount    Int                @default(0)
+  parserVersion String             @default("annual-tax-v1")
+  uploadedBy    String
+  createdAt     DateTime           @default(now())
+  batch         AnnualTaxBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sheets        AnnualTaxSheet[]
+
+  @@index([batchId])
+  @@map("annual_tax_workbooks")
+}
+
+model AnnualTaxSheet {
+  id             String                  @id @default(cuid())
+  workbookId     String
+  sheetName      String
+  normalizedName String
+  detectedType   AnnualTaxSheetType
+  confidence     Decimal                 @default(0) @db.Decimal(8, 4)
+  rangeRef       String?
+  rowCount       Int                     @default(0)
+  columnCount    Int                     @default(0)
+  cellCount      Int                     @default(0)
+  status         AnnualTaxSheetStatus    @default(Detected)
+  sampleRows     Json?
+  metadata       Json?
+  createdAt      DateTime                @default(now())
+  workbook       AnnualTaxWorkbook       @relation(fields: [workbookId], references: [id], onDelete: Cascade)
+  extractedValues AnnualTaxExtractedValue[]
+
+  @@index([workbookId])
+  @@index([detectedType, status])
+  @@map("annual_tax_sheets")
+}
+
+model AnnualTaxExtractedValue {
+  id              String                  @id @default(cuid())
+  sheetId         String
+  section         AnnualTaxSectionType
+  fieldKey        String
+  label           String
+  rawValue        String?
+  normalizedValue String?
+  valueType       AnnualTaxValueType      @default(Text)
+  cellRef         String?
+  rowNumber       Int?
+  columnNumber    Int?
+  confidence      Decimal                 @default(0) @db.Decimal(8, 4)
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+  sheet           AnnualTaxSheet          @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@index([sheetId, section])
+  @@index([fieldKey])
+  @@map("annual_tax_extracted_values")
+}
+
+model AnnualTaxSection {
+  id          String                  @id @default(cuid())
+  batchId     String
+  sectionType AnnualTaxSectionType
+  status      AnnualTaxSectionStatus  @default(Missing)
+  title       String
+  data        Json?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  notes       String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  batch       AnnualTaxBatch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  issues      AnnualTaxValidationIssue[]
+
+  @@unique([batchId, sectionType])
+  @@index([batchId, status])
+  @@map("annual_tax_sections")
+}
+
+model AnnualTaxValidationIssue {
+  id             String                         @id @default(cuid())
+  batchId        String
+  sectionId      String?
+  severity       AnnualTaxIssueSeverity
+  code           String
+  message        String
+  expectedValue  String?
+  actualValue    String?
+  sourceEvidence Json?
+  status         AnnualTaxIssueStatus           @default(Open)
+  resolutionNote String?
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime                       @default(now())
+  batch          AnnualTaxBatch                 @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  section        AnnualTaxSection?              @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, status, severity])
+  @@index([sectionId])
+  @@map("annual_tax_validation_issues")
+}
+
+model AnnualTaxExport {
+  id          String                @id @default(cuid())
+  batchId     String
+  exportType  AnnualTaxExportType
+  fileUrl     String?
+  generatedBy String
+  generatedAt DateTime              @default(now())
+  metadata    Json?
+  batch       AnnualTaxBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, exportType])
+  @@map("annual_tax_exports")
 }
 
 enum Role {
@@ -706,4 +882,108 @@ enum AccDocModule {
   Expense
   Cashflow
   FinancialReport
+}
+
+enum AnnualTaxBatchStatus {
+  Draft
+  Parsed
+  Mapped
+  Review
+  Approved
+  Exported
+  Archived
+}
+
+enum AnnualTaxSheetStatus {
+  Detected
+  Ignored
+  Mapped
+  NeedsReview
+}
+
+enum AnnualTaxSheetType {
+  CompanyIdentity
+  Spt1771Main
+  Spt1771Attachment
+  FinancialPosition
+  CommercialProfitLoss
+  FiscalReconciliation
+  TaxCalculation
+  FiscalLossCompensation
+  FixedAssetDepreciation
+  MonthlyTaxRecap
+  VatReconciliation
+  VatInput
+  VatOutput
+  ExportDocument
+  WithholdingTax
+  BankCashLedger
+  AccountsReceivable
+  AccountsPayable
+  TaxPayable
+  PayrollBpjs
+  Inventory
+  LeaseContract
+  ShareholdersDividends
+  Affiliates
+  BranchSegment
+  OfficialBlankForm
+  Unknown
+}
+
+enum AnnualTaxSectionType {
+  CompanyIdentity
+  FinancialStatements
+  FiscalReconciliation
+  TaxCalculation1771
+  DepreciationFiscal
+  FiscalLossCompensation
+  TaxCredits
+  VatReconciliation
+  WithholdingTax
+  PayrollBpjs
+  AccountsReceivable
+  AccountsPayable
+  Inventory
+  LeaseContracts
+  ShareholdersDividends
+  Affiliates
+  BranchSegments
+  AttachmentsChecklist
+}
+
+enum AnnualTaxSectionStatus {
+  Missing
+  Draft
+  NeedsReview
+  Reviewed
+  Approved
+  NotApplicable
+}
+
+enum AnnualTaxValueType {
+  Text
+  Number
+  Date
+  Boolean
+}
+
+enum AnnualTaxIssueSeverity {
+  Info
+  Warning
+  Error
+  Blocking
+}
+
+enum AnnualTaxIssueStatus {
+  Open
+  Resolved
+  AcceptedRisk
+  NotApplicable
+}
+
+enum AnnualTaxExportType {
+  ReviewWorkbook
+  ReviewPdf
+  Spt1771Workbook
 }

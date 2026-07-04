@@ -4,18 +4,22 @@ import { prisma } from "@/lib/prisma";
 import type { Client } from "@prisma/client";
 import {
     assertCanAccessClient,
+    getCurrentUser,
     getOwnClientId,
     handleAuthError,
-    isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { generateDeadlinesForClient } from "@/lib/tax-deadline-templates";
 
 export async function getClients() {
     try {
-        const admin = await isAdminOrStaff();
+        const user = await getCurrentUser();
+        const admin = user?.role === "Admin" || user?.role === "Staff";
+
         if (admin) {
-            // Admin/staff sees all clients
+            // Agency users see sub-accounts inside their agency. A user without
+            // organisationId acts as a super-admin during setup/migration.
             const clients = await prisma.client.findMany({
+                where: user.organisationId ? { organisationId: user.organisationId } : undefined,
                 orderBy: { createdAt: "desc" }
             });
             return { success: true, data: clients };
@@ -35,10 +39,16 @@ export async function getClients() {
 
 export async function createClient(data: Omit<Client, "id" | "createdAt" | "updatedAt" | "deletedAt">) {
     try {
-        const admin = await isAdminOrStaff();
-        if (!admin) return { success: false, error: "Akses ditolak." };
+        const user = await getCurrentUser();
+        const admin = user?.role === "Admin" || user?.role === "Staff";
+        if (!admin || !user) return { success: false, error: "Akses ditolak." };
 
-        const newClient = await prisma.client.create({ data });
+        const newClient = await prisma.client.create({
+            data: {
+                ...data,
+                organisationId: user.organisationId ?? data.organisationId ?? null,
+            },
+        });
 
         // Auto-seed tax deadlines for new client
         try {
@@ -60,12 +70,29 @@ export async function createClient(data: Omit<Client, "id" | "createdAt" | "upda
 
 export async function updateClient(id: string, data: Partial<Client>) {
     try {
-        const admin = await isAdminOrStaff();
-        if (!admin) return { success: false, error: "Akses ditolak." };
+        const user = await getCurrentUser();
+        const admin = user?.role === "Admin" || user?.role === "Staff";
+        if (!admin || !user) return { success: false, error: "Akses ditolak." };
+
+        if (user.organisationId) {
+            const existing = await prisma.client.findUnique({
+                where: { id },
+                select: { organisationId: true },
+            });
+            if (!existing || existing.organisationId !== user.organisationId) {
+                return { success: false, error: "Akses ditolak." };
+            }
+        }
+
+        const EDITABLE_FIELDS = ["nama", "npwp", "jenisWP", "email", "telepon", "alamat", "status"] as const;
+        const safeData: Partial<Client> = {};
+        for (const field of EDITABLE_FIELDS) {
+            if (field in data) (safeData as Record<string, unknown>)[field] = data[field];
+        }
 
         const updatedClient = await prisma.client.update({
             where: { id },
-            data
+            data: safeData
         });
         return { success: true, data: updatedClient };
     } catch (error) {
@@ -76,8 +103,19 @@ export async function updateClient(id: string, data: Partial<Client>) {
 
 export async function deleteClient(id: string) {
     try {
-        const admin = await isAdminOrStaff();
-        if (!admin) return { success: false, error: "Akses ditolak." };
+        const user = await getCurrentUser();
+        const admin = user?.role === "Admin" || user?.role === "Staff";
+        if (!admin || !user) return { success: false, error: "Akses ditolak." };
+
+        if (user.organisationId) {
+            const existing = await prisma.client.findUnique({
+                where: { id },
+                select: { organisationId: true },
+            });
+            if (!existing || existing.organisationId !== user.organisationId) {
+                return { success: false, error: "Akses ditolak." };
+            }
+        }
 
         await prisma.client.delete({ where: { id } });
         return { success: true };

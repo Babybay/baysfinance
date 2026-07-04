@@ -201,7 +201,8 @@ export const en = {
     // Dashboard Sidebar
     sidebar: {
         dashboard: "Dashboard",
-        clients: "Clients",
+        agency: "Agency",
+        clients: "Sub-accounts",
         taxCalendar: "Tax Calendar",
         documents: "Documents",
         invoices: "Invoices",
@@ -216,22 +217,22 @@ export const en = {
     },
     userManagement: {
         title: "User Management",
-        subtitle: "Manage user roles and access to the platform",
+        subtitle: "Manage agency team members and client portal access",
         table: {
             name: "Name",
             email: "Email",
             role: "Role",
-            client: "Associated Client",
+            client: "Sub-account",
             actions: "Actions",
         },
         roles: {
-            admin: "Advisor (Admin)",
-            client: "Client (Taxpayer)",
+            admin: "Agency Owner",
+            client: "Sub-account User",
         },
         assignClient: {
-            label: "Select Client",
-            placeholder: "Select client for this user",
-            none: "None / Admin",
+            label: "Select Sub-account",
+            placeholder: "Select sub-account for this user",
+            none: "None / Agency user",
         },
         saveChanges: "Save Changes",
         cancel: "Cancel",

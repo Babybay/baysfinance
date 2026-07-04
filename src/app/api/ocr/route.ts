@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Rate limit: 30 OCR requests per hour per user
-        const rateCheck = ocrLimiter.check(user.id);
+        const rateCheck = await ocrLimiter.check(user.id);
         if (!rateCheck.success) {
             return NextResponse.json(
                 { success: false, error: "Terlalu banyak permintaan OCR. Coba lagi nanti." },

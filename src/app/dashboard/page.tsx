@@ -15,9 +15,9 @@ export default async function DashboardPage() {
     // Retrieve role and clientId from metadata
     const role = user.role.toLowerCase();
     const clientId = user.clientId;
-    const isAdmin = role === "admin";
+    const isAdmin = role === "admin" || role === "staff";
 
-    const response = await getDashboardData(clientId, role);
+    const response = await getDashboardData();
 
     if (!response.success || !response.data) {
         return (

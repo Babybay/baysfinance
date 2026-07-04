@@ -43,6 +43,7 @@ interface PaymentForJournal {
 }
 
 interface InvoiceRef {
+    id: string;
     nomorInvoice: string;
     clientId: string;
 }
@@ -146,9 +147,8 @@ export async function createInvoiceSentJournal(
         // Duplicate check
         const existing = await (tx as any).journalEntry.findFirst({
             where: {
-                clientId: invoice.clientId,
+                invoiceId: invoice.id,
                 source: "auto_invoice",
-                description: { contains: invoice.nomorInvoice },
                 deletedAt: null,
             },
             select: { id: true, refNumber: true },
@@ -196,6 +196,7 @@ export async function createInvoiceSentJournal(
                 totalDebit,
                 totalCredit: round2(creditPendapatan + creditPPN),
                 source: "auto_invoice",
+                invoiceId: invoice.id,
                 items: {
                     create: items.map((item) => ({
                         accountId: item.accountId,
@@ -238,9 +239,8 @@ export async function createInvoiceReversalJournal(
         // Find original journal to link
         const originalJournal = await (tx as any).journalEntry.findFirst({
             where: {
-                clientId: invoice.clientId,
+                invoiceId: invoice.id,
                 source: "auto_invoice",
-                description: { contains: invoice.nomorInvoice },
                 deletedAt: null,
             },
             select: { id: true },
@@ -271,6 +271,7 @@ export async function createInvoiceReversalJournal(
                 totalCredit: totalCredit,
                 source: "auto_invoice_reversal",
                 relatedEntryId: originalJournal?.id || null,
+                invoiceId: invoice.id,
                 items: {
                     create: items.map((item) => ({
                         accountId: item.accountId,
@@ -315,7 +316,7 @@ export async function createPaymentReceivedJournal(
         // Duplicate check — idempotent if called twice for same payment
         const existing = await (tx as any).journalEntry.findFirst({
             where: {
-                clientId: invoice.clientId,
+                invoiceId: invoice.id,
                 source: "auto_payment",
                 description: { contains: payment.id },
                 deletedAt: null,
@@ -361,6 +362,7 @@ export async function createPaymentReceivedJournal(
                 totalDebit: amount,
                 totalCredit: amount,
                 source: "auto_payment",
+                invoiceId: invoice.id,
                 items: {
                     create: items.map((item) => ({
                         accountId: item.accountId,
@@ -406,7 +408,7 @@ export async function createPaymentReversalJournal(
         // Find the original payment journal to link the reversal
         const originalJournal = await (tx as any).journalEntry.findFirst({
             where: {
-                clientId: invoice.clientId,
+                invoiceId: invoice.id,
                 source: "auto_payment",
                 description: { contains: payment.id },
                 deletedAt: null,
@@ -441,6 +443,7 @@ export async function createPaymentReversalJournal(
                 totalCredit: amount,
                 source: "auto_payment_reversal",
                 relatedEntryId: originalJournal?.id || null,
+                invoiceId: invoice.id,
                 items: {
                     create: items.map((item) => ({
                         accountId: item.accountId,

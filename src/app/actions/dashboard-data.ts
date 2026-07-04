@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Invoice, TaxDeadline, Client } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 type DeadlineWithClient = TaxDeadline & {
     client?: { nama: string } | null;
@@ -26,26 +27,45 @@ export interface RecentActivity {
     meta?: string;
 }
 
-export async function getDashboardData(clientId?: string, role: string = "admin") {
+export async function getDashboardData() {
     try {
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false as const,
+                data: {
+                    clients: [], invoices: [], deadlines: [],
+                    permitSummary: { total: 0, byStatus: {} },
+                    monthlyRevenue: [], recentActivity: [],
+                    documentCount: 0, importBatchCount: 0,
+                },
+                error: "Sesi tidak valid. Silakan login kembali.",
+            };
+        }
+        const isAgencyRole = user.role === "Admin" || user.role === "Staff";
+        const clientId = isAgencyRole ? undefined : user.clientId;
+        const agencyClientWhere = user.organisationId ? { organisationId: user.organisationId } : undefined;
+
         let clients: Client[] = [];
         let invoices: Invoice[] = [];
         let rawDeadlines: DeadlineWithClient[] = [];
 
-        if (role === "admin") {
+        if (isAgencyRole) {
             [clients, invoices, rawDeadlines] = await Promise.all([
                 prisma.client.findMany({
+                    where: agencyClientWhere,
                     orderBy: { createdAt: "desc" },
                 }),
                 prisma.invoice.findMany({
-                    where: { client: { deletedAt: null } },
+                    where: { client: { deletedAt: null, ...agencyClientWhere } },
                     orderBy: { tanggal: "desc" },
                     take: 50,
                 }),
                 prisma.taxDeadline.findMany({
-                    where: { client: { deletedAt: null } },
+                    where: { client: { deletedAt: null, ...agencyClientWhere } },
                     include: { client: { select: { nama: true } } },
                     orderBy: { tanggalBatas: "asc" },
+                    take: 1000,
                 }),
             ]);
         } else if (clientId) {
@@ -60,6 +80,7 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
                     where: { clientId },
                     include: { client: { select: { nama: true } } },
                     orderBy: { tanggalBatas: "asc" },
+                    take: 1000,
                 }),
             ]);
         }
@@ -76,7 +97,7 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
         let documentCount = 0;
         let importBatchCount = 0;
 
-        if (role === "admin") {
+        if (isAgencyRole) {
             // Monthly revenue (last 6 months)
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -91,25 +112,28 @@ export async function getDashboardData(clientId?: string, role: string = "admin"
             ] = await Promise.all([
                 prisma.permitCase.groupBy({
                     by: ["status"],
+                    where: { client: agencyClientWhere },
                     _count: { _all: true },
                 }).catch(() => []),
                 prisma.invoice.findMany({
                     where: {
                         status: "Lunas",
                         tanggal: { gte: sixMonthsAgo },
-                        client: { deletedAt: null },
+                        client: { deletedAt: null, ...agencyClientWhere },
                     },
                     select: { tanggal: true, total: true },
                     orderBy: { tanggal: "asc" },
                 }),
-                prisma.document.count().catch(() => 0),
-                prisma.importBatch.count().catch(() => 0),
+                prisma.document.count({ where: { client: agencyClientWhere } }).catch(() => 0),
+                prisma.importBatch.count({ where: { client: agencyClientWhere } }).catch(() => 0),
                 prisma.permitCase.findMany({
+                    where: { client: agencyClientWhere },
                     include: { client: { select: { nama: true } }, permitType: true },
                     orderBy: { updatedAt: "desc" },
                     take: 5,
                 }).catch(() => []),
                 prisma.importBatch.findMany({
+                    where: { client: agencyClientWhere },
                     orderBy: { createdAt: "desc" },
                     take: 3,
                 }).catch(() => []),

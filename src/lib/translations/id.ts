@@ -203,7 +203,8 @@ export const id: Translations = {
     // Dashboard Sidebar
     sidebar: {
         dashboard: "Dashboard",
-        clients: "Klien",
+        agency: "Agency",
+        clients: "Sub-account",
         taxCalendar: "Kalender Pajak",
         documents: "Dokumen",
         invoices: "Invoice",
@@ -218,22 +219,22 @@ export const id: Translations = {
     },
     userManagement: {
         title: "Manajemen User",
-        subtitle: "Kelola role dan akses user ke platform",
+        subtitle: "Kelola tim agency dan akses portal sub-account",
         table: {
             name: "Nama",
             email: "Email",
             role: "Role",
-            client: "Klien Terkait",
+            client: "Sub-account",
             actions: "Aksi",
         },
         roles: {
-            admin: "Advisor (Admin)",
-            client: "Klien (Wajib Pajak)",
+            admin: "Agency Owner",
+            client: "User Sub-account",
         },
         assignClient: {
-            label: "Pilih Klien",
-            placeholder: "Pilih klien untuk user ini",
-            none: "Tanpa Klien / Admin",
+            label: "Pilih Sub-account",
+            placeholder: "Pilih sub-account untuk user ini",
+            none: "Tanpa sub-account / user agency",
         },
         saveChanges: "Simpan Perubahan",
         cancel: "Batal",

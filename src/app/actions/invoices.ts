@@ -6,15 +6,15 @@ import {
     assertCanAccessClient,
     getCurrentUser,
     handleAuthError,
-    isAdminOrStaff,
 } from "@/lib/auth-helpers";
 import { writeAuditLog } from "@/lib/audit";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("invoices");
 import { createInvoiceSentJournal, createInvoiceReversalJournal } from "@/lib/auto-journal";
-import { round2, roundRupiah } from "@/lib/accounting-helpers";
+import { roundRupiah } from "@/lib/accounting-helpers";
 import { TAX_CONFIG } from "@/lib/tax-config";
+import { withSerializableRetry } from "@/lib/db-retry";
 
 // ─── VALID STATUS TRANSITIONS ───────────────────────────────────────────────
 
@@ -29,17 +29,24 @@ const VALID_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 
 export async function getInvoices(clientId?: string) {
     try {
+        const user = await getCurrentUser();
+
         if (clientId) {
             await assertCanAccessClient(clientId);
         } else {
-            const admin = await isAdminOrStaff();
+            const admin = user?.role === "Admin" || user?.role === "Staff";
             if (!admin) return { success: false, data: [], error: "Akses ditolak." };
         }
 
         const invoices = await prisma.invoice.findMany({
-            where: clientId ? { clientId } : undefined,
+            where: clientId
+                ? { clientId }
+                : user?.organisationId
+                    ? { client: { organisationId: user.organisationId } }
+                    : undefined,
             include: { items: true },
             orderBy: { tanggal: "desc" },
+            take: 2000, // safety net against unbounded growth; real pagination if this is ever hit
         });
         // Normalize Decimal → number for JSON serialization
         const normalized = invoices.map((inv) => ({
@@ -105,7 +112,7 @@ export async function createInvoice(data: {
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
         const counterKey = `INV-${dateStr}`;
 
-        const invoice = await prisma.$transaction(async (tx) => {
+        const invoice = await withSerializableRetry(() => prisma.$transaction(async (tx) => {
             const rows = await tx.$queryRaw<[{ counter: number }]>(
                 Prisma.sql`
                     INSERT INTO permit_counters (id, counter)
@@ -147,7 +154,7 @@ export async function createInvoice(data: {
                 },
                 include: { items: true },
             });
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
 
         writeAuditLog({
             action: "CREATE",
@@ -186,7 +193,18 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
         }
 
         // Use transaction to atomically update status + create auto-journal
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await withSerializableRetry(() => prisma.$transaction(async (tx) => {
+            // Re-check the transition inside the tx: a Serializable retry means another
+            // writer touched this invoice between attempts, so the pre-fetched `existing`
+            // status may be stale.
+            const current = await tx.invoice.findUniqueOrThrow({
+                where: { id },
+                select: { status: true },
+            });
+            if (!VALID_TRANSITIONS[current.status].includes(status)) {
+                throw new Error(`Tidak dapat mengubah status dari ${current.status} ke ${status}.`);
+            }
+
             const invoice = await tx.invoice.update({
                 where: { id },
                 data: { status },
@@ -196,7 +214,7 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
             let journalRefNumber: string | null = null;
 
             // Auto-journal on Draft → Terkirim (first send)
-            if (existing.status === InvoiceStatus.Draft && status === InvoiceStatus.Terkirim) {
+            if (current.status === InvoiceStatus.Draft && status === InvoiceStatus.Terkirim) {
                 const journalResult = await createInvoiceSentJournal(tx, {
                     id: invoice.id,
                     nomorInvoice: invoice.nomorInvoice,
@@ -213,7 +231,7 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
             }
 
             return { invoice, journalRefNumber };
-        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
 
         writeAuditLog({
             action: "STATUS_CHANGE",
@@ -226,6 +244,9 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
 
         return { success: true, data: result.invoice, journalRefNumber: result.journalRefNumber };
     } catch (error) {
+        if (error instanceof Error && error.message.startsWith("Tidak dapat mengubah status")) {
+            return { success: false, error: error.message };
+        }
         log.error({ err: error }, "updateInvoiceStatus failed");
         return handleAuthError(error);
     }
@@ -253,7 +274,7 @@ export async function deleteInvoice(id: string) {
 
         // For Terkirim/JatuhTempo: create reversal journal before deleting
         if (existing.status === InvoiceStatus.Terkirim || existing.status === InvoiceStatus.JatuhTempo) {
-            await prisma.$transaction(async (tx) => {
+            await withSerializableRetry(() => prisma.$transaction(async (tx) => {
                 await createInvoiceReversalJournal(tx, {
                     id: existing.id,
                     nomorInvoice: existing.nomorInvoice,
@@ -265,7 +286,7 @@ export async function deleteInvoice(id: string) {
                 });
                 // Soft-delete via raw to bypass the extended client within tx
                 await tx.invoice.update({ where: { id }, data: { deletedAt: new Date() } });
-            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
         } else {
             // Draft: just soft-delete
             await prisma.invoice.delete({ where: { id } });

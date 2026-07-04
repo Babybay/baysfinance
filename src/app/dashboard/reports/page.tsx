@@ -19,7 +19,7 @@ export default function ReportsPage() {
 
     const loadData = async () => {
         setIsLoaded(false);
-        const response = await getDashboardData(undefined, "admin");
+        const response = await getDashboardData();
 
         if (response.success && response.data) {
             const formattedClients = response.data.clients.map(c => ({

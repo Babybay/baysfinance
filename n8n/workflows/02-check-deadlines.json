@@ -1,0 +1,62 @@
+{
+  "name": "BaysConsult — Check Tax Deadlines",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "triggerAtHour": 0, "triggerAtMinute": 10 }]
+        }
+      },
+      "id": "schedule-2",
+      "name": "Every Day 00:10 WIB",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3000/api/cron/check-deadlines",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "http-2",
+      "name": "Check Tax Deadlines",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "CRON_SECRET_CREDENTIAL_ID", "name": "BaysConsult Cron Secret" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-2",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals", "name": "filter.operator.equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-2",
+      "name": "Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Every Day 00:10 WIB": { "main": [[{ "node": "Check Tax Deadlines", "type": "main", "index": 0 }]] },
+    "Check Tax Deadlines": { "main": [[{ "node": "Success?", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Asia/Jakarta" },
+  "tags": [{ "name": "BaysConsult" }]
+}

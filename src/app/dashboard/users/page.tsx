@@ -5,21 +5,21 @@ import { useI18n } from "@/lib/i18n";
 import { useRoles } from "@/lib/hooks/useRoles";
 import { Client } from "@/lib/data";
 import { getClients } from "@/app/actions/clients";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { Shield, User, Edit2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { JenisWP, ClientStatus } from "@prisma/client";
+import { JenisWP, ClientStatus, type Client as PrismaClient } from "@prisma/client";
 
 interface ManagedUser {
     id: string;
     firstName: string | null;
     lastName: string | null;
     email: string;
-    role: "admin" | "client";
+    role: "admin" | "staff" | "client";
     clientId: string | null;
 }
 
@@ -58,7 +58,7 @@ export default function UserManagementPage() {
     const loadClients = async () => {
         const res = await getClients();
         if (res.success && res.data) {
-            const formatted = (res.data as any[]).map(c => ({
+            const formatted = (res.data as PrismaClient[]).map(c => ({
                 ...c,
                 jenisWP: c.jenisWP as JenisWP,
                 status: c.status as ClientStatus,
@@ -91,7 +91,7 @@ export default function UserManagementPage() {
             } else {
                 setMessage({ type: "error", text: t.userManagement.updateError });
             }
-        } catch (error) {
+        } catch {
             setMessage({ type: "error", text: t.userManagement.updateError });
         } finally {
             setUpdating(null);
@@ -168,8 +168,12 @@ export default function UserManagementPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Badge variant={user.role === "admin" ? "info" : "default"}>
-                                            {user.role === "admin" ? t.userManagement.roles.admin : t.userManagement.roles.client}
+                                        <Badge variant={user.role === "client" ? "default" : "info"}>
+                                            {user.role === "admin"
+                                                ? t.userManagement.roles.admin
+                                                : user.role === "staff"
+                                                    ? "Agency Staff"
+                                                    : t.userManagement.roles.client}
                                         </Badge>
                                     </td>
                                     <td className="px-6 py-4">
@@ -221,11 +225,12 @@ export default function UserManagementPage() {
                                 value={editUser.role}
                                 onChange={(e) => setEditUser({
                                     ...editUser,
-                                    role: e.target.value as "admin" | "client",
-                                    clientId: e.target.value === "admin" ? null : editUser.clientId
+                                    role: e.target.value as "admin" | "staff" | "client",
+                                    clientId: e.target.value === "client" ? editUser.clientId : null
                                 })}
                                 options={[
                                     { value: "admin", label: t.userManagement.roles.admin },
+                                    { value: "staff", label: "Agency Staff" },
                                     { value: "client", label: t.userManagement.roles.client },
                                 ]}
                             />

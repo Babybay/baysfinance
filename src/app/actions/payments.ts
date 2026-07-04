@@ -130,7 +130,7 @@ export async function recordPayment(data: {
             const journalResult = await createPaymentReceivedJournal(
                 tx,
                 { id: payment.id, jumlah: data.jumlah, tanggalBayar: new Date(data.tanggalBayar) },
-                { nomorInvoice: invoice.nomorInvoice, clientId: invoice.clientId }
+                { id: invoice.id, nomorInvoice: invoice.nomorInvoice, clientId: invoice.clientId }
             );
 
             // Log journal errors but don't fail the payment
@@ -204,7 +204,7 @@ export async function deletePayment(paymentId: string) {
             const reversalResult = await createPaymentReversalJournal(
                 tx,
                 { id: payment.id, jumlah: Number(payment.jumlah), tanggalBayar: payment.tanggalBayar },
-                { nomorInvoice: payment.invoice.nomorInvoice, clientId: payment.invoice.clientId }
+                { id: payment.invoice.id, nomorInvoice: payment.invoice.nomorInvoice, clientId: payment.invoice.clientId }
             );
             if (!reversalResult.success) {
                 log.warn({ error: reversalResult.error }, "deletePayment reversal journal failed");

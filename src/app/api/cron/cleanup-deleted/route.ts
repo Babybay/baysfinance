@@ -8,7 +8,7 @@ const log = createLogger("cron:cleanup-deleted");
  * GDPR / data retention cron.
  * Permanently deletes records that were soft-deleted more than 90 days ago.
  *
- * Protected by CRON_SECRET (enforced in middleware.ts).
+ * Protected by CRON_SECRET (enforced in proxy.ts).
  * Schedule: daily (recommended via external cron scheduler).
  */
 
@@ -60,6 +60,16 @@ export async function GET() {
         } catch (err) {
             log.error({ err, model }, "Failed to cleanup model");
         }
+    }
+
+    // Rate-limit buckets: purge anything older than 1 day (all limiter windows are far shorter)
+    const rateLimitCutoff = new Date();
+    rateLimitCutoff.setDate(rateLimitCutoff.getDate() - 1);
+    const rateLimitDeleted = await prisma.rateLimitBucket.deleteMany({
+        where: { windowStart: { lt: rateLimitCutoff } },
+    });
+    if (rateLimitDeleted.count > 0) {
+        log.info({ deleted: rateLimitDeleted.count }, "Purged expired rate limit buckets");
     }
 
     log.info({ totalDeleted, modelsAffected: results.length }, "Cleanup completed");

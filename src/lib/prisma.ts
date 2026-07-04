@@ -8,7 +8,7 @@ const globalForPrisma = globalThis as unknown as {
 const SOFT_DELETE_MODELS = new Set([
     'Client', 'TaxDeadline', 'Document', 'Invoice',
     'PermitCase',
-    'RecurringInvoice', 'Account', 'ImportBatch', 'FixedAsset',
+    'RecurringInvoice', 'Account', 'ImportBatch', 'FixedAsset', 'AnnualTaxBatch',
     'Expense'
     // JournalEntry and Payment are intentionally EXCLUDED:
     // Financial records must be immutable — use reversing entries instead of deletion.
@@ -28,6 +28,7 @@ const SOFT_DELETE_CASCADE: Record<string, { model: string; foreignKey: string }[
         { model: 'Account', foreignKey: 'clientId' },
         { model: 'ImportBatch', foreignKey: 'clientId' },
         { model: 'FixedAsset', foreignKey: 'clientId' },
+        { model: 'AnnualTaxBatch', foreignKey: 'clientId' },
         { model: 'Expense', foreignKey: 'clientId' },
         // JournalEntry and Payment are NOT cascaded — they are immutable financial records.
     ],
@@ -38,15 +39,16 @@ const READ_OPS = new Set(['findUnique', 'findFirst', 'findMany', 'count', 'aggre
 /**
  * Cascade soft-delete to child models.
  * Uses the raw PrismaClient (not extended) to avoid infinite recursion.
+ * Caller must invoke this inside a $transaction alongside the parent update
+ * so a failure partway through cannot leave children deleted but parent alive.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic model access requires any
-async function cascadeSoftDelete(client: PrismaClient, model: string, where: Record<string, unknown>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function cascadeSoftDelete(tx: any, model: string, where: Record<string, unknown>) {
     const cascades = SOFT_DELETE_CASCADE[model]
     if (!cascades) return
 
     // Resolve the parent IDs that are being deleted
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parentRecords = await (client as any)[model].findMany({
+    const parentRecords = await tx[model].findMany({
         where,
         select: { id: true },
     })
@@ -56,18 +58,25 @@ async function cascadeSoftDelete(client: PrismaClient, model: string, where: Rec
 
     for (const cascade of cascades) {
         const fk = cascade.foreignKey
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (client as any)[cascade.model].updateMany({
+        await tx[cascade.model].updateMany({
             where: { [fk]: { in: parentIds }, deletedAt: null },
             data: { deletedAt: new Date() },
         })
         // Recurse for nested cascades (e.g., Client → Invoice → Payment)
-        await cascadeSoftDelete(client, cascade.model, { [fk]: { in: parentIds } })
+        await cascadeSoftDelete(tx, cascade.model, { [fk]: { in: parentIds } })
     }
 }
 
 function createPrismaClient() {
-    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+    const adapter = new PrismaPg({
+        connectionString: process.env.DATABASE_URL!,
+        // pg defaults: max 10, connectionTimeoutMillis 0 (wait forever).
+        // Serverless runs one pool per instance, so keep the pool small and
+        // fail fast instead of queueing indefinitely when Postgres is saturated.
+        max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+        connectionTimeoutMillis: 5_000,
+        idleTimeoutMillis: 300_000,
+    })
     const client = new PrismaClient({ adapter })
 
     return client.$extends({
@@ -85,21 +94,25 @@ function createPrismaClient() {
                         a.where = { ...a.where, deletedAt: null }
                     }
 
-                    // Convert delete → soft-delete with cascade
+                    // Convert delete → soft-delete with cascade (atomic: cascade + parent update in one tx)
                     if (operation === 'delete') {
-                        await cascadeSoftDelete(client, model as string, args.where as Record<string, unknown>)
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        return (client as any)[model].update({
-                            where: args.where,
-                            data: { deletedAt: new Date() },
+                        return client.$transaction(async (tx) => {
+                            await cascadeSoftDelete(tx, model as string, args.where as Record<string, unknown>)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            return (tx as any)[model].update({
+                                where: args.where,
+                                data: { deletedAt: new Date() },
+                            })
                         })
                     }
                     if (operation === 'deleteMany') {
-                        await cascadeSoftDelete(client, model as string, (args.where ?? {}) as Record<string, unknown>)
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        return (client as any)[model].updateMany({
-                            where: args.where,
-                            data: { deletedAt: new Date() },
+                        return client.$transaction(async (tx) => {
+                            await cascadeSoftDelete(tx, model as string, (args.where ?? {}) as Record<string, unknown>)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            return (tx as any)[model].updateMany({
+                                where: args.where,
+                                data: { deletedAt: new Date() },
+                            })
                         })
                     }
 

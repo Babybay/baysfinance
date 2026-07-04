@@ -15,6 +15,7 @@ export async function GET(request: Request) {
         const updated = await prisma.invoice.updateMany({
             where: {
                 status: InvoiceStatus.Terkirim,
+                deletedAt: null,
                 jatuhTempo: {
                     lt: now
                 }

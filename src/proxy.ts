@@ -28,10 +28,10 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
     return response;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    // Cron endpoints: enforce CRON_SECRET at middleware level (defense-in-depth)
+    // Cron endpoints: enforce CRON_SECRET at proxy level (defense-in-depth)
     if (isCronPath(pathname)) {
         const cronSecret = process.env.CRON_SECRET;
         const authHeader = req.headers.get("authorization");
@@ -45,7 +45,7 @@ export async function middleware(req: NextRequest) {
         // Rate limit only sign-in POST (not session checks which fire on every page load)
         if (pathname.startsWith("/api/auth/callback") && req.method === "POST") {
             const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-            const rateCheck = authLimiter.check(ip);
+            const rateCheck = await authLimiter.check(ip);
             if (!rateCheck.success) {
                 return withSecurityHeaders(
                     NextResponse.json(
@@ -61,7 +61,7 @@ export async function middleware(req: NextRequest) {
     // General API rate limit: 100 requests per minute per IP
     if (pathname.startsWith("/api/")) {
         const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        const rateCheck = apiLimiter.check(ip);
+        const rateCheck = await apiLimiter.check(ip);
         if (!rateCheck.success) {
             return withSecurityHeaders(
                 NextResponse.json(

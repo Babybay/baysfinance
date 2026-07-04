@@ -14,6 +14,7 @@ const nextConfig = {
   },
   output: 'standalone',
   serverExternalPackages: ['tesseract.js', 'pdf-parse'],
+  reactCompiler: true,
 };
 
 export default nextConfig;

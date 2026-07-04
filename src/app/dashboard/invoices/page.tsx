@@ -3,7 +3,14 @@ import { getClients } from "@/app/actions/clients";
 import { InvoiceListView } from "./InvoiceListView";
 import { Invoice, Client } from "@/lib/data";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { JenisWP, ClientStatus } from "@prisma/client";
+import { JenisWP, ClientStatus, type Client as PrismaClient, type InvoiceItem as PrismaInvoiceItem } from "@prisma/client";
+
+type InvoiceActionRow = Omit<Invoice, "tanggal" | "jatuhTempo" | "catatan" | "items"> & {
+    tanggal: string | Date;
+    jatuhTempo: string | Date;
+    catatan: string | null;
+    items: Array<Omit<PrismaInvoiceItem, "harga" | "jumlah"> & { harga: number; jumlah: number }>;
+};
 
 export default async function InvoicesPage() {
     const user = await getCurrentUser();
@@ -19,7 +26,7 @@ export default async function InvoicesPage() {
 
     let initialInvoices: Invoice[] = [];
     if (invRes.success && invRes.data) {
-        initialInvoices = (invRes.data as any[]).map(i => ({
+        initialInvoices = (invRes.data as InvoiceActionRow[]).map(i => ({
             ...i,
             tanggal: new Date(i.tanggal).toISOString().split("T")[0],
             jatuhTempo: new Date(i.jatuhTempo).toISOString().split("T")[0],
@@ -31,7 +38,7 @@ export default async function InvoicesPage() {
 
     let clients: Client[] = [];
     if (clientsRes.success && clientsRes.data) {
-        clients = (clientsRes.data as any[]).map(c => ({
+        clients = (clientsRes.data as PrismaClient[]).map(c => ({
             ...c,
             jenisWP: c.jenisWP as JenisWP,
             status: c.status as ClientStatus,

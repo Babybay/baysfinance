@@ -68,3 +68,13 @@ inspect-db.js
 # client source documents / workbooks
 docs/*.xls
 docs/*.xlsx
+
+.vercel
+.env*
+
+# dev server logs
+next-dev.log
+next-dev.err.log
+
+# python bytecode
+__pycache__/

@@ -7,7 +7,7 @@ import { ShieldAlert } from "lucide-react";
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const user = await getCurrentUser();
     const role = user?.role?.toLowerCase() || "client";
-    const isAdmin = role === "admin";
+    const isAdmin = role === "admin" || role === "staff";
 
     if (!isAdmin) {
         redirect("/dashboard");

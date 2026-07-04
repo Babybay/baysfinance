@@ -7,14 +7,14 @@ import { ShieldAlert } from "lucide-react";
 export default async function ClientsPage() {
     const user = await getCurrentUser();
     const role = user?.role?.toLowerCase() || "client";
-    const isAdmin = role === "admin";
+    const isAdmin = role === "admin" || role === "staff";
 
     if (!isAdmin) {
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-card rounded-[16px] border border-border">
                 <ShieldAlert className="h-12 w-12 text-error mb-4" />
                 <h2 className="font-serif text-xl text-foreground">Akses Dibatasi</h2>
-                <p className="text-muted-foreground mt-2 text-center max-w-md">Halaman ini hanya dapat diakses oleh Admin (Advisor).</p>
+                <p className="text-muted-foreground mt-2 text-center max-w-md">Halaman ini hanya dapat diakses oleh user agency.</p>
             </div>
         );
     }

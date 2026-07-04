@@ -7,7 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { Plus, Search, Receipt, Eye, Trash2, Printer, Download, RefreshCw, CreditCard, X } from "lucide-react";
+import { Plus, Search, Receipt, Eye, Trash2, Printer, Download, RefreshCw, CreditCard, BookOpenCheck } from "lucide-react";
 import { exportToCsv, csvIDR, csvDate } from "@/lib/csv-export";
 import { Invoice, InvoiceItem, Client, PaymentRecord, formatIDR } from "@/lib/data";
 import { useRoles } from "@/lib/hooks/useRoles";
@@ -194,7 +194,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Invoice &amp; Billing</h1>
-                    <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Kelola invoice konsultasi pajak" : "Daftar tagihan Anda"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Company-ledger invoices with AR, revenue, PPN, and payment posting" : "Daftar tagihan Anda"}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {filtered.length > 0 && (
@@ -220,6 +220,9 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                     )}
                     {isAdmin && (
                         <>
+                            <a href="/dashboard/invoices/audit" className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors">
+                                <BookOpenCheck className="h-4 w-4 mr-2" /> Audit
+                            </a>
                             <a href="/dashboard/invoices/recurring" className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors">
                                 <RefreshCw className="h-4 w-4 mr-2" /> Berulang
                             </a>
@@ -310,11 +313,22 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
             </div>
 
             {/* Create Invoice Modal */}
-            <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Buat Invoice Baru" size="xl">
+            <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create Ledger Invoice" size="xl">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Select label="Klien" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} options={clients.map((c) => ({ value: c.id, label: c.nama }))} placeholder="Pilih Klien" />
+                        <Select label="Ledger Company / Sub-account" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} options={clients.map((c) => ({ value: c.id, label: c.nama }))} placeholder="Pilih company ledger" />
                         <Input label="Jatuh Tempo" type="date" value={form.jatuhTempo} onChange={(e) => setForm({ ...form, jatuhTempo: e.target.value })} required />
+                    </div>
+                    <div className="rounded-[10px] border border-border bg-surface p-4">
+                        <div className="flex items-start gap-3">
+                            <BookOpenCheck className="mt-0.5 h-5 w-5 text-accent" />
+                            <div>
+                                <p className="text-sm font-medium text-foreground">Accounting treatment</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Draft invoices do not hit the ledger. When marked Terkirim, the system posts Dr 120 Piutang Usaha, Cr 604 Pendapatan Jasa, and Cr 320 Utang PPN for the selected ledger company.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -434,6 +448,12 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                                 {viewInvoice.atasNama && <p className="text-sm text-foreground">a.n. {viewInvoice.atasNama}</p>}
                             </div>
                         )}
+
+                        <div className="bg-surface rounded-[8px] p-3">
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Accounting Posting</p>
+                            <p className="text-sm text-foreground">Terkirim: Dr Piutang Usaha {formatIDR(viewInvoice.total)}; Cr Pendapatan Jasa {formatIDR(viewInvoice.subtotal)}; Cr Utang PPN {formatIDR(viewInvoice.ppn)}.</p>
+                            <p className="mt-1 text-sm text-foreground">Payment: Dr Bank; Cr Piutang Usaha.</p>
+                        </div>
 
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                             {isAdmin && (

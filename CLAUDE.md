@@ -18,15 +18,15 @@ npx prisma studio    # Open Prisma Studio GUI
 
 **Bay'sConsult** is an Indonesian tax consulting SaaS for managing clients, tax deadlines, documents, invoices, permits, and accounting.
 
-**Stack:** Next.js 16 App Router · React 19 · TypeScript · Prisma 7 + PostgreSQL (via `@prisma/adapter-pg`) · Tailwind CSS 4 · Clerk auth · Cloudflare R2 (file storage via AWS S3 SDK)
+**Stack:** Next.js 16 App Router · React 19 (React Compiler enabled) · TypeScript · Prisma 7 + PostgreSQL (via `@prisma/adapter-pg`) · Tailwind CSS 4 · NextAuth v5 (credentials + JWT) · Cloudflare R2 / MinIO (file storage via AWS S3 SDK)
 
 ### Key Patterns
 
 **Server Actions** (`src/app/actions/`) are the primary data layer — all DB reads/writes go through `"use server"` functions. Pages fetch data server-side and pass it to client components. Actions always return `{ success: boolean, data?: ..., error?: string }`.
 
-**Soft Deletes** are handled globally in `src/lib/prisma.ts`. The Prisma client is extended with middleware that intercepts `delete`/`deleteMany` on most models and converts them to `{ deletedAt: new Date() }` updates. `findMany`/`findUnique`/`findFirst` automatically filter `deletedAt: null`. Affected models: `Client`, `TaxDeadline`, `Document`, `Invoice`, `PermitCase`, `JournalEntry`, `Payment`, `RecurringInvoice`, `Account`.
+**Soft Deletes** are handled globally in `src/lib/prisma.ts`. The Prisma client is extended with middleware that intercepts `delete`/`deleteMany` on most models and converts them to `{ deletedAt: new Date() }` updates (cascading Client → children, atomically in a transaction). Read operations (`findMany`/`findUnique`/`findFirst`/`count`/`aggregate`/`groupBy`) automatically filter `deletedAt: null` — but `update`/`updateMany` do NOT, so add `deletedAt: null` manually where it matters. Affected models: `Client`, `TaxDeadline`, `Document`, `Invoice`, `PermitCase`, `RecurringInvoice`, `Account`, `ImportBatch`, `FixedAsset`, `AnnualTaxBatch`, `Expense`. `JournalEntry` and `Payment` are intentionally excluded — financial records are immutable; use reversing entries.
 
-**Auth & RBAC:** Clerk handles authentication. User role (`"admin"` or `"client"`) and `clientId` are stored in Clerk `publicMetadata`. The dashboard layout (`src/app/dashboard/layout.tsx`) reads these and wraps children in `<RoleProvider>`. Client components access roles via `useRoles()` hook. Admin/staff users are synced to the local `User` DB model via the Clerk webhook (`/api/webhooks/clerk`).
+**Auth & RBAC:** NextAuth v5 (credentials provider, bcrypt password hashes, JWT sessions). Users live in the local `User` model with `role` enum `Admin` | `Staff` | `Client` (note: capitalized in DB/session; some UI code lowercases). Use `getCurrentUser()` / `assertCanAccessClient()` from `src/lib/auth-helpers.ts` in all server actions — never trust role/clientId passed in from the client. Route protection + CRON_SECRET enforcement live in `src/proxy.ts` (Next 16 proxy convention, formerly middleware.ts). The dashboard layout wraps children in `<RoleProvider>`; client components access roles via `useRoles()` hook.
 
 **Multi-tenancy:** Client-role users only see their own data. Server actions accept an optional `clientId` parameter — when provided, queries filter by it. When `role === "client"`, pages extract `clientId` from Clerk metadata and pass it down.
 
@@ -39,10 +39,11 @@ src/
   app/
     actions/          # Server Actions (data layer)
     api/
-      webhooks/clerk/ # Clerk user sync webhook
-      upload/         # Direct file upload to R2
+      auth/[...nextauth]/ # NextAuth v5 handlers
+      admin/users/    # User management (Admin/Staff; Admin-only for role grants)
+      upload/         # Direct file upload to R2/MinIO
       documents/presigned/ # Presigned URLs for file access
-      cron/           # update-invoices (marks overdue; needs CRON_SECRET)
+      cron/           # update-invoices, reminder-*, cleanup-deleted, etc. (CRON_SECRET enforced in proxy.ts)
     dashboard/        # All dashboard pages
       accounting/     # Chart of accounts, journal, ledger, reports
       clients/        # Client management (admin only)
@@ -85,12 +86,12 @@ Field names and enum values in the DB/Prisma schema use Indonesian (e.g., `nama`
 
 ```
 DATABASE_URL          # PostgreSQL connection string
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-CLERK_SECRET_KEY
-CLERK_WEBHOOK_SECRET  # For /api/webhooks/clerk
-R2_ENDPOINT           # Cloudflare R2 S3-compatible endpoint
+DATABASE_POOL_MAX     # Optional: pg pool size per instance (default 5)
+AUTH_SECRET           # NextAuth JWT secret
+R2_ENDPOINT           # Cloudflare R2 / MinIO S3-compatible endpoint
 R2_ACCESS_KEY_ID
 R2_SECRET_ACCESS_KEY
 R2_BUCKET_NAME
-CRON_SECRET           # Bearer token for /api/cron/update-invoices
+CRON_SECRET           # Bearer token for all /api/cron/* routes
+N8N_WEBHOOK_URL       # Optional: push notifications to n8n
 ```

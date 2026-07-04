@@ -1,15 +1,18 @@
 /**
- * In-memory sliding-window rate limiter.
+ * Postgres-backed fixed-window rate limiter.
  *
- * Each limiter instance tracks requests per key (typically IP or userId).
- * Old entries are pruned automatically on each check to prevent memory leaks.
+ * Each check atomically increments a per-(limiter, key, window) counter row
+ * via upsert, so limits hold across serverless instances (unlike an
+ * in-memory Map, which resets per isolate on Vercel).
  *
- * For production at scale, replace with Redis-backed solution (e.g. Upstash Ratelimit).
+ * Fixed windows can allow a short burst at the window boundary (e.g. up to
+ * 2x the limit across two adjacent windows) — acceptable here since these
+ * limiters guard against sustained abuse, not precise quotas.
+ *
+ * Old buckets are purged by the cleanup-deleted cron.
  */
 
-interface RateLimitEntry {
-    timestamps: number[];
-}
+import { prisma } from "@/lib/prisma";
 
 interface RateLimiterOptions {
     /** Maximum number of requests allowed in the window */
@@ -18,42 +21,32 @@ interface RateLimiterOptions {
     windowMs: number;
 }
 
-const stores = new Map<string, Map<string, RateLimitEntry>>();
-
 export function createRateLimiter(name: string, options: RateLimiterOptions) {
     const { limit, windowMs } = options;
-
-    // Share store across hot-reloads in dev
-    if (!stores.has(name)) {
-        stores.set(name, new Map());
-    }
-    const store = stores.get(name)!;
 
     return {
         /**
          * Check if a request is allowed for the given key.
          * Returns { success: true } if allowed, or { success: false, retryAfterMs } if rate-limited.
          */
-        check(key: string): { success: true } | { success: false; retryAfterMs: number } {
+        async check(key: string): Promise<{ success: true } | { success: false; retryAfterMs: number }> {
             const now = Date.now();
-            const cutoff = now - windowMs;
+            const windowIndex = Math.floor(now / windowMs);
+            const id = `${name}:${key}:${windowIndex}`;
+            const windowStart = new Date(windowIndex * windowMs);
 
-            let entry = store.get(key);
-            if (!entry) {
-                entry = { timestamps: [] };
-                store.set(key, entry);
-            }
+            const bucket = await prisma.rateLimitBucket.upsert({
+                where: { id },
+                create: { id, count: 1, windowStart },
+                update: { count: { increment: 1 } },
+                select: { count: true },
+            });
 
-            // Prune expired timestamps
-            entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
-
-            if (entry.timestamps.length >= limit) {
-                const oldestInWindow = entry.timestamps[0];
-                const retryAfterMs = oldestInWindow + windowMs - now;
+            if (bucket.count > limit) {
+                const retryAfterMs = (windowIndex + 1) * windowMs - now;
                 return { success: false, retryAfterMs };
             }
 
-            entry.timestamps.push(now);
             return { success: true };
         },
     };

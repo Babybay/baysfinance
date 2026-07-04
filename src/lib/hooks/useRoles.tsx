@@ -2,13 +2,15 @@
 
 import React, { createContext, useContext } from "react";
 
-export type UserRole = "admin" | "client";
+export type UserRole = "admin" | "staff" | "client";
 
 interface RoleContextType {
     isLoaded: boolean;
     role: UserRole | null;
     clientId: string | undefined;
     isAdmin: boolean;
+    isStaff: boolean;
+    isAgency: boolean;
     isClient: boolean;
 }
 
@@ -17,17 +19,24 @@ const RoleContext = createContext<RoleContextType>({
     role: null,
     clientId: undefined,
     isAdmin: false,
+    isStaff: false,
+    isAgency: false,
     isClient: false,
 });
 
 export function RoleProvider({ children, role, clientId }: { children: React.ReactNode; role: string; clientId?: string }) {
+    const normalizedRole = role.toLowerCase() as UserRole;
+    const isAgency = normalizedRole === "admin" || normalizedRole === "staff";
+
     return (
         <RoleContext.Provider value={{
             isLoaded: true,
-            role: role as UserRole,
+            role: normalizedRole,
             clientId,
-            isAdmin: role === "admin",
-            isClient: role === "client",
+            isAdmin: isAgency,
+            isStaff: normalizedRole === "staff",
+            isAgency,
+            isClient: normalizedRole === "client",
         }}>
             {children}
         </RoleContext.Provider>
