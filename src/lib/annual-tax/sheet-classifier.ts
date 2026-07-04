@@ -101,7 +101,7 @@ const rules: Rule[] = [
         type: "monthly_tax_recap",
         confidence: 0.9,
         reason: "Monthly tax recap schedule",
-        patterns: [/rekap.*pajak/, /pajak.*rekap/, /pph\s*25/],
+        patterns: [/rekap.*pajak/, /pajak.*rekap/, /pph\s*25/, /rekapan?\s+tahunan/, /dispenda/],
     },
     {
         type: "vat_input",
@@ -131,7 +131,7 @@ const rules: Rule[] = [
         type: "withholding_tax",
         confidence: 0.88,
         reason: "Withholding tax evidence or recap",
-        patterns: [/pph\s*23/, /pph\s*26/, /bukti\s+potong/, /bupot/],
+        patterns: [/pph\s*23/, /pph\s*26/, /bukti\s+potong/, /bupot/, /fee\s+konsultan/],
     },
     {
         type: "bank_cash_ledger",
@@ -197,7 +197,7 @@ const rules: Rule[] = [
         type: "commercial_profit_loss",
         confidence: 0.78,
         reason: "Commercial profit/loss schedule",
-        patterns: [/\blr\b/, /laba\s+rugi/, /profit.*loss/, /income\s+report/],
+        patterns: [/\blr\b/, /laba\s+rugi/, /profit.*loss/, /income\s+report/, /omset/, /penjualan/, /\bsales?\b/],
     },
 ];
 

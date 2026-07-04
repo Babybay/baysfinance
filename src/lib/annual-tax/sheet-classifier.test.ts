@@ -40,6 +40,21 @@ describe("annual tax sheet classifier", () => {
         expect(classifyAnnualTaxSheet("Rekap Sewa").type).toBe("lease_contract");
     });
 
+    it("classifies revenue and recap sheets from real client workbooks", () => {
+        // Sheet names taken from actual SPT workbooks in docs/
+        expect(classifyAnnualTaxSheet("omset 2025").type).toBe("commercial_profit_loss");
+        expect(classifyAnnualTaxSheet("SALE DAYU").type).toBe("commercial_profit_loss");
+        expect(classifyAnnualTaxSheet("Penjualan Toko").type).toBe("commercial_profit_loss");
+        expect(classifyAnnualTaxSheet("REKAPAN TAHUNAN").type).toBe("monthly_tax_recap");
+        expect(classifyAnnualTaxSheet("Dispenda").type).toBe("monthly_tax_recap");
+        expect(classifyAnnualTaxSheet("REKAPAN FEE KONSULTAN ").type).toBe("withholding_tax");
+    });
+
+    it("leaves genuinely ambiguous sheets unknown", () => {
+        expect(classifyAnnualTaxSheet("Sheet6").type).toBe("unknown");
+        expect(classifyAnnualTaxSheet("PENJELASAN DAYU").type).toBe("unknown");
+    });
+
     it("summarizes classified workbook sheets", () => {
         const classifications = classifyAnnualTaxSheets([
             "Data",

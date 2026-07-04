@@ -250,9 +250,10 @@ export async function classifyAnnualTaxWorkbookUpload(batchId: string, formData:
             return { success: false as const, error: "Format file harus .xlsx atau .xls." };
         }
 
-        const MAX_FILE_SIZE = 10 * 1024 * 1024;
+        // Real client SPT workbooks reach ~13MB (see docs/ samples) — cap at 25MB.
+        const MAX_FILE_SIZE = 25 * 1024 * 1024;
         if (file.size > MAX_FILE_SIZE) {
-            return { success: false as const, error: "Ukuran file maksimal 10MB." };
+            return { success: false as const, error: "Ukuran file maksimal 25MB." };
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());

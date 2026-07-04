@@ -84,7 +84,9 @@
       "Bash(npm audit *)",
       "Bash(npm install *)",
       "Bash(node -e \"console.log\\(require\\('xlsx'\\).version\\)\")",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(git push *)",
+      "Bash(npm exec *)"
     ]
   }
 }
