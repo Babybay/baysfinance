@@ -73,7 +73,11 @@ export async function proxy(req: NextRequest) {
     }
 
     // Verify JWT without importing Prisma/bcrypt (Edge-compatible)
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+    const token = await getToken({
+        req,
+        secret: process.env.AUTH_SECRET,
+        secureCookie: process.env.NODE_ENV === "production",
+    });
 
     if (!token) {
         const signInUrl = new URL("/sign-in", req.url);
