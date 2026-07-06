@@ -1,7 +1,5 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-const STORAGE_REQUIRED_VARS = ["MINIO_ACCESS_KEY_ID", "MINIO_SECRET_ACCESS_KEY", "MINIO_ENDPOINT", "MINIO_BUCKET_NAME"] as const;
-
 function env(primary: string, fallback: string): string | undefined {
     return process.env[primary] || process.env[fallback];
 }
@@ -12,15 +10,7 @@ export const STORAGE_SECRET_ACCESS_KEY = env("MINIO_SECRET_ACCESS_KEY", "R2_SECR
 export const BUCKET_NAME = env("MINIO_BUCKET_NAME", "R2_BUCKET_NAME") || "";
 export const STORAGE_PUBLIC_URL = env("MINIO_PUBLIC_URL", "R2_PUBLIC_URL") || "";
 
-const isNextBuild = process.env.NEXT_PHASE === "phase-production-build";
-
-// Fail fast at runtime in production: large files live in TrueNAS/MinIO, not in Neon.
-if (process.env.NODE_ENV === "production" && !isNextBuild) {
-    const missing = STORAGE_REQUIRED_VARS.filter((v) => !process.env[v] && !process.env[v.replace("MINIO_", "R2_")]);
-    if (missing.length > 0) {
-        throw new Error(`Missing required object storage environment variables: ${missing.join(", ")}`);
-    }
-} else if (!STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY || !STORAGE_ENDPOINT) {
+if (!STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY || !STORAGE_ENDPOINT) {
     console.warn("[s3] MinIO environment variables are missing. File uploads will fail.");
 }
 
