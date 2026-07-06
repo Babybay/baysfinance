@@ -1,21 +1,23 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-function env(primary: string, fallback: string): string | undefined {
-    return process.env[primary] || process.env[fallback];
+function env(...names: string[]): string | undefined {
+    for (const name of names) {
+        if (process.env[name]) return process.env[name];
+    }
 }
 
-export const STORAGE_ENDPOINT = env("MINIO_ENDPOINT", "R2_ENDPOINT");
-export const STORAGE_ACCESS_KEY_ID = env("MINIO_ACCESS_KEY_ID", "R2_ACCESS_KEY_ID") || "";
-export const STORAGE_SECRET_ACCESS_KEY = env("MINIO_SECRET_ACCESS_KEY", "R2_SECRET_ACCESS_KEY") || "";
-export const BUCKET_NAME = env("MINIO_BUCKET_NAME", "R2_BUCKET_NAME") || "";
+export const STORAGE_ENDPOINT = env("MINIO_ENDPOINT", "R2_ENDPOINT", "AWS_ENDPOINT_URL_S3");
+export const STORAGE_ACCESS_KEY_ID = env("MINIO_ACCESS_KEY_ID", "R2_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID") || "";
+export const STORAGE_SECRET_ACCESS_KEY = env("MINIO_SECRET_ACCESS_KEY", "R2_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY") || "";
+export const BUCKET_NAME = env("MINIO_BUCKET_NAME", "R2_BUCKET_NAME", "AWS_BUCKET_NAME", "NEON_STORAGE_BUCKET") || "";
 export const STORAGE_PUBLIC_URL = env("MINIO_PUBLIC_URL", "R2_PUBLIC_URL") || "";
 
 if (!STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY || !STORAGE_ENDPOINT) {
-    console.warn("[s3] MinIO environment variables are missing. File uploads will fail.");
+    console.warn("[s3] Object storage environment variables are missing. File uploads will fail.");
 }
 
 export const s3Client = new S3Client({
-    region: process.env.MINIO_REGION || "us-east-1",
+    region: env("MINIO_REGION", "R2_REGION", "AWS_REGION") || "us-east-1",
     endpoint: STORAGE_ENDPOINT,
     forcePathStyle: true,
     credentials: {
