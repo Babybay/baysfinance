@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { isAdminOrStaffRole } from "@/lib/user-roles";
 
 export interface AuthUser {
     id: string;
@@ -35,10 +36,8 @@ export async function assertCanAccessClient(clientId: string): Promise<void> {
     const user = await getCurrentUser();
     if (!user) throw new Error("UNAUTHENTICATED");
 
-    const role = user.role;
-
     // Client-role: strict match on their own clientId
-    if (role !== "Admin" && role !== "Staff") {
+    if (!isAdminOrStaffRole(user.role)) {
         if (!user.clientId || user.clientId !== clientId) {
             throw new Error("FORBIDDEN");
         }
@@ -66,7 +65,7 @@ export async function assertCanAccessClient(clientId: string): Promise<void> {
 export async function isAdminOrStaff(): Promise<boolean> {
     const user = await getCurrentUser();
     if (!user) return false;
-    return user.role === "Admin" || user.role === "Staff";
+    return isAdminOrStaffRole(user.role);
 }
 
 /**

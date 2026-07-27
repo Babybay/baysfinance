@@ -3,11 +3,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useI18n } from "@/lib/i18n";
+import { getStaffPortalUrl } from "@/lib/staff-guide";
 import { Menu, X } from "lucide-react";
+
+const staffPortalUrl = getStaffPortalUrl();
 
 export function Navbar() {
     const { t } = useI18n();
@@ -44,6 +47,12 @@ export function Navbar() {
                 <div className="flex items-center justify-end space-x-3">
                     <LanguageSelector />
                     <nav className="hidden md:flex items-center gap-[12px]">
+                        <a
+                            href={staffPortalUrl}
+                            className={buttonVariants({ variant: "soft", size: "default" })}
+                        >
+                            {t.nav.staffPortal}
+                        </a>
                         {!session ? (
                             <>
                                 <Link href="/sign-in">
@@ -115,6 +124,13 @@ export function Navbar() {
                         </Link>
 
                         <div className="border-t border-border pt-[16px] flex flex-col gap-[12px]">
+                            <a
+                                href={staffPortalUrl}
+                                onClick={() => setMobileOpen(false)}
+                                className={buttonVariants({ variant: "soft", size: "large", className: "w-full" })}
+                            >
+                                {t.nav.staffPortal}
+                            </a>
                             {!session ? (
                                 <>
                                     <Link href="/sign-in" onClick={() => setMobileOpen(false)}>

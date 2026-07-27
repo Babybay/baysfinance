@@ -14,6 +14,7 @@ export const id: Translations = {
         pricing: "Harga",
         about: "Tentang",
         procedures: "Prosedur",
+        staffPortal: "Portal Staf",
         signIn: "Masuk",
         signUp: "Coba Gratis",
         dashboard: "Dashboard",
@@ -214,6 +215,7 @@ export const id: Translations = {
 
         businessPermits: "Izin Usaha (OSS)",
         userManagement: "Manajemen User",
+        erpnextGuide: "Panduan Staf ERPNext",
         myAccount: "Akun Saya",
         backToHome: "Kembali ke Beranda",
     },

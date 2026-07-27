@@ -20,6 +20,7 @@ import {
     X,
     ChevronLeft,
     BookOpen,
+    GraduationCap,
 } from "lucide-react";
 
 
@@ -41,6 +42,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         { href: "/dashboard/reports", label: t.sidebar.reports, icon: BarChart3, roles: ["admin", "staff"] },
 
         { href: "/dashboard/users", label: t.sidebar.userManagement, icon: Users, roles: ["admin", "staff"] },
+        { href: "/dashboard/erpnext-guide", label: t.sidebar.erpnextGuide, icon: GraduationCap, roles: ["admin", "staff"] },
     ].filter(link => role && link.roles.includes(role));
 
     // Loading state is now handled by Next.js layouts and server components

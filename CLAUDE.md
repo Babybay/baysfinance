@@ -94,4 +94,5 @@ R2_SECRET_ACCESS_KEY
 R2_BUCKET_NAME
 CRON_SECRET           # Bearer token for all /api/cron/* routes
 N8N_WEBHOOK_URL       # Optional: push notifications to n8n
+NEXT_PUBLIC_STAFF_PORTAL_URL # Optional public staff-portal URL, e.g. https://thebaysworld.j.frappe.cloud/app/guide
 ```

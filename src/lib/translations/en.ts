@@ -12,6 +12,7 @@ export const en = {
         pricing: "Pricing",
         about: "About",
         procedures: "Procedures",
+        staffPortal: "Staff Portal",
         signIn: "Sign In",
         signUp: "Start Free Trial",
         dashboard: "Dashboard",
@@ -212,6 +213,7 @@ export const en = {
 
         businessPermits: "Business Permits (OSS)",
         userManagement: "User Management",
+        erpnextGuide: "ERPNext Staff Guide",
         myAccount: "My Account",
         backToHome: "Back to Home",
     },
