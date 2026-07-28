@@ -8,7 +8,7 @@ shown in the site navigation.
 If it is unset, the link defaults to:
 
 ```text
-https://thebaysworld.j.frappe.cloud/app/guide
+https://thebaysworld.j.frappe.cloud/app
 ```
 
 This is a public URL and must not contain credentials or other secrets.

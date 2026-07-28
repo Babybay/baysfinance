@@ -6,8 +6,8 @@ describe("getStaffPortalUrl", () => {
         expect(getStaffPortalUrl("https://erp.example.test/app/guide")).toBe("https://erp.example.test/app/guide");
     });
 
-    it("falls back to the Frappe Guide workspace", () => {
-        expect(getStaffPortalUrl()).toBe("https://thebaysworld.j.frappe.cloud/app/guide");
+    it("falls back to the ERPNext Desk home", () => {
+        expect(getStaffPortalUrl()).toBe("https://thebaysworld.j.frappe.cloud/app");
     });
 });
 

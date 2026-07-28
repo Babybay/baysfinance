@@ -1,4 +1,4 @@
-export const DEFAULT_STAFF_PORTAL_URL = "https://thebaysworld.j.frappe.cloud/app/guide";
+export const DEFAULT_STAFF_PORTAL_URL = "https://thebaysworld.j.frappe.cloud/app";
 
 export function getStaffPortalUrl(configuredUrl = process.env.NEXT_PUBLIC_STAFF_PORTAL_URL): string {
     return configuredUrl?.trim() || DEFAULT_STAFF_PORTAL_URL;
