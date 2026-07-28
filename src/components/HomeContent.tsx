@@ -280,7 +280,7 @@ export function HomeContent() {
                             data-hero-item
                             className="flex flex-col sm:flex-row justify-center items-center gap-[12px]"
                         >
-                            <Link href="/sign-up">
+                            <Link href="/portal">
                                 <Button variant="accent" size="large" className="w-full sm:w-auto group">
                                     {t.hero.cta}{" "}
                                     <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
@@ -417,7 +417,7 @@ export function HomeContent() {
 
                         {/* CTA after features */}
                         <div className="mt-[64px] text-center">
-                            <Link href="/sign-up">
+                            <Link href="/portal">
                                 <Button variant="accent" size="large" className="group">
                                     {t.hero.cta}{" "}
                                     <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
@@ -520,7 +520,7 @@ export function HomeContent() {
                                 <p className="text-body md:text-body-lg text-muted-foreground mb-[48px] max-w-[600px] mx-auto leading-[1.6]">
                                     {t.cta.description}
                                 </p>
-                                <Link href="/sign-up">
+                                <Link href="/portal">
                                     <Button variant="accent" size="large" className="group">
                                         {t.cta.button}{" "}
                                         <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />

@@ -58,7 +58,7 @@ export function Navbar() {
                                 <Link href="/sign-in">
                                     <Button variant="transparent" size="default">{t.nav.signIn}</Button>
                                 </Link>
-                                <Link href="/sign-up">
+                                <Link href="/portal">
                                     <Button variant="accent" size="default">{t.nav.signUp}</Button>
                                 </Link>
                             </>
@@ -136,7 +136,7 @@ export function Navbar() {
                                     <Link href="/sign-in" onClick={() => setMobileOpen(false)}>
                                         <Button variant="soft" size="large" className="w-full">{t.nav.signIn}</Button>
                                     </Link>
-                                    <Link href="/sign-up" onClick={() => setMobileOpen(false)}>
+                                    <Link href="/portal" onClick={() => setMobileOpen(false)}>
                                         <Button variant="accent" size="large" className="w-full">{t.nav.signUp}</Button>
                                     </Link>
                                 </>

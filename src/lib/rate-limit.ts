@@ -71,3 +71,15 @@ export const apiLimiter = createRateLimiter("api", {
     limit: 100,
     windowMs: 60 * 1000,
 });
+
+/** Public CRM registration: hard backstop across all website submissions */
+export const crmGlobalLimiter = createRateLimiter("crm-global", {
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+});
+
+/** Public CRM registration: prevents repeated requests for one email address */
+export const crmEmailLimiter = createRateLimiter("crm-email", {
+    limit: 2,
+    windowMs: 15 * 60 * 1000,
+});

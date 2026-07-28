@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { authLimiter, apiLimiter } from "@/lib/rate-limit";
+import { getStaffPortalUrl } from "@/lib/staff-guide";
 
-const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/api/auth", "/api/health", "/api/webhooks"];
+const PUBLIC_PATHS = ["/", "/portal", "/crm", "/sign-in", "/sign-up", "/api/auth", "/api/health", "/api/webhooks"];
 
 function isPublic(pathname: string): boolean {
     return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -83,6 +84,12 @@ export async function proxy(req: NextRequest) {
         const signInUrl = new URL("/sign-in", req.url);
         signInUrl.searchParams.set("callbackUrl", pathname);
         return withSecurityHeaders(NextResponse.redirect(signInUrl));
+    }
+
+    const role = typeof token.role === "string" ? token.role.toLowerCase() : "";
+    const isStaff = role === "admin" || role === "staff";
+    if (isStaff && pathname.startsWith("/dashboard") && pathname !== "/dashboard/erpnext-guide") {
+        return withSecurityHeaders(NextResponse.redirect(getStaffPortalUrl()));
     }
 
     return withSecurityHeaders(NextResponse.next());

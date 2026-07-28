@@ -14,21 +14,21 @@ export const en = {
         procedures: "Procedures",
         staffPortal: "Staff Portal",
         signIn: "Sign In",
-        signUp: "Start Free Trial",
+        signUp: "Client Portal",
         dashboard: "Dashboard",
     },
 
     // Hero
     hero: {
         badge: "Trusted by 100+ tax consultants across Indonesia",
-        heading: "Stop Losing Clients to Missed Deadlines.",
-        description: "The all-in-one platform that helps tax professionals manage clients, automate compliance, and grow their practice — without the chaos.",
-        cta: "Start Your Free Trial",
+        heading: "Tax, accounting, and business consulting — made clear.",
+        description: "Start a service request, access client-facing information, and work with a consulting team powered by ERPNext.",
+        cta: "Access Our Portals",
         ctaSecondary: "Watch 2-min Demo",
-        trustNoCard: "No credit card needed",
-        trustFreeTrial: "Free 14-day trial",
-        trustSetup: "Setup in 5 minutes",
-        trustCancel: "Cancel anytime",
+        trustNoCard: "Secure client access",
+        trustFreeTrial: "Direct CRM registration",
+        trustSetup: "Specialist-led onboarding",
+        trustCancel: "No credit card required",
     },
 
     // Social Proof
@@ -77,27 +77,27 @@ export const en = {
 
     // Features
     features: {
-        heading: "The Platform That Runs Your Practice",
-        description: "Every tool you need, built into one system. No more juggling spreadsheets, email threads, and filing cabinets.",
+        heading: "A Clear Way to Work With Us",
+        description: "Use the Bay's Finance website to request services and access your client portal. Our consulting team operates in ERPNext.",
         clientManagement: {
-            title: "Client Management",
-            description: "Manage complete client data with TIN, taxpayer type, and company status in one centralized dashboard.",
+            title: "Start a Service Request",
+            description: "Send your consultation request directly to our CRM for review by the right specialist.",
         },
         taxCalendar: {
-            title: "Tax Calendar",
-            description: "Never miss a deadline again. Automatically track all tax obligations with real-time status indicators.",
+            title: "Expert Tax Support",
+            description: "Work with tax specialists who manage compliance workflows through a single operational CRM.",
         },
         documentManagement: {
-            title: "Document Management",
-            description: "Archive Tax Invoices, Withholding Slips, Tax Returns, and Financial Statements in a structured manner per client.",
+            title: "Client Information Access",
+            description: "Existing clients can access agreed client-facing information through the Bay's Finance portal.",
         },
         invoiceBilling: {
-            title: "Invoice & Billing",
-            description: "Create professional invoices in minutes with automatic VAT calculation and real-time payment tracking.",
+            title: "Clear Service Updates",
+            description: "Your consultant keeps you informed as your accounting, tax, licensing, or business matter progresses.",
         },
         complianceReports: {
-            title: "Compliance Reports",
-            description: "Detailed analytics dashboard for firm revenue reports and client compliance audits.",
+            title: "ERPNext-Powered Operations",
+            description: "Bay's Finance staff use ERPNext as the central CRM and operational workspace.",
         },
     },
 
@@ -137,12 +137,12 @@ export const en = {
 
     // CTA
     cta: {
-        heading: "Ready to Grow Your Practice?",
-        description: "Join 100+ tax professionals who save 10+ hours every week with Bay'sConsult.",
-        button: "Start Your Free Trial",
-        free: "Free 14 days",
+        heading: "Ready to Work With Bay's Finance?",
+        description: "Choose the portal that fits your relationship: client access on the website or ERPNext for staff operations.",
+        button: "Open Our Portals",
+        free: "Client-friendly onboarding",
         noCard: "No credit card required",
-        guarantee: "Cancel anytime — no questions asked",
+        guarantee: "Specialist support from the start",
     },
 
     // Footer

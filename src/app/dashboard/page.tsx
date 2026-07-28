@@ -1,9 +1,10 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-helpers";
-import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import { getDashboardData } from "@/app/actions/dashboard-data";
 import { JenisWP, ClientStatus, InvoiceStatus, TaxDeadlineStatus } from "@prisma/client";
+import { getStaffPortalUrl } from "@/lib/staff-guide";
 
 export default async function DashboardPage() {
     const user = await getCurrentUser();
@@ -16,6 +17,10 @@ export default async function DashboardPage() {
     const role = user.role.toLowerCase();
     const clientId = user.clientId;
     const isAdmin = role === "admin" || role === "staff";
+
+    if (isAdmin) {
+        redirect(getStaffPortalUrl());
+    }
 
     const response = await getDashboardData();
 
@@ -53,21 +58,6 @@ export default async function DashboardPage() {
         status: d.status as TaxDeadlineStatus,
         clientName: d.clientName || undefined
     }));
-
-    if (isAdmin) {
-        return (
-            <AdminDashboard
-                clients={formattedClients}
-                invoices={formattedInvoices}
-                deadlines={formattedDeadlines}
-                permitSummary={response.data.permitSummary}
-                monthlyRevenue={response.data.monthlyRevenue}
-                recentActivity={response.data.recentActivity}
-                documentCount={response.data.documentCount}
-                importBatchCount={response.data.importBatchCount}
-            />
-        );
-    }
 
     // Client View
     const targetClient = formattedClients.find(c => c.id === clientId) || (formattedClients.length > 0 ? formattedClients[0] : null);

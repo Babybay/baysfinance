@@ -16,21 +16,21 @@ export const id: Translations = {
         procedures: "Prosedur",
         staffPortal: "Portal Staf",
         signIn: "Masuk",
-        signUp: "Coba Gratis",
+        signUp: "Portal Klien",
         dashboard: "Dashboard",
     },
 
     // Hero
     hero: {
         badge: "Dipercaya 100+ konsultan pajak di seluruh Indonesia",
-        heading: "Jangan Kehilangan Klien Karena Deadline Terlewat.",
-        description: "Platform all-in-one yang membantu profesional pajak mengelola klien, mengotomatisasi kepatuhan, dan mengembangkan praktik — tanpa kekacauan.",
-        cta: "Mulai Uji Coba Gratis",
+        heading: "Pajak, akuntansi, dan konsultasi bisnis — dibuat lebih jelas.",
+        description: "Ajukan layanan, akses informasi klien, dan bekerja bersama tim konsultasi yang didukung ERPNext.",
+        cta: "Akses Portal Kami",
         ctaSecondary: "Tonton Demo 2 Menit",
-        trustNoCard: "Tanpa kartu kredit",
-        trustFreeTrial: "Gratis 14 hari",
-        trustSetup: "Setup dalam 5 menit",
-        trustCancel: "Batalkan kapan saja",
+        trustNoCard: "Akses klien yang aman",
+        trustFreeTrial: "Pendaftaran langsung ke CRM",
+        trustSetup: "Onboarding bersama spesialis",
+        trustCancel: "Tanpa kartu kredit",
     },
 
     // Social Proof
@@ -79,27 +79,27 @@ export const id: Translations = {
 
     // Features
     features: {
-        heading: "Platform yang Menjalankan Praktik Anda",
-        description: "Semua alat yang Anda butuhkan, terintegrasi dalam satu sistem. Tidak perlu lagi berganti-ganti spreadsheet, email, dan lemari arsip.",
+        heading: "Cara yang Jelas untuk Bekerja Bersama Kami",
+        description: "Gunakan website Bay's Finance untuk mengajukan layanan dan mengakses portal klien. Tim konsultasi kami bekerja di ERPNext.",
         clientManagement: {
-            title: "Manajemen Klien",
-            description: "Kelola data klien lengkap dengan NPWP, jenis WP, dan status perusahaan dalam satu dashboard terpusat.",
+            title: "Ajukan Permintaan Layanan",
+            description: "Kirim permintaan konsultasi langsung ke CRM kami agar ditinjau oleh spesialis yang tepat.",
         },
         taxCalendar: {
-            title: "Kalender Pajak",
-            description: "Jangan lewatkan deadline lagi. Pantau semua kewajiban pajak otomatis dengan indikator status real-time.",
+            title: "Dukungan Pajak Ahli",
+            description: "Bekerja dengan spesialis pajak yang menangani alur kepatuhan melalui CRM operasional terpusat.",
         },
         documentManagement: {
-            title: "Manajemen Dokumen",
-            description: "Arsipkan Faktur Pajak, Bukti Potong, SPT, dan Laporan Keuangan secara terstruktur per klien.",
+            title: "Akses Informasi Klien",
+            description: "Klien aktif dapat mengakses informasi klien yang disepakati melalui portal Bay's Finance.",
         },
         invoiceBilling: {
-            title: "Invoice & Billing",
-            description: "Buat invoice profesional dalam hitungan menit dengan perhitungan PPN otomatis dan pelacakan pembayaran real-time.",
+            title: "Pembaruan Layanan yang Jelas",
+            description: "Konsultan Anda memberi pembaruan saat urusan akuntansi, pajak, perizinan, atau bisnis berjalan.",
         },
         complianceReports: {
-            title: "Laporan Kepatuhan",
-            description: "Dashboard analitik detail untuk laporan pendapatan firma dan audit kepatuhan klien.",
+            title: "Operasional Berbasis ERPNext",
+            description: "Staf Bay's Finance menggunakan ERPNext sebagai CRM dan ruang kerja operasional utama.",
         },
     },
 
@@ -139,12 +139,12 @@ export const id: Translations = {
 
     // CTA
     cta: {
-        heading: "Siap Mengembangkan Praktik Anda?",
-        description: "Bergabung dengan 100+ profesional pajak yang menghemat 10+ jam setiap minggu dengan Bay'sConsult.",
-        button: "Mulai Uji Coba Gratis",
-        free: "Gratis 14 hari",
+        heading: "Siap Bekerja dengan Bay's Finance?",
+        description: "Pilih portal sesuai kebutuhan: akses klien di website atau ERPNext untuk operasional staf.",
+        button: "Buka Portal Kami",
+        free: "Onboarding ramah klien",
         noCard: "Tanpa kartu kredit",
-        guarantee: "Batalkan kapan saja — tanpa pertanyaan",
+        guarantee: "Dukungan spesialis sejak awal",
     },
 
     // Footer

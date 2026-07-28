@@ -9,17 +9,14 @@ import { useRoles } from "@/lib/hooks/useRoles";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import {
     LayoutDashboard,
-    Users,
     CalendarDays,
     FileText,
     Receipt,
-    BarChart3,
     FileCheck,
-    Building2,
     Menu,
     X,
     ChevronLeft,
-    BookOpen,
+
     GraduationCap,
 } from "lucide-react";
 
@@ -31,17 +28,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     const { role } = useRoles();
 
     const sidebarLinks = [
-        { href: "/dashboard", label: t.sidebar.dashboard, icon: LayoutDashboard, roles: ["admin", "staff", "client"] },
-        { href: "/dashboard/agency", label: t.sidebar.agency, icon: Building2, roles: ["admin", "staff"] },
-        { href: "/dashboard/clients", label: t.sidebar.clients, icon: Users, roles: ["admin", "staff"] },
-        { href: "/dashboard/tax-calendar", label: t.sidebar.taxCalendar, icon: CalendarDays, roles: ["admin", "staff", "client"] },
-        { href: "/dashboard/permits", label: t.sidebar.permits, icon: FileCheck, roles: ["admin", "staff", "client"] },
-        { href: "/dashboard/documents", label: t.sidebar.documents, icon: FileText, roles: ["admin", "staff", "client"] },
-        { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: Receipt, roles: ["admin", "staff", "client"] },
-        { href: "/dashboard/accounting", label: t.sidebar.accounting, icon: BookOpen, roles: ["admin", "staff"] },
-        { href: "/dashboard/reports", label: t.sidebar.reports, icon: BarChart3, roles: ["admin", "staff"] },
-
-        { href: "/dashboard/users", label: t.sidebar.userManagement, icon: Users, roles: ["admin", "staff"] },
+        { href: "/dashboard", label: t.sidebar.dashboard, icon: LayoutDashboard, roles: ["client"] },
+        { href: "/dashboard/tax-calendar", label: t.sidebar.taxCalendar, icon: CalendarDays, roles: ["client"] },
+        { href: "/dashboard/permits", label: t.sidebar.permits, icon: FileCheck, roles: ["client"] },
+        { href: "/dashboard/documents", label: t.sidebar.documents, icon: FileText, roles: ["client"] },
+        { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: Receipt, roles: ["client"] },
         { href: "/dashboard/erpnext-guide", label: t.sidebar.erpnextGuide, icon: GraduationCap, roles: ["admin", "staff"] },
     ].filter(link => role && link.roles.includes(role));
 
