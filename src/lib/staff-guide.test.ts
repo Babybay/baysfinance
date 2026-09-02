@@ -6,8 +6,8 @@ describe("getStaffPortalUrl", () => {
         expect(getStaffPortalUrl("https://erp.example.test/app/guide")).toBe("https://erp.example.test/app/guide");
     });
 
-    it("falls back to the ERPNext Desk home", () => {
-        expect(getStaffPortalUrl()).toBe("https://thebaysworld.j.frappe.cloud/app");
+    it("falls back to the verified ERPNext staff workspace", () => {
+        expect(getStaffPortalUrl()).toBe("https://thebaysworld.j.frappe.cloud/app/bays-finance-operations");
     });
 });
 
