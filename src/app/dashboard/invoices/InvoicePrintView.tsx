@@ -94,7 +94,7 @@ export function InvoicePrintView({ invoice }: InvoicePrintViewProps) {
                 <div className="no-print max-w-[210mm] mx-auto mb-4 flex gap-3">
                     <button
                         onClick={() => window.print()}
-                        className="px-6 py-2.5 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
+                        className="px-6 py-2.5 bg-accent text-accent-foreground font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
                     >
                         Cetak Invoice
                     </button>
@@ -118,7 +118,7 @@ export function InvoicePrintView({ invoice }: InvoicePrintViewProps) {
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-                                    Bay&apos;sConsult
+                                    CAL
                                 </h1>
                                 <p className="text-[11px] text-blue-600 font-semibold tracking-wide uppercase mt-0.5">
                                     Tax Consultant &amp; Business Advisory
@@ -153,7 +153,7 @@ export function InvoicePrintView({ invoice }: InvoicePrintViewProps) {
                             <div>
                                 <p className="text-[11px] text-gray-500 mb-1">Bill from :</p>
                                 <div className="border border-gray-300 rounded p-3 text-[12px] text-gray-700 leading-relaxed">
-                                    <p className="font-bold text-gray-900 text-[13px]">BAY&apos;SCONSULT</p>
+                                    <p className="font-bold text-gray-900 text-[13px]">CAL</p>
                                     <p>Jl. Sudirman No. 123, Jakarta Selatan</p>
                                     <p>Telp: (021) 555-0123</p>
                                     <p>Email: info@baysconsult.id</p>
@@ -214,7 +214,7 @@ export function InvoicePrintView({ invoice }: InvoicePrintViewProps) {
                                     <ul className="list-disc list-inside mt-1 space-y-0.5 text-gray-600">
                                         <li>Bank Name : {invoice.namaBank || "BCA"}</li>
                                         <li>Account Number : {invoice.nomorRekening || "-"}</li>
-                                        <li>Account Name : {invoice.atasNama || "Bay'sConsult"}</li>
+                                        <li>Account Name : {invoice.atasNama || "—"}</li>
                                     </ul>
                                     <p className="mt-2 text-gray-500 text-[11px]">
                                         Please Send Proof of Payment to our email or Whatsapp.

@@ -202,7 +202,7 @@ export default function NewPermitPage() {
                 <div className="flex items-center justify-between">
                     {stepLabels.map((label, idx) => (
                         <div key={idx} className="flex items-center gap-2">
-                            <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors ${idx < step ? "bg-accent border-accent text-white" :
+                            <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors ${idx < step ? "bg-accent border-accent text-accent-foreground" :
                                 idx === step ? "bg-card border-accent text-accent" :
                                     "bg-card border-border text-muted"
                                 }`}>
@@ -249,7 +249,7 @@ export default function NewPermitPage() {
                                             : "border-border bg-surface hover:border-accent/30 hover:bg-accent-muted/50"
                                             }`}
                                     >
-                                        <div className={`h-12 w-12 rounded-[10px] flex items-center justify-center transition-colors ${isSelected ? "bg-accent text-white" : "bg-card border border-border text-muted group-hover:text-accent"
+                                        <div className={`h-12 w-12 rounded-[10px] flex items-center justify-center transition-colors ${isSelected ? "bg-accent text-accent-foreground" : "bg-card border border-border text-muted group-hover:text-accent"
                                             }`}>
                                             <Icon className="h-6 w-6" />
                                         </div>

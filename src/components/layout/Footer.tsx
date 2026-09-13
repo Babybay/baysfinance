@@ -1,57 +1,43 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { Lock, Shield, Globe, Mail } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { Brand } from "@/components/Brand";
+import { getStaffPortalUrl } from "@/lib/staff-guide";
 
 export function Footer() {
-    const { t } = useI18n();
-
+    const { t, locale } = useI18n();
     return (
-        <footer className="border-t border-border bg-foreground text-background">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-[72px]">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-[48px]">
-                    <div className="col-span-2">
-                        <Link href="/" className="inline-block font-serif text-[22px] tracking-tight text-background mb-[24px]">
-                            Bay&apos;sConsult
-                        </Link>
-                        <p className="text-[15px] leading-[1.6] text-muted-foreground max-w-[300px] mb-[24px]">
-                            {t.footer.description}
-                        </p>
-                        {/* Security badge */}
-                        <div className="flex items-center gap-[8px] text-muted-foreground">
-                            <Lock className="h-4 w-4 text-accent" />
-                            <span className="text-[13px]">{t.footer.security}</span>
-                        </div>
+        <footer className="border-t border-border bg-[#2c2520] text-[#faf8f5]">
+            <div className="cal-container py-14 sm:py-16">
+                <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <Link href="/" aria-label="CAL home"><Brand className="text-[#faf8f5] [&_span_span]:text-[#ffc093]" /></Link>
+                        <p className="mt-5 max-w-sm text-sm leading-7 text-[#d9c9bd]">{locale === "id" ? "Pajak, akuntansi, dan konsultasi bisnis. Pendampingan yang lebih jelas untuk setiap langkah Anda." : "Tax, accounting, and business consulting. A little more clarity for every step of your journey."}</p>
+                        <Link href="/crm/register" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-[#ffc093] hover:underline">{locale === "id" ? "Mari bicarakan bisnis Anda" : "Let’s talk about your business"}<ArrowUpRight className="h-4 w-4" /></Link>
                     </div>
                     <div>
-                        <h3 className="font-medium text-[14px] mb-[24px] text-secondary uppercase tracking-[0.5px]">{t.footer.platform}</h3>
-                        <ul className="space-y-[16px]">
-                            <li><Link href="#services" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.nav.services}</Link></li>
-                            <li><Link href="#features" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.nav.features}</Link></li>
-                            <li><Link href="#pricing" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.nav.pricing}</Link></li>
-                            <li><Link href="/dashboard" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.nav.dashboard}</Link></li>
+                        <h3 className="mb-5 text-[10px] font-semibold uppercase tracking-[.16em] text-[#c8ab95]">{t.footer.company}</h3>
+                        <ul className="space-y-3 text-sm text-[#eaded4]">
+                            <li><Link href="/#services" className="hover:text-white">{t.nav.services}</Link></li>
+                            <li><Link href="/#about" className="hover:text-white">{t.nav.about}</Link></li>
+                            <li><Link href="/procedures" className="hover:text-white">{t.nav.procedures}</Link></li>
+                            <li><Link href="/crm/register" className="hover:text-white">{t.footer.contact}</Link></li>
                         </ul>
                     </div>
                     <div>
-                        <h3 className="font-medium text-[14px] mb-[24px] text-secondary uppercase tracking-[0.5px]">{t.footer.company}</h3>
-                        <ul className="space-y-[16px]">
-                            <li><Link href="#about" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.nav.about}</Link></li>
-                            <li><Link href="/privacy" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.footer.privacy}</Link></li>
-                            <li><Link href="/terms" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.footer.terms}</Link></li>
-                            <li><Link href="/contact" className="text-[15px] text-muted-foreground hover:text-background transition-colors">{t.footer.contact}</Link></li>
+                        <h3 className="mb-5 text-[10px] font-semibold uppercase tracking-[.16em] text-[#c8ab95]">{t.footer.platform}</h3>
+                        <ul className="space-y-3 text-sm text-[#eaded4]">
+                            <li><Link href="/portal" className="hover:text-white">{t.nav.signUp}</Link></li>
+                            <li><Link href="/sign-in" className="hover:text-white">{t.nav.signIn}</Link></li>
+                            <li><a href={getStaffPortalUrl()} className="hover:text-white">{t.nav.staffPortal}<ArrowUpRight className="ml-1 inline h-3 w-3" /></a></li>
                         </ul>
                     </div>
                 </div>
-                <div className="mt-[72px] pt-[32px] border-t border-muted-foreground/20 flex flex-col md:flex-row justify-between items-center gap-[16px]">
-                    <p className="text-[12px] text-muted-foreground">
-                        © {new Date().getFullYear()} Bay&apos;sConsult. {t.footer.copyright}
-                    </p>
-                    <div className="flex gap-[24px]">
-                        <Globe className="h-5 w-5 text-muted-foreground hover:text-background cursor-pointer transition-colors" />
-                        <Mail className="h-5 w-5 text-muted-foreground hover:text-background cursor-pointer transition-colors" />
-                    </div>
+                <div className="mt-12 flex flex-col justify-between gap-3 border-t border-white/15 pt-6 text-xs text-[#c5ad9a] sm:flex-row">
+                    <p>© {new Date().getFullYear()} CAL. {t.footer.copyright}</p>
+                    <p>{locale === "id" ? "Kejelasan untuk bisnis. Ruang untuk berkembang." : "Clarity for business. Space to grow."}</p>
                 </div>
             </div>
         </footer>

@@ -88,7 +88,10 @@ export async function proxy(req: NextRequest) {
 
     const role = typeof token.role === "string" ? token.role.toLowerCase() : "";
     const isStaff = role === "admin" || role === "staff";
-    if (isStaff && pathname.startsWith("/dashboard") && pathname !== "/dashboard/erpnext-guide") {
+    // Explicit website knowledge routes; each page also enforces Staff/Admin server-side.
+    const isStaffKnowledge = pathname === "/dashboard/erpnext-guide"
+        || pathname === "/dashboard/erpnext-guide/operating-model";
+    if (isStaff && pathname.startsWith("/dashboard") && !isStaffKnowledge) {
         return withSecurityHeaders(NextResponse.redirect(getStaffPortalUrl()));
     }
 

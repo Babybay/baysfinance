@@ -151,7 +151,7 @@ export function RecurringInvoiceView({ initialRecurring, clients }: Props) {
                     <h1 className="text-2xl font-bold text-foreground">Invoice Berulang</h1>
                     <p className="text-sm text-muted-foreground mt-1">Kelola template invoice otomatis untuk tagihan rutin</p>
                 </div>
-                <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
+                <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-accent-foreground font-medium hover:bg-accent-hover transition-colors">
                     <Plus className="h-4 w-4 mr-2" /> Buat Template
                 </button>
             </div>

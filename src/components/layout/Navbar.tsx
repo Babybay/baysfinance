@@ -1,154 +1,64 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Button, buttonVariants } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/Button";
+import { Brand } from "@/components/Brand";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useI18n } from "@/lib/i18n";
 import { getStaffPortalUrl } from "@/lib/staff-guide";
-import { Menu, X } from "lucide-react";
-
-const staffPortalUrl = getStaffPortalUrl();
+import { ArrowUpRight, Menu, X } from "lucide-react";
 
 export function Navbar() {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const { data: session } = useSession();
+    const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const toggleRef = useRef<HTMLButtonElement>(null);
+    const links = [
+        { href: "/#services", label: t.nav.services },
+        { href: "/#features", label: locale === "id" ? "Cara kerja" : "How it works" },
+        { href: "/#about", label: t.nav.about },
+        { href: "/procedures", label: t.nav.procedures },
+    ];
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const close = (event: KeyboardEvent) => {
+            if (event.key === "Escape") { setMobileOpen(false); toggleRef.current?.focus(); }
+        };
+        document.addEventListener("keydown", close);
+        return () => document.removeEventListener("keydown", close);
+    }, [mobileOpen]);
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border bg-nav-bg backdrop-blur-md">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
-                <div className="flex items-center gap-[48px]">
-                    <Link href="/" className="flex items-center space-x-2">
-                        <span className="inline-block font-serif text-[22px] tracking-tight text-foreground">
-                            Bay&apos;sConsult
-                        </span>
-                    </Link>
-                    <nav className="hidden md:flex gap-[32px]">
-                        <Link href="#services" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
-                            {t.nav.services}
-                        </Link>
-                        <Link href="#features" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
-                            {t.nav.features}
-                        </Link>
-                        <Link href="#about" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
-                            {t.nav.about}
-                        </Link>
-                        <Link href="#pricing" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
-                            {t.nav.pricing}
-                        </Link>
-                        <Link href="/procedures" className="text-[15px] font-medium text-muted hover:text-foreground transition-colors">
-                            {t.nav.procedures}
-                        </Link>
-                    </nav>
-                </div>
-                <div className="flex items-center justify-end space-x-3">
+        <header className="sticky top-0 z-50 border-b border-border bg-nav-bg backdrop-blur-xl">
+            <div className="cal-container flex h-20 items-center justify-between gap-6">
+                <Link href="/" aria-label="CAL home" className="shrink-0 text-foreground"><Brand /></Link>
+                <nav aria-label={locale === "id" ? "Navigasi utama" : "Main navigation"} className="hidden items-center gap-7 xl:flex">
+                    {links.map(link => <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} className="text-[13px] font-medium text-muted transition-colors hover:text-accent">{link.label}</Link>)}
+                </nav>
+                <div className="flex items-center gap-3">
                     <LanguageSelector />
-                    <nav className="hidden md:flex items-center gap-[12px]">
-                        <a
-                            href={staffPortalUrl}
-                            className={buttonVariants({ variant: "soft", size: "default" })}
-                        >
-                            {t.nav.staffPortal}
-                        </a>
-                        {!session ? (
-                            <>
-                                <Link href="/sign-in">
-                                    <Button variant="transparent" size="default">{t.nav.signIn}</Button>
-                                </Link>
-                                <Link href="/portal">
-                                    <Button variant="accent" size="default">{t.nav.signUp}</Button>
-                                </Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link href="/dashboard">
-                                    <Button variant="soft" size="default" className="mr-2">{t.nav.dashboard}</Button>
-                                </Link>
-                                <UserMenu />
-                            </>
-                        )}
-                    </nav>
-
-                    {/* Mobile menu button */}
-                    <button
-                        className="md:hidden p-2 rounded-[8px] text-muted hover:text-foreground hover:bg-surface transition-colors"
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                        aria-label="Toggle menu"
-                    >
+                    <div className="hidden items-center gap-3 xl:flex">
+                        <a href={getStaffPortalUrl()} className="px-2 text-xs font-medium text-muted hover:text-accent">{t.nav.staffPortal}<ArrowUpRight className="ml-1 inline h-3 w-3" /></a>
+                        {session ? <><Link href="/dashboard" className={buttonVariants({ variant: "accent", className: "text-sm" })}>{t.nav.dashboard}</Link><UserMenu /></> : <Link href="/portal" className={buttonVariants({ variant: "accent", className: "gap-2 text-sm" })}>{t.nav.signUp}<ArrowUpRight className="h-4 w-4" /></Link>}
+                    </div>
+                    <button ref={toggleRef} type="button" className="rounded-lg p-2 text-foreground hover:bg-surface xl:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? (locale === "id" ? "Tutup menu" : "Close menu") : (locale === "id" ? "Buka menu" : "Open menu")} aria-expanded={mobileOpen} aria-controls="mobile-navigation">
                         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                     </button>
                 </div>
             </div>
-
-            {/* Mobile menu panel */}
-            {mobileOpen && (
-                <div className="md:hidden border-t border-border bg-background">
-                    <div className="container mx-auto px-4 py-[24px] flex flex-col gap-[16px]">
-                        <Link
-                            href="#services"
-                            onClick={() => setMobileOpen(false)}
-                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
-                        >
-                            {t.nav.services}
-                        </Link>
-                        <Link
-                            href="#features"
-                            onClick={() => setMobileOpen(false)}
-                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
-                        >
-                            {t.nav.features}
-                        </Link>
-                        <Link
-                            href="#about"
-                            onClick={() => setMobileOpen(false)}
-                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
-                        >
-                            {t.nav.about}
-                        </Link>
-                        <Link
-                            href="#pricing"
-                            onClick={() => setMobileOpen(false)}
-                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
-                        >
-                            {t.nav.pricing}
-                        </Link>
-                        <Link
-                            href="/procedures"
-                            onClick={() => setMobileOpen(false)}
-                            className="text-[15px] font-medium text-muted hover:text-foreground transition-colors py-[8px]"
-                        >
-                            {t.nav.procedures}
-                        </Link>
-
-                        <div className="border-t border-border pt-[16px] flex flex-col gap-[12px]">
-                            <a
-                                href={staffPortalUrl}
-                                onClick={() => setMobileOpen(false)}
-                                className={buttonVariants({ variant: "soft", size: "large", className: "w-full" })}
-                            >
-                                {t.nav.staffPortal}
-                            </a>
-                            {!session ? (
-                                <>
-                                    <Link href="/sign-in" onClick={() => setMobileOpen(false)}>
-                                        <Button variant="soft" size="large" className="w-full">{t.nav.signIn}</Button>
-                                    </Link>
-                                    <Link href="/portal" onClick={() => setMobileOpen(false)}>
-                                        <Button variant="accent" size="large" className="w-full">{t.nav.signUp}</Button>
-                                    </Link>
-                                </>
-                            ) : (
-                                <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
-                                    <Button variant="accent" size="large" className="w-full">{t.nav.dashboard}</Button>
-                                </Link>
-                            )}
-                        </div>
-                    </div>
+            {mobileOpen && <nav id="mobile-navigation" aria-label={locale === "id" ? "Navigasi seluler" : "Mobile navigation"} className="max-h-[calc(100dvh-80px)] overflow-y-auto border-t border-border bg-card px-6 py-5 xl:hidden">
+                {links.map(link => <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="block rounded-lg px-3 py-3 text-sm font-medium text-muted hover:bg-surface hover:text-accent">{link.label}</Link>)}
+                <div className="mt-4 grid gap-3 border-t border-border pt-5">
+                    <Link href={session ? "/dashboard" : "/portal"} onClick={() => setMobileOpen(false)} className={buttonVariants({ variant: "accent", size: "large" })}>{session ? t.nav.dashboard : t.nav.signUp}</Link>
+                    {!session && <Link href="/sign-in" onClick={() => setMobileOpen(false)} className={buttonVariants({ variant: "light", size: "large" })}>{t.nav.signIn}</Link>}
+                    <a href={getStaffPortalUrl()} className="py-3 text-center text-sm text-muted hover:text-accent">{t.nav.staffPortal}<ArrowUpRight className="ml-1 inline h-4 w-4" /></a>
                 </div>
-            )}
+            </nav>}
         </header>
     );
 }

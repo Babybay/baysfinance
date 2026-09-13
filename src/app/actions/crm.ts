@@ -3,14 +3,13 @@
 import "server-only";
 import {
     buildErpNextLead,
-    buildErpNextLeadComment,
     getErpNextLeadEndpoint,
     validateCrmRegistration,
     type CrmRegistration,
 } from "@/lib/erpnext-crm";
 import { crmEmailLimiter, crmGlobalLimiter } from "@/lib/rate-limit";
 
-type ActionResult = { success: true; notice?: string } | { success: false; error: string };
+type ActionResult = { success: true; notice?: string; reference?: string } | { success: false; error: string };
 type CrmRegistrationRequest = CrmRegistration & { website?: string };
 
 function getErpNextCredentials() {
@@ -51,6 +50,7 @@ export async function registerCrmLead(input: CrmRegistrationRequest): Promise<Ac
             },
             body: JSON.stringify(buildErpNextLead(registration)),
             cache: "no-store",
+            signal: AbortSignal.timeout(15000),
         });
 
         if (!leadResponse.ok) {
@@ -65,22 +65,7 @@ export async function registerCrmLead(input: CrmRegistrationRequest): Promise<Ac
             return { success: true, notice: "We received your request. Our team will confirm the service details shortly." };
         }
 
-        const commentResponse = await fetch(new URL("/api/resource/Comment", new URL(credentials.url).origin), {
-            method: "POST",
-            headers: {
-                Authorization: authorization,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(buildErpNextLeadComment(leadName, registration.serviceInterest)),
-            cache: "no-store",
-        });
-
-        if (!commentResponse.ok) {
-            console.error(`[crm] ERPNext Lead comment creation failed with status ${commentResponse.status}`);
-            return { success: true, notice: "We received your request. Our team will confirm the service details shortly." };
-        }
-
-        return { success: true };
+        return { success: true, reference: leadName };
     } catch (error) {
         if (error instanceof Error && /required|valid email|too long|supported service/.test(error.message)) {
             return { success: false, error: error.message };

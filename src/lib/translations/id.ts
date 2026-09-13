@@ -3,7 +3,7 @@ import type { Translations } from "./en";
 export const id: Translations = {
     // Metadata
     meta: {
-        title: "Bay'sConsult — Platform Konsultan Pajak & Bisnis",
+        title: "CAL — Platform Konsultan Pajak & Bisnis",
         description: "Platform all-in-one untuk konsultan pajak: kelola klien, otomatisasi kepatuhan, pantau deadline, dan kembangkan praktik Anda.",
     },
 
@@ -80,7 +80,7 @@ export const id: Translations = {
     // Features
     features: {
         heading: "Cara yang Jelas untuk Bekerja Bersama Kami",
-        description: "Gunakan website Bay's Finance untuk mengajukan layanan dan mengakses portal klien. Tim konsultasi kami bekerja di ERPNext.",
+        description: "Gunakan website CAL untuk mengajukan layanan dan mengakses portal klien. Tim konsultasi kami bekerja di ERPNext.",
         clientManagement: {
             title: "Ajukan Permintaan Layanan",
             description: "Kirim permintaan konsultasi langsung ke CRM kami agar ditinjau oleh spesialis yang tepat.",
@@ -91,7 +91,7 @@ export const id: Translations = {
         },
         documentManagement: {
             title: "Akses Informasi Klien",
-            description: "Klien aktif dapat mengakses informasi klien yang disepakati melalui portal Bay's Finance.",
+            description: "Klien aktif dapat mengakses informasi klien yang disepakati melalui portal CAL.",
         },
         invoiceBilling: {
             title: "Pembaruan Layanan yang Jelas",
@@ -99,16 +99,16 @@ export const id: Translations = {
         },
         complianceReports: {
             title: "Operasional Berbasis ERPNext",
-            description: "Staf Bay's Finance menggunakan ERPNext sebagai CRM dan ruang kerja operasional utama.",
+            description: "Staf CAL menggunakan ERPNext sebagai CRM dan ruang kerja operasional utama.",
         },
     },
 
     // Founder
     founder: {
         heading: "Dibangun oleh Praktisi, Bukan Hanya Developer",
-        name: "Tim Bay's Finance",
+        name: "Tim CAL",
         title: "Ahli Konsultasi Pajak & Bisnis",
-        bio: "Dengan pengalaman lebih dari satu dekade dalam hukum pajak Indonesia, perizinan usaha, dan advisory keuangan, tim kami membangun Bay'sConsult untuk menyelesaikan masalah yang kami hadapi setiap hari. Kami memahami tekanan deadline kepatuhan, kompleksitas manajemen multi-klien, dan kebutuhan akan akurasi — karena kami mengalaminya sendiri.",
+        bio: "Dengan pengalaman lebih dari satu dekade dalam hukum pajak Indonesia, perizinan usaha, dan advisory keuangan, tim kami membangun CAL untuk menyelesaikan masalah yang kami hadapi setiap hari. Kami memahami tekanan deadline kepatuhan, kompleksitas manajemen multi-klien, dan kebutuhan akan akurasi — karena kami mengalaminya sendiri.",
         credential1: "10+ Tahun di Konsultasi Pajak",
         credential2: "Ratusan Bisnis Dilayani",
         credential3: "Keahlian Regulasi Mendalam",
@@ -117,7 +117,7 @@ export const id: Translations = {
     // Testimonials
     testimonials: {
         heading: "Dengar dari Klien Kami",
-        description: "Profesional pajak di seluruh Indonesia mempercayai Bay'sConsult untuk menjalankan praktik mereka.",
+        description: "Profesional pajak di seluruh Indonesia mempercayai CAL untuk menjalankan praktik mereka.",
         items: [
             {
                 quote: "Platform ini mengubah cara kami mengelola deadline pajak klien. Kami beralih dari spreadsheet ke kalender otomatis penuh dalam kurang dari seminggu.",
@@ -139,7 +139,7 @@ export const id: Translations = {
 
     // CTA
     cta: {
-        heading: "Siap Bekerja dengan Bay's Finance?",
+        heading: "Siap Bekerja dengan CAL?",
         description: "Pilih portal sesuai kebutuhan: akses klien di website atau ERPNext untuk operasional staf.",
         button: "Buka Portal Kami",
         free: "Onboarding ramah klien",
@@ -351,7 +351,7 @@ export const id: Translations = {
         ],
         legalRefs: "Referensi Hukum: PP 28/2025 • PP 16/2021 • UU 6/2023 • UU 6/2011 • UU 7/2021",
         sourcesVerified: "Semua tautan terverifikasi",
-        disclaimer: "Disclaimer: Informasi ini disediakan untuk tujuan edukasi berdasarkan peraturan pemerintah Indonesia yang tersedia secara publik. Peraturan dapat berubah sewaktu-waktu. Selalu verifikasi dengan portal resmi pemerintah sebelum mengajukan aplikasi. Bay'sConsult tidak memberikan nasihat hukum.",
+        disclaimer: "Disclaimer: Informasi ini disediakan untuk tujuan edukasi berdasarkan peraturan pemerintah Indonesia yang tersedia secara publik. Peraturan dapat berubah sewaktu-waktu. Selalu verifikasi dengan portal resmi pemerintah sebelum mengajukan aplikasi. CAL tidak memberikan nasihat hukum.",
         ctaTitle: "Butuh Bantuan Dengan Aplikasi Anda?",
         ctaSubtitle: "Tim kami telah memproses 500+ aplikasi di seluruh Indonesia. Biar kami yang urus.",
         ctaButton: "Mulai Uji Coba Gratis",

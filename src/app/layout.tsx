@@ -1,27 +1,37 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
 
-const dmSerif = DM_Serif_Display({
+const dmSerif = localFont({
+  src: "../../public/fonts/dm-serif-display-latin.woff2",
   variable: "--font-dm-serif",
-  subsets: ["latin"],
   weight: "400",
+  display: "swap",
+  fallback: ["Georgia", "Times New Roman", "serif"],
 });
 
-const inter = Inter({
+const inter = localFont({
+  src: "../../public/fonts/inter-latin.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
+  fallback: ["Segoe UI", "Arial", "sans-serif"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const jetbrainsMono = localFont({
+  src: "../../public/fonts/jetbrains-mono-latin.woff2",
   variable: "--font-jetbrains",
-  subsets: ["latin"],
+  weight: "100 800",
+  display: "swap",
+  fallback: ["Consolas", "monospace"],
 });
 
 export const metadata: Metadata = {
-  title: "PajakConsult — Platform Konsultan Pajak",
+  title: { default: "CAL — Tax, Accounting & Business Consulting", template: "%s | CAL" },
+  applicationName: "CAL",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
   description: "Platform all-in-one untuk konsultan pajak: kelola klien, hitung pajak, pantau deadline, buat invoice, dan kelola dokumen.",
 };
 

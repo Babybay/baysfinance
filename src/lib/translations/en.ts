@@ -1,7 +1,7 @@
 export const en = {
     // Metadata
     meta: {
-        title: "Bay'sConsult — Tax & Business Consulting Platform",
+        title: "CAL — Tax & Business Consulting Platform",
         description: "The all-in-one platform for tax consultants: manage clients, automate compliance, track deadlines, and grow your practice.",
     },
 
@@ -78,7 +78,7 @@ export const en = {
     // Features
     features: {
         heading: "A Clear Way to Work With Us",
-        description: "Use the Bay's Finance website to request services and access your client portal. Our consulting team operates in ERPNext.",
+        description: "Use the CAL website to request services and access your client portal. Our consulting team operates in ERPNext.",
         clientManagement: {
             title: "Start a Service Request",
             description: "Send your consultation request directly to our CRM for review by the right specialist.",
@@ -89,7 +89,7 @@ export const en = {
         },
         documentManagement: {
             title: "Client Information Access",
-            description: "Existing clients can access agreed client-facing information through the Bay's Finance portal.",
+            description: "Existing clients can access agreed client-facing information through the CAL portal.",
         },
         invoiceBilling: {
             title: "Clear Service Updates",
@@ -97,16 +97,16 @@ export const en = {
         },
         complianceReports: {
             title: "ERPNext-Powered Operations",
-            description: "Bay's Finance staff use ERPNext as the central CRM and operational workspace.",
+            description: "CAL staff use ERPNext as the central CRM and operational workspace.",
         },
     },
 
     // Founder
     founder: {
         heading: "Built by a Practitioner, Not Just Developers",
-        name: "Bay's Finance Team",
+        name: "CAL Team",
         title: "Tax & Business Consulting Experts",
-        bio: "With over a decade of hands-on experience in Indonesian tax law, business licensing, and financial advisory, our team built Bay'sConsult to solve the problems we faced every day. We understand the pressure of compliance deadlines, the complexity of multi-client management, and the need for accuracy — because we've lived it.",
+        bio: "With over a decade of hands-on experience in Indonesian tax law, business licensing, and financial advisory, our team built CAL to solve the problems we faced every day. We understand the pressure of compliance deadlines, the complexity of multi-client management, and the need for accuracy — because we've lived it.",
         credential1: "10+ Years in Tax Consulting",
         credential2: "Hundreds of Businesses Served",
         credential3: "Deep Regulatory Expertise",
@@ -115,7 +115,7 @@ export const en = {
     // Testimonials
     testimonials: {
         heading: "Hear From Our Clients",
-        description: "Tax professionals across Indonesia trust Bay'sConsult to run their practice.",
+        description: "Tax professionals across Indonesia trust CAL to run their practice.",
         items: [
             {
                 quote: "This platform transformed how we manage our clients' tax deadlines. We went from spreadsheets to a fully automated calendar in under a week.",
@@ -137,7 +137,7 @@ export const en = {
 
     // CTA
     cta: {
-        heading: "Ready to Work With Bay's Finance?",
+        heading: "Ready to Work With CAL?",
         description: "Choose the portal that fits your relationship: client access on the website or ERPNext for staff operations.",
         button: "Open Our Portals",
         free: "Client-friendly onboarding",
@@ -350,7 +350,7 @@ export const en = {
         ],
         legalRefs: "Legal References: PP 28/2025 • PP 16/2021 • UU 6/2023 • UU 6/2011 • UU 7/2021",
         sourcesVerified: "All links verified",
-        disclaimer: "Disclaimer: This information is provided for educational purposes based on publicly available Indonesian government regulations. Regulations are subject to change. Always verify with official government portals before submitting applications. Bay'sConsult does not provide legal advice.",
+        disclaimer: "Disclaimer: This information is provided for educational purposes based on publicly available Indonesian government regulations. Regulations are subject to change. Always verify with official government portals before submitting applications. CAL does not provide legal advice.",
         ctaTitle: "Need Help With Your Application?",
         ctaSubtitle: "Our team has processed 500+ applications across Indonesia. Let us handle the complexity.",
         ctaButton: "Start Your Free Trial",

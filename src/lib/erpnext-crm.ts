@@ -14,18 +14,15 @@ export const CRM_SERVICE_INTERESTS = [
     "Other consultation",
 ] as const;
 
+export const CAL_CRM_SOURCE = "CAL Website";
+
 export type ErpNextLead = {
     lead_name: string;
     email_id: string;
     mobile_no: string;
     company_name: string;
-};
-
-export type ErpNextLeadComment = {
-    comment_type: "Comment";
-    reference_doctype: "Lead";
-    reference_name: string;
-    content: string;
+    utm_source: typeof CAL_CRM_SOURCE;
+    notes: { note: string }[];
 };
 
 function requiredString(value: unknown, field: string, maxLength: number): string {
@@ -67,15 +64,8 @@ export function buildErpNextLead(registration: CrmRegistration): ErpNextLead {
         email_id: registration.email,
         mobile_no: registration.phone,
         company_name: registration.companyName,
-    };
-}
-
-export function buildErpNextLeadComment(leadName: string, serviceInterest: string): ErpNextLeadComment {
-    return {
-        comment_type: "Comment",
-        reference_doctype: "Lead",
-        reference_name: leadName,
-        content: `Website service interest: ${serviceInterest}`,
+        utm_source: CAL_CRM_SOURCE,
+        notes: [{ note: `CAL website consultation request. Service interest: ${registration.serviceInterest}` }],
     };
 }
 

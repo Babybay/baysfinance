@@ -59,7 +59,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
         catatan: "",
         namaBank: "Bank BCA",
         nomorRekening: "",
-        atasNama: "Bay'sConsult",
+        atasNama: "CAL",
         penandaTangan: "",
         jabatanPenandaTangan: "Managing Partner",
         items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] as InvoiceItem[],
@@ -101,7 +101,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
         if (res.success) {
             router.refresh();
             setModalOpen(false);
-            setForm({ clientId: "", jatuhTempo: "", catatan: "", namaBank: "Bank BCA", nomorRekening: "", atasNama: "Bay'sConsult", penandaTangan: "", jabatanPenandaTangan: "Managing Partner", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
+            setForm({ clientId: "", jatuhTempo: "", catatan: "", namaBank: "Bank BCA", nomorRekening: "", atasNama: "CAL", penandaTangan: "", jabatanPenandaTangan: "Managing Partner", items: [{ deskripsi: "", qty: 1, harga: 0, jumlah: 0 }] });
             toast.success("Invoice berhasil dibuat");
         } else {
             toast.error(res.error || "Gagal membuat invoice");
@@ -226,7 +226,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                             <a href="/dashboard/invoices/recurring" className="flex items-center justify-center h-10 px-4 rounded-[8px] border border-border text-sm font-medium text-foreground hover:bg-surface transition-colors">
                                 <RefreshCw className="h-4 w-4 mr-2" /> Berulang
                             </a>
-                            <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
+                            <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-accent-foreground font-medium hover:bg-accent-hover transition-colors">
                                 <Plus className="h-4 w-4 mr-2" /> Buat Invoice
                             </button>
                         </>
@@ -376,7 +376,7 @@ export function InvoiceListView({ initialInvoices, clients }: InvoiceListViewPro
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <Input label="Nama Bank" value={form.namaBank} onChange={(e) => setForm({ ...form, namaBank: e.target.value })} placeholder="Bank BCA" />
                             <Input label="No. Rekening" value={form.nomorRekening} onChange={(e) => setForm({ ...form, nomorRekening: e.target.value })} placeholder="123-456-7890" />
-                            <Input label="Atas Nama" value={form.atasNama} onChange={(e) => setForm({ ...form, atasNama: e.target.value })} placeholder="Bay'sConsult" />
+                            <Input label="Atas Nama" value={form.atasNama} onChange={(e) => setForm({ ...form, atasNama: e.target.value })} placeholder="CAL" />
                         </div>
                     </div>
 

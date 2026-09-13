@@ -280,7 +280,7 @@ export function AccountsView({ accounts, role }: AccountsViewProps) {
                                 onClick={() => setTypeFilter(value)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                                     typeFilter === value
-                                        ? "bg-accent text-white shadow-sm"
+                                        ? "bg-accent text-accent-foreground shadow-sm"
                                         : "bg-muted/50 text-muted-foreground hover:bg-muted"
                                 }`}
                             >
@@ -509,7 +509,7 @@ function TemplateGrid({
                         <div className="flex items-start gap-3">
                             <div className={`shrink-0 p-2.5 rounded-lg transition-colors ${
                                 isActive
-                                    ? "bg-accent text-white"
+                                    ? "bg-accent text-accent-foreground"
                                     : "bg-muted/50 text-muted-foreground group-hover:bg-accent/10 group-hover:text-accent"
                             }`}>
                                 <IconComponent className="h-5 w-5" />

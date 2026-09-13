@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/Button";
+import { WorkspacePreview } from "@/components/home/WorkspacePreview";
+import { buttonVariants } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n";
 import Link from "next/link";
 import {
@@ -40,10 +41,16 @@ function useFadeUp(delay = 0) {
     useEffect(() => {
         const el = ref.current;
         if (!el) return;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            el.style.opacity = "1";
+            el.style.transform = "none";
+            return;
+        }
+        let timer: ReturnType<typeof setTimeout>;
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    setTimeout(() => {
+                    timer = setTimeout(() => {
                         if (el) {
                             el.style.opacity = "1";
                             el.style.transform = "translateY(0)";
@@ -55,7 +62,7 @@ function useFadeUp(delay = 0) {
             { threshold: 0.12 }
         );
         observer.observe(el);
-        return () => observer.disconnect();
+        return () => { observer.disconnect(); clearTimeout(timer); };
     }, [delay]);
     return ref;
 }
@@ -174,7 +181,7 @@ function ServiceCard({
                 transform: "translateY(16px)",
                 transition: "opacity 0.5s ease, transform 0.5s ease",
             }}
-            className="group flex items-center gap-[16px] p-[24px] rounded-[16px] bg-card border border-border hover:-translate-y-0.5 transition-all duration-300 shadow-[0px_2px_8px_0px_var(--shadow-subtle)] hover:shadow-[0px_6px_20px_0px_var(--shadow-subtle)] cursor-default"
+            className="soft-panel soft-panel-interactive group flex items-center gap-[16px] p-[24px] rounded-[20px] cursor-default"
         >
             <div className="h-[44px] w-[44px] shrink-0 rounded-[12px] bg-surface flex items-center justify-center transition-colors duration-300 group-hover:bg-accent/10">
                 <Icon className="h-5 w-5 text-accent" />
@@ -184,31 +191,35 @@ function ServiceCard({
     );
 }
 
+function SectorCard({
+    title,
+    description,
+    icon: Icon,
+}: {
+    title: string;
+    description: string;
+    icon: React.ElementType;
+}) {
+    return (
+        <article className="soft-panel soft-panel-interactive rounded-[22px] p-6">
+            <div className="soft-inset flex h-11 w-11 items-center justify-center rounded-[14px] text-accent">
+                <Icon className="h-5 w-5" />
+            </div>
+            <h3 className="mt-5 font-serif text-h6 text-foreground">{title}</h3>
+            <p className="mt-2 text-body-sm leading-6 text-muted">{description}</p>
+        </article>
+    );
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export function HomeContent() {
-    const { t } = useI18n();
-
-    const heroRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        const el = heroRef.current;
-        if (!el) return;
-        const children = el.querySelectorAll<HTMLElement>("[data-hero-item]");
-        children.forEach((child, i) => {
-            child.style.opacity = "0";
-            child.style.transform = "translateY(24px)";
-            setTimeout(() => {
-                child.style.transition = "opacity 0.7s ease, transform 0.7s ease";
-                child.style.opacity = "1";
-                child.style.transform = "translateY(0)";
-            }, 100 + i * 120);
-        });
-    }, []);
+    const { t, locale } = useI18n();
 
     const stats = [
-        { value: "2,400+", label: "Clients managed across firms", icon: Users },
-        { value: "98%", label: "On-time compliance rate", icon: Shield },
-        { value: "3×", label: "Faster reporting workflow", icon: TrendingUp },
-        { value: "< 24h", label: "Average document turnaround", icon: Clock },
+        { value: "2,400+", label: locale === "id" ? "Klien yang dikelola" : "Clients managed across firms", icon: Users },
+        { value: "98%", label: locale === "id" ? "Kepatuhan tepat waktu" : "On-time compliance rate", icon: Shield },
+        { value: "3×", label: locale === "id" ? "Proses pelaporan lebih cepat" : "Faster reporting workflow", icon: TrendingUp },
+        { value: "< 24h", label: locale === "id" ? "Rata-rata proses dokumen" : "Average document turnaround", icon: Clock },
     ];
 
     const problemIcons = [AlertTriangle, FileSearch, CircleAlert];
@@ -228,96 +239,57 @@ export function HomeContent() {
         { title: t.services.appraisal, icon: BadgeCheck },
     ];
 
+    const sectorContent = locale === "id"
+        ? {
+            eyebrow: "Keahlian lintas sektor",
+            heading: "Konsultasi yang memahami cara bisnis Anda berjalan.",
+            description: "Kami memulai dari proses, dokumen, dan risiko operasional sektor Anda—lalu menyusun layanan pajak, akuntansi, legalitas, atau advisory yang tepat.",
+            items: [
+                ["Perdagangan, Ritel & F&B", "Outlet, transaksi, persediaan, supplier, dan kebutuhan perizinan."],
+                ["Manufaktur & Distribusi", "Alur pembelian, gudang, costing, dan kontrol operasional."],
+                ["Jasa Profesional & Digital", "Kontrak layanan, proyek, penagihan berkala, dan pelaporan."],
+                ["Properti & Konstruksi", "Struktur proyek, vendor, termin, anggaran, dan dokumentasi."],
+                ["Hospitality & Pariwisata", "Channel penjualan, setoran, tenaga kerja, dan kesiapan operasional."],
+                ["Investasi & Mobilitas Global", "Struktur entitas, kebutuhan izin, dan koordinasi spesialis."],
+            ],
+        }
+        : {
+            eyebrow: "Cross-sector expertise",
+            heading: "Consulting built around how your business actually runs.",
+            description: "We begin with your sector’s processes, documents, and operational risks—then shape the right tax, accounting, licensing, or advisory engagement.",
+            items: [
+                ["Trade, Retail & F&B", "Outlets, transactions, inventory, suppliers, and relevant licensing."],
+                ["Manufacturing & Distribution", "Procurement, warehouses, costing, and operational controls."],
+                ["Professional & Digital Services", "Service contracts, projects, recurring billing, and reporting."],
+                ["Property & Construction", "Project structures, vendors, milestones, budgets, and documentation."],
+                ["Hospitality & Tourism", "Sales channels, deposits, workforce, and operational readiness."],
+                ["Investment & Global Mobility", "Entity structures, permit requirements, and specialist coordination."],
+            ],
+        };
+    const sectorIcons = [Building2, Briefcase, BarChart3, Scale, Users, Plane];
+
     return (
-        <div className="min-h-screen flex flex-col bg-background selection:bg-foreground selection:text-background">
+        <div className="cal-home min-h-screen flex flex-col bg-background selection:bg-foreground selection:text-background">
             <Navbar />
-
-            <main className="flex-1">
-                {/* ── 1. Hero ──────────────────────────────────────────────── */}
-                <section className="relative pt-[120px] pb-[80px] lg:pt-[180px] lg:pb-[140px] px-4 sm:px-6 lg:px-8 overflow-hidden">
-                    {/* Subtle background gradient blob */}
-                    <div
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                    >
-                        <div
-                            style={{
-                                width: "720px",
-                                height: "480px",
-                                background:
-                                    "radial-gradient(ellipse at center, var(--color-accent, #4f46e5) 0%, transparent 70%)",
-                                opacity: 0.04,
-                                filter: "blur(60px)",
-                            }}
-                        />
-                    </div>
-
-                    <div ref={heroRef} className="container mx-auto text-center max-w-[1200px]">
-                        {/* Authority badge */}
-                        <div
-                            data-hero-item
-                            className="inline-flex items-center gap-[8px] px-[16px] py-[8px] rounded-full bg-accent-muted border border-accent/20 mb-[32px]"
-                        >
-                            <Shield className="h-4 w-4 text-accent" />
-                            <span className="text-body-sm font-medium text-accent">{t.hero.badge}</span>
+            <a href="#main-content" className="cal-skip-link">{locale === "id" ? "Langsung ke konten" : "Skip to content"}</a>
+            <main id="main-content" className="flex-1">
+                <section className="cal-hero">
+                    <div className="cal-container grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
+                        <div className="cal-hero-copy">
+                            <p className="cal-eyebrow"><span className="h-1.5 w-1.5 rounded-full bg-accent" />{locale === "id" ? "PARTNER UNTUK LANGKAH BISNIS ANDA" : "YOUR PARTNER IN BUSINESS CLARITY"}</p>
+                            <h1 className="cal-hero-title">{locale === "id" ? <>Bisnis lebih tenang.<br /><span>Langkah lebih pasti.</span></> : <>Less complexity.<br /><span>More possibility.</span></>}</h1>
+                            <p className="mt-6 max-w-[470px] text-base leading-[1.8] text-muted sm:text-lg">{locale === "id" ? "Pajak, akuntansi, dan legalitas yang lebih terarah. CAL membantu Anda mengurus detail, agar Anda bisa fokus mengembangkan bisnis." : "Tax, accounting, and business matters, made clear. CAL helps you take care of the details, so you can focus on moving your business forward."}</p>
+                            <div className="mt-8 flex flex-wrap gap-3">
+                                <Link href="/crm/register" className={buttonVariants({ variant: "accent", size: "large", className: "gap-3" })}>{locale === "id" ? "Mulai konsultasi" : "Let’s talk business"}<ArrowRight className="h-4 w-4" /></Link>
+                                <Link href="/#services" className={buttonVariants({ variant: "light", size: "large", className: "gap-3" })}>{locale === "id" ? "Jelajahi layanan" : "Explore our services"}<ArrowRight className="h-4 w-4 -rotate-45" /></Link>
+                            </div>
+                            <div className="mt-9 flex flex-wrap gap-x-5 gap-y-3 border-t border-border pt-6 text-xs text-muted">
+                                <span className="flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-accent" />{locale === "id" ? "Pendampingan spesialis" : "Specialist-led support"}</span>
+                                <span className="flex items-center gap-2"><Lock className="h-4 w-4 text-accent" />{locale === "id" ? "Portal klien pribadi" : "Your private client portal"}</span>
+                            </div>
+                            <p className="mt-4 text-xs leading-5 text-muted">{locale === "id" ? "Portal klien oleh CAL. CRM dan operasional tim melalui ERPNext." : "Your client portal by CAL. Team CRM and operations powered by ERPNext."}</p>
                         </div>
-
-                        <h1
-                            data-hero-item
-                            className="font-serif text-h4 md:text-h3 lg:text-h1 text-foreground max-w-[900px] mx-auto text-balance mb-[24px] leading-[1.08]"
-                        >
-                            {t.hero.heading}
-                        </h1>
-
-                        <p
-                            data-hero-item
-                            className="text-body md:text-body-lg text-muted max-w-[640px] mx-auto mb-[40px] text-balance leading-[1.6]"
-                        >
-                            {t.hero.description}
-                        </p>
-
-                        <div
-                            data-hero-item
-                            className="flex flex-col sm:flex-row justify-center items-center gap-[12px]"
-                        >
-                            <Link href="/portal">
-                                <Button variant="accent" size="large" className="w-full sm:w-auto group">
-                                    {t.hero.cta}{" "}
-                                    <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
-                                </Button>
-                            </Link>
-                            <Link href="#features">
-                                <Button variant="soft" size="large" className="w-full sm:w-auto">
-                                    {t.hero.ctaSecondary}
-                                </Button>
-                            </Link>
-                        </div>
-
-                        {/* Trust strip */}
-                        <div
-                            data-hero-item
-                            className="mt-[48px] flex flex-wrap items-center justify-center gap-x-[28px] gap-y-[12px] text-body-sm text-muted"
-                        >
-                            <span className="flex items-center gap-[8px]">
-                                <CheckCircle2 className="h-4 w-4 text-accent" />
-                                {t.hero.trustFreeTrial}
-                            </span>
-                            <span className="hidden sm:block h-[4px] w-[4px] rounded-full bg-border" />
-                            <span className="flex items-center gap-[8px]">
-                                <CheckCircle2 className="h-4 w-4 text-accent" />
-                                {t.hero.trustNoCard}
-                            </span>
-                            <span className="hidden sm:block h-[4px] w-[4px] rounded-full bg-border" />
-                            <span className="flex items-center gap-[8px]">
-                                <CheckCircle2 className="h-4 w-4 text-accent" />
-                                {t.hero.trustSetup}
-                            </span>
-                            <span className="hidden sm:block h-[4px] w-[4px] rounded-full bg-border" />
-                            <span className="flex items-center gap-[8px]">
-                                <CheckCircle2 className="h-4 w-4 text-accent" />
-                                {t.hero.trustCancel}
-                            </span>
-                        </div>
+                        <WorkspacePreview />
                     </div>
                 </section>
 
@@ -354,7 +326,7 @@ export function HomeContent() {
                         {/* Inline CTA after problem */}
                         <div className="mt-[56px] text-center">
                             <Link href="#features" className="inline-flex items-center gap-[8px] text-accent font-medium text-body hover:underline underline-offset-4 transition-all group">
-                                See How Bay&apos;sConsult Solves This
+                                {locale === "id" ? "Temukan cara kerja CAL" : "See how CAL can help"}
                                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                             </Link>
                         </div>
@@ -384,7 +356,23 @@ export function HomeContent() {
                     </div>
                 </section>
 
-                {/* ── 5. Features ──────────────────────────────────────────── */}
+                {/* ── 5. Sector Expertise ───────────────────────────────────── */}
+                <section className="py-[100px] lg:py-[120px] bg-background">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="mx-auto mb-[56px] max-w-[760px] text-center">
+                            <p className="mb-4 text-body-sm font-semibold uppercase tracking-[0.16em] text-accent">{sectorContent.eyebrow}</p>
+                            <h2 className="font-serif text-h3 text-foreground">{sectorContent.heading}</h2>
+                            <p className="mt-5 text-body-lg leading-[1.6] text-muted">{sectorContent.description}</p>
+                        </div>
+                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            {sectorContent.items.map(([title, description], index) => (
+                                <SectorCard key={title} title={title} description={description} icon={sectorIcons[index]} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── 6. Features ──────────────────────────────────────────── */}
                 <section id="features" className="py-[100px] lg:py-[120px] bg-background">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="max-w-[800px] mb-[64px]">
@@ -417,11 +405,9 @@ export function HomeContent() {
 
                         {/* CTA after features */}
                         <div className="mt-[64px] text-center">
-                            <Link href="/portal">
-                                <Button variant="accent" size="large" className="group">
+                            <Link href="/portal" className={buttonVariants({ variant: "accent", size: "large", className: "group" })}>
                                     {t.hero.cta}{" "}
                                     <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
-                                </Button>
                             </Link>
                         </div>
                     </div>
@@ -435,7 +421,7 @@ export function HomeContent() {
                                 {/* Avatar / Visual */}
                                 <div className="flex flex-col items-center md:items-start gap-[24px]">
                                     <div className="h-[200px] w-[200px] rounded-[24px] bg-gradient-to-br from-accent/20 via-accent/10 to-transparent flex items-center justify-center border border-accent/10">
-                                        <span className="font-serif text-[64px] text-accent/60 select-none">B</span>
+                                        <span className="font-serif text-[64px] text-accent/60 select-none">CAL.</span>
                                     </div>
                                     {/* Credentials */}
                                     <div className="flex flex-col gap-[12px] w-full">
@@ -459,8 +445,8 @@ export function HomeContent() {
                                     <p className="text-body text-muted leading-[1.8] mb-[32px]">
                                         {t.founder.bio}
                                     </p>
-                                    <Link href="#contact" className="inline-flex items-center gap-[8px] text-accent font-medium text-body hover:underline underline-offset-4 transition-all group">
-                                        Book a Consultation
+                                    <Link href="/crm/register" className="inline-flex items-center gap-[8px] text-accent font-medium text-body hover:underline underline-offset-4 transition-all group">
+                                        {locale === "id" ? "Mulai konsultasi" : "Book a consultation"}
                                         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                                     </Link>
                                 </div>
@@ -501,9 +487,9 @@ export function HomeContent() {
                 </section>
 
                 {/* ── 9. Final CTA ─────────────────────────────────────────── */}
-                <section className="py-[120px]">
+                <section id="contact" className="py-[120px]">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="bg-foreground rounded-[24px] overflow-hidden relative">
+                        <div className="cal-cta rounded-[24px] overflow-hidden relative">
                             {/* Subtle inner glow */}
                             <div
                                 aria-hidden
@@ -520,12 +506,10 @@ export function HomeContent() {
                                 <p className="text-body md:text-body-lg text-muted-foreground mb-[48px] max-w-[600px] mx-auto leading-[1.6]">
                                     {t.cta.description}
                                 </p>
-                                <Link href="/portal">
-                                    <Button variant="accent" size="large" className="group">
+                                <Link href="/portal" className={buttonVariants({ variant: "accent", size: "large", className: "group" })}>
                                         {t.cta.button}{" "}
                                         <ArrowRight className="ml-2 h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
-                                    </Button>
-                                </Link>
+                            </Link>
                                 <div className="mt-[32px] flex flex-col sm:flex-row items-center justify-center gap-[24px] text-body-sm text-muted-foreground">
                                     <span className="flex items-center gap-[8px]">
                                         <CheckCircle2 className="h-4 w-4 text-accent" /> {t.cta.free}

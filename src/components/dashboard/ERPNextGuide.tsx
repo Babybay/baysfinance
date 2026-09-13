@@ -42,13 +42,13 @@ const guideContent: Record<"en" | "id", GuideContent> = {
     en: {
         eyebrow: "Staff onboarding · ERPNext",
         title: "Your first week with ERPNext",
-        subtitle: "Use this guide to understand where staff work happens, practise the core workflows, and know when Bay'sConsult remains the system of record.",
+        subtitle: "Use this guide to understand where staff work happens, practise the core workflows, and know when CAL remains the system of record.",
         openPortal: "Open ERPNext Staff Portal",
         policyTitle: "Know which system owns the work",
         policyIntro: "Do not duplicate records between systems. Use the owner below and escalate a sync issue rather than editing both copies.",
         policyRows: [
             { system: "ERPNext", owner: "Staff operations", description: "Accounts, Journal Entries, staff tasks, internal approvals, and the staff workspace." },
-            { system: "Bay'sConsult", owner: "Client operations", description: "Client portal records, tax calendar, permit cases, client documents, invoices, and payments while the current sync is active." },
+            { system: "CAL", owner: "Client operations", description: "Client portal records, tax calendar, permit cases, client documents, invoices, and payments while the current sync is active." },
         ],
         onboardingTitle: "First-day checklist",
         onboardingSubtitle: "Complete these in order before processing client work.",
@@ -70,13 +70,13 @@ const guideContent: Record<"en" | "id", GuideContent> = {
             {
                 title: "Case 1 — New advisory client",
                 scenario: "A consultant receives a request from PT Nusantara for monthly tax advisory.",
-                steps: ["Search for the customer first to avoid duplicates.", "Create or update the Customer only after the approved client intake is complete.", "Create a Project and assign the engagement owner with the next action as a ToDo.", "Keep tax deadlines and permit case work in Bay'sConsult until the ownership migration is announced."],
+                steps: ["Search for the customer first to avoid duplicates.", "Create or update the Customer only after the approved client intake is complete.", "Create a Project and assign the engagement owner with the next action as a ToDo.", "Keep tax deadlines and permit case work in CAL until the ownership migration is announced."],
                 outcome: "One accountable owner, a visible task trail, and no duplicate client record.",
             },
             {
                 title: "Case 2 — Consulting invoice to payment",
                 scenario: "A monthly advisory service is ready to bill and the client pays three days later.",
-                steps: ["Confirm whether the invoice is still Bay'sConsult-owned under the current sync policy.", "When ERPNext owns the process, prepare a Draft Sales Invoice and have the designated reviewer validate it.", "Submit only after the reviewer confirms customer, company, tax, and amount.", "Record the payment against the correct submitted invoice and attach the approved payment evidence."],
+                steps: ["Confirm whether the invoice is still CAL-owned under the current sync policy.", "When ERPNext owns the process, prepare a Draft Sales Invoice and have the designated reviewer validate it.", "Submit only after the reviewer confirms customer, company, tax, and amount.", "Record the payment against the correct submitted invoice and attach the approved payment evidence."],
                 outcome: "A complete audit trail from invoice through payment, without posting a duplicate invoice.",
             },
             {
@@ -91,19 +91,19 @@ const guideContent: Record<"en" | "id", GuideContent> = {
             "Never share passwords, API keys, or session links. Use your own Frappe account.",
             "Search before creating. Duplicate Customers, Items, and invoices create reconciliation work.",
             "Draft first; submit only after required review and supporting documents are complete.",
-            "If ERPNext and Bay'sConsult disagree, stop and report the sync issue—do not edit both systems to force a match.",
+            "If ERPNext and CAL disagree, stop and report the sync issue—do not edit both systems to force a match.",
         ],
     },
     id: {
         eyebrow: "Onboarding staf · ERPNext",
         title: "Minggu pertama Anda dengan ERPNext",
-        subtitle: "Gunakan panduan ini untuk memahami lokasi kerja staf, melatih alur kerja inti, dan mengetahui kapan Bay'sConsult tetap menjadi sumber data utama.",
+        subtitle: "Gunakan panduan ini untuk memahami lokasi kerja staf, melatih alur kerja inti, dan mengetahui kapan CAL tetap menjadi sumber data utama.",
         openPortal: "Buka Portal Staf ERPNext",
         policyTitle: "Pahami sistem pemilik pekerjaan",
         policyIntro: "Jangan menggandakan data di dua sistem. Gunakan sistem pemilik di bawah ini dan laporkan masalah sinkronisasi, bukan mengubah kedua data sekaligus.",
         policyRows: [
             { system: "ERPNext", owner: "Operasional staf", description: "Akun, Jurnal, tugas staf, persetujuan internal, dan workspace staf." },
-            { system: "Bay'sConsult", owner: "Operasional klien", description: "Data portal klien, kalender pajak, kasus perizinan, dokumen klien, invoice, dan pembayaran selama sinkronisasi saat ini aktif." },
+            { system: "CAL", owner: "Operasional klien", description: "Data portal klien, kalender pajak, kasus perizinan, dokumen klien, invoice, dan pembayaran selama sinkronisasi saat ini aktif." },
         ],
         onboardingTitle: "Checklist hari pertama",
         onboardingSubtitle: "Selesaikan secara berurutan sebelum memproses pekerjaan klien.",
@@ -125,13 +125,13 @@ const guideContent: Record<"en" | "id", GuideContent> = {
             {
                 title: "Kasus 1 — Klien advisory baru",
                 scenario: "Seorang konsultan menerima permintaan advisory pajak bulanan dari PT Nusantara.",
-                steps: ["Cari customer terlebih dahulu untuk menghindari duplikasi.", "Buat atau perbarui Customer hanya setelah intake klien disetujui.", "Buat Project dan tetapkan engagement owner dengan aksi berikutnya sebagai ToDo.", "Simpan pekerjaan deadline pajak dan kasus perizinan di Bay'sConsult sampai migrasi kepemilikan diumumkan."],
+                steps: ["Cari customer terlebih dahulu untuk menghindari duplikasi.", "Buat atau perbarui Customer hanya setelah intake klien disetujui.", "Buat Project dan tetapkan engagement owner dengan aksi berikutnya sebagai ToDo.", "Simpan pekerjaan deadline pajak dan kasus perizinan di CAL sampai migrasi kepemilikan diumumkan."],
                 outcome: "Satu pemilik yang bertanggung jawab, jejak tugas yang terlihat, dan tidak ada data klien ganda.",
             },
             {
                 title: "Kasus 2 — Invoice konsultasi sampai pembayaran",
                 scenario: "Layanan advisory bulanan siap ditagihkan dan klien membayar tiga hari kemudian.",
-                steps: ["Pastikan invoice masih dimiliki Bay'sConsult berdasarkan kebijakan sinkronisasi saat ini.", "Saat ERPNext menjadi pemilik proses, siapkan Draft Sales Invoice dan minta reviewer yang ditunjuk memvalidasinya.", "Submit hanya setelah reviewer mengonfirmasi customer, company, pajak, dan nominal.", "Catat pembayaran pada invoice submitted yang tepat dan lampirkan bukti pembayaran yang disetujui."],
+                steps: ["Pastikan invoice masih dimiliki CAL berdasarkan kebijakan sinkronisasi saat ini.", "Saat ERPNext menjadi pemilik proses, siapkan Draft Sales Invoice dan minta reviewer yang ditunjuk memvalidasinya.", "Submit hanya setelah reviewer mengonfirmasi customer, company, pajak, dan nominal.", "Catat pembayaran pada invoice submitted yang tepat dan lampirkan bukti pembayaran yang disetujui."],
                 outcome: "Jejak audit lengkap dari invoice hingga pembayaran tanpa membuat invoice ganda.",
             },
             {
@@ -146,7 +146,7 @@ const guideContent: Record<"en" | "id", GuideContent> = {
             "Jangan pernah membagikan password, API key, atau session link. Gunakan akun Frappe Anda sendiri.",
             "Cari sebelum membuat. Customer, Item, dan invoice ganda menambah pekerjaan rekonsiliasi.",
             "Buat draft terlebih dahulu; submit hanya setelah review dan dokumen pendukung lengkap.",
-            "Jika ERPNext dan Bay'sConsult tidak sesuai, berhenti dan laporkan masalah sinkronisasi—jangan mengubah keduanya agar terlihat cocok.",
+            "Jika ERPNext dan CAL tidak sesuai, berhenti dan laporkan masalah sinkronisasi—jangan mengubah keduanya agar terlihat cocok.",
         ],
     },
 };
@@ -177,6 +177,14 @@ export function ERPNextGuide() {
                 </div>
             </section>
 
+            <section lang="id" aria-labelledby="operating-model-title" className="mb-6 rounded-[16px] border border-border bg-card p-6">
+                <h2 id="operating-model-title" className="font-serif text-xl text-foreground">Pengetahuan operasional multi-klien</h2>
+                <p className="mt-2 leading-6 text-muted-foreground">Bedakan onboarding Customer CRM dari Company pembukuan, pahami batas akses, serta pelajari SOP bengkel dan restoran. Panduan berbahasa Indonesia.</p>
+                <Link href="/dashboard/erpnext-guide/operating-model" className="mt-3 inline-flex min-h-11 items-center gap-2 text-foreground underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4">
+                    Baca model operasional CAL<ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
+            </section>
+
             <section className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                     <ShieldCheck className="h-5 w-5 text-accent" />
@@ -205,7 +213,7 @@ export function ERPNextGuide() {
                 <ol className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {content.onboardingSteps.map((step, index) => (
                         <li key={step.title} className="flex gap-4 rounded-[12px] bg-surface p-4">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">{index + 1}</span>
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">{index + 1}</span>
                             <div>
                                 <h3 className="text-sm font-semibold text-foreground">{step.title}</h3>
                                 <p className="text-sm text-muted-foreground leading-6 mt-1">{step.description}</p>

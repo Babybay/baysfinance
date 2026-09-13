@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 export const metadata = {
-    title: "Official Permit Procedures — Bay'sConsult",
+    title: "Official Permit Procedures — CAL",
     description: "Step-by-step guide to Indonesian business permit procedures based on OSS-RBA government regulations. Required documents, risk categories, and FAQ.",
 };
 

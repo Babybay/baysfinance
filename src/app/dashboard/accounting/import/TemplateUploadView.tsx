@@ -366,7 +366,7 @@ function SingleResultView({
             <div className="flex justify-center gap-3">
                 <button
                     onClick={onReset}
-                    className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-white hover:bg-accent/90"
+                    className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
                 >
                     {ti?.importAnother ?? "Proses File Lain"}
                 </button>
@@ -464,7 +464,7 @@ function BatchResultView({
             <div className="flex justify-center gap-3">
                 <button
                     onClick={onReset}
-                    className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-white hover:bg-accent/90"
+                    className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
                 >
                     Batch Upload Lagi
                 </button>

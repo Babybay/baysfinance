@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
 
     // Build workbook
     const wb = new ExcelJS.Workbook();
-    wb.creator = "Bay'sConsult";
+    wb.creator = "CAL";
     wb.created = new Date();
 
     const ws = wb.addWorksheet("Buku Besar", {

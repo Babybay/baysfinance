@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
     buildErpNextLead,
-    buildErpNextLeadComment,
     getErpNextLeadEndpoint,
     validateCrmRegistration,
 } from "./erpnext-crm";
@@ -67,17 +66,8 @@ describe("buildErpNextLead", () => {
             email_id: "rani@example.com",
             mobile_no: "0812-3456-7890",
             company_name: "PT Sinar Baru",
-        });
-    });
-});
-
-describe("buildErpNextLeadComment", () => {
-    it("keeps the requested service with the newly created ERPNext lead", () => {
-        expect(buildErpNextLeadComment("LEAD-0001", "Tax consulting")).toEqual({
-            comment_type: "Comment",
-            reference_doctype: "Lead",
-            reference_name: "LEAD-0001",
-            content: "Website service interest: Tax consulting",
+            utm_source: "CAL Website",
+            notes: [{ note: "CAL website consultation request. Service interest: Tax consulting" }],
         });
     });
 });

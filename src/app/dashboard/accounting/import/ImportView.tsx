@@ -209,7 +209,7 @@ export function ImportView({}: ImportViewProps) {
                         onClick={() => { setMode("spreadsheet"); resetState(); }}
                         className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                             mode === "spreadsheet"
-                                ? "bg-accent text-white"
+                                ? "bg-accent text-accent-foreground"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -220,7 +220,7 @@ export function ImportView({}: ImportViewProps) {
                         onClick={() => { setMode("scan"); resetState(); }}
                         className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                             mode === "scan"
-                                ? "bg-accent text-white"
+                                ? "bg-accent text-accent-foreground"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
@@ -496,7 +496,7 @@ export function ImportView({}: ImportViewProps) {
                             <button
                                 onClick={handleImport}
                                 disabled={entries.filter((e) => e.balanced).length === 0}
-                                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
                             >
                                 {ti?.importButton ?? "Impor"} {entries.filter((e) => e.balanced).length} {ti?.entriesLabel ?? "Entri"}
                             </button>
@@ -551,7 +551,7 @@ export function ImportView({}: ImportViewProps) {
                     <div className="flex justify-center gap-3">
                         <button
                             onClick={resetState}
-                            className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-white hover:bg-accent/90"
+                            className="rounded-md bg-accent px-6 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
                         >
                             {ti?.importAnother ?? "Impor File Lain"}
                         </button>

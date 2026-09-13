@@ -708,7 +708,7 @@ export function AccountingDocumentsView() {
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                             <button
                                 onClick={() => openPresigned(detailDoc.fileUrl)}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-[8px] bg-accent text-white hover:bg-accent-hover transition-colors"
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-[8px] bg-accent text-accent-foreground hover:bg-accent-hover transition-colors"
                             >
                                 <Download className="h-4 w-4 mr-1.5" /> Download
                             </button>

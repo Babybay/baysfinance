@@ -213,7 +213,7 @@ export function ExpenseListView() {
                         </button>
                     )}
                     {isAdmin && (
-                        <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-white font-medium hover:bg-accent-hover transition-colors">
+                        <button onClick={() => setModalOpen(true)} className="flex items-center justify-center h-10 px-4 rounded-[8px] bg-accent text-accent-foreground font-medium hover:bg-accent-hover transition-colors">
                             <Plus className="h-4 w-4 mr-2" /> Catat Beban
                         </button>
                     )}

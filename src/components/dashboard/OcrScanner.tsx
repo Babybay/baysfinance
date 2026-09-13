@@ -629,7 +629,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                                 {!showJournalPreview && (
                                     <button
                                         onClick={handlePrepareJournal}
-                                        className="flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90"
+                                        className="flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent/90"
                                     >
                                         <Pencil className="h-3 w-3" />
                                         {locale === "id" ? "Siapkan Jurnal" : "Prepare Journal"}
@@ -802,7 +802,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                             <button
                                 onClick={showJournalPreview ? handleImportToJournal : handlePrepareJournal}
                                 disabled={!importClientId || importing || (showJournalPreview && journalEntries.filter(e => !e._removed && e.balanced).length === 0)}
-                                className="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                                className="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
                             >
                                 {importing ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -829,7 +829,7 @@ export function OcrScanner({ clients = [], defaultClientId = "" }: OcrScannerPro
                     <div className="flex flex-wrap gap-3">
                         <button
                             onClick={resetState}
-                            className="flex items-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent/90"
+                            className="flex items-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground hover:bg-accent/90"
                         >
                             <RefreshCw className="h-4 w-4" />
                             {locale === "id" ? "Scan Dokumen Lain" : "Scan Another Document"}
