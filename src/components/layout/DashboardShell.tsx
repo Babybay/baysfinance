@@ -19,6 +19,7 @@ import {
     ChevronLeft,
 
     GraduationCap,
+    UserRoundCog,
 } from "lucide-react";
 
 
@@ -44,6 +45,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         { href: "/dashboard/documents", label: t.sidebar.documents, icon: FileText, roles: ["client"] },
         { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: Receipt, roles: ["client"] },
         { href: "/dashboard/erpnext-guide", label: t.sidebar.erpnextGuide, icon: GraduationCap, roles: ["admin", "staff"] },
+        { href: "/dashboard/users", label: locale === "id" ? "Akses klien" : "Client access", icon: UserRoundCog, roles: ["admin"] },
     ].filter(link => role && link.roles.includes(role));
 
     // Loading state is now handled by Next.js layouts and server components

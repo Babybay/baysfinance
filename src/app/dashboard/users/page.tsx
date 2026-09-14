@@ -8,9 +8,10 @@ import { getClients } from "@/app/actions/clients";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
-import { Shield, User, Edit2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Shield, User, Edit2, Loader2, CheckCircle2, AlertCircle, Copy, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { JenisWP, ClientStatus, type Client as PrismaClient } from "@prisma/client";
 
@@ -24,13 +25,18 @@ interface ManagedUser {
 }
 
 export default function UserManagementPage() {
-    const { t } = useI18n();
-    const { isAdmin, isLoaded: roleLoaded } = useRoles();
+    const { t, locale } = useI18n();
+    const { role, isLoaded: roleLoaded } = useRoles();
+    const isAdmin = role === "admin";
     const [users, setUsers] = useState<ManagedUser[]>([]);
     const [allClients, setAllClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState<string | null>(null);
     const [editUser, setEditUser] = useState<ManagedUser | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [newUser, setNewUser] = useState({ name: "", email: "", clientId: "" });
+    const [setupUrl, setSetupUrl] = useState("");
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     const fetchUsers = async () => {
@@ -99,6 +105,28 @@ export default function UserManagementPage() {
         }
     };
 
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreating(true);
+        try {
+            const res = await fetch("/api/admin/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newUser),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json() as { setupUrl: string };
+            setSetupUrl(data.setupUrl);
+            setNewUser({ name: "", email: "", clientId: "" });
+            setCreateOpen(false);
+            await fetchUsers();
+        } catch (cause) {
+            setMessage({ type: "error", text: cause instanceof Error ? cause.message : t.userManagement.updateError });
+        } finally {
+            setCreating(false);
+        }
+    };
+
     if (!roleLoaded || (loading && users.length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
@@ -120,10 +148,25 @@ export default function UserManagementPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-bold text-foreground font-serif">{t.userManagement.title}</h1>
-                <p className="text-muted-foreground">{t.userManagement.subtitle}</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-col gap-1">
+                    <p className="text-sm font-semibold text-accent">{locale === "id" ? "Khusus Admin" : "Admin only"}</p>
+                    <h1 className="text-3xl text-foreground font-serif">{locale === "id" ? "Akses portal klien" : "Client portal access"}</h1>
+                    <p className="max-w-2xl text-muted-foreground">{locale === "id" ? "Buat akun hanya setelah prospek disetujui dan data klien sudah benar." : "Create an account only after the prospect is approved and the client record is correct."}</p>
+                </div>
+                <Button variant="accent" className="min-h-11 gap-2" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" />{locale === "id" ? "Undang klien" : "Invite client"}</Button>
             </div>
+
+            {setupUrl && (
+                <section aria-labelledby="invite-ready" className="rounded-[16px] border border-success-border bg-success-muted p-5">
+                    <h2 id="invite-ready" className="font-semibold text-foreground">{locale === "id" ? "Tautan aktivasi siap" : "Activation link ready"}</h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{locale === "id" ? "Kirim melalui kanal pribadi yang aman. Tautan berlaku 48 jam dan hanya dapat digunakan sekali. Untuk mengirim ulang sebelum aktivasi, undang email yang sama lagi." : "Send it through a secure private channel. It expires in 48 hours and works once. To resend before activation, invite the same email again."}</p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <div className="flex-1"><Input aria-label="Activation link" readOnly value={setupUrl} className="font-mono text-xs" /></div>
+                        <Button variant="soft" className="min-h-10 shrink-0 gap-2" onClick={() => navigator.clipboard.writeText(setupUrl)}><Copy className="h-4 w-4" />{locale === "id" ? "Salin" : "Copy"}</Button>
+                    </div>
+                </section>
+            )}
 
             <AnimatePresence>
                 {message && (
@@ -201,6 +244,23 @@ export default function UserManagementPage() {
                     </table>
                 </div>
             </Card>
+
+            <Modal
+                isOpen={createOpen}
+                onClose={() => setCreateOpen(false)}
+                title={locale === "id" ? "Undang klien ke portal" : "Invite client to portal"}
+            >
+                <form onSubmit={handleCreate} className="space-y-5">
+                    <p className="rounded-[10px] bg-warning-bg p-4 text-sm leading-6 text-foreground">{locale === "id" ? "Pastikan Lead sudah disetujui. Pilih data klien yang tepat; pilihan ini menentukan semua data yang dapat mereka lihat." : "Confirm the Lead is approved. The selected client determines everything this person can see."}</p>
+                    <Input label={locale === "id" ? "Nama lengkap" : "Full name"} required autoComplete="name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+                    <Input label="Email" type="email" required autoComplete="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+                    <Select label={locale === "id" ? "Hubungkan ke klien" : "Link to client"} required value={newUser.clientId} onChange={(e) => setNewUser({ ...newUser, clientId: e.target.value })} placeholder={locale === "id" ? "Pilih klien yang sudah disetujui" : "Choose an approved client"} options={allClients.map((client) => ({ value: client.id, label: client.nama }))} />
+                    <div className="flex justify-end gap-3 border-t border-border pt-4">
+                        <Button type="button" variant="soft" onClick={() => setCreateOpen(false)}>{t.userManagement.cancel}</Button>
+                        <Button type="submit" variant="accent" disabled={creating} isLoading={creating}>{locale === "id" ? "Buat tautan aktivasi" : "Create activation link"}</Button>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 isOpen={!!editUser}

@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { authLimiter, apiLimiter } from "@/lib/rate-limit";
 import { getStaffPortalUrl } from "@/lib/staff-guide";
 
-const PUBLIC_PATHS = ["/", "/portal", "/crm", "/sign-in", "/sign-up", "/api/auth", "/api/health", "/api/webhooks"];
+const PUBLIC_PATHS = ["/", "/portal", "/crm", "/sign-in", "/sign-up", "/set-password", "/api/auth", "/api/health", "/api/webhooks"];
 
 function isPublic(pathname: string): boolean {
     return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -91,7 +91,8 @@ export async function proxy(req: NextRequest) {
     // Explicit website knowledge routes; each page also enforces Staff/Admin server-side.
     const isStaffKnowledge = pathname === "/dashboard/erpnext-guide"
         || pathname === "/dashboard/erpnext-guide/operating-model";
-    if (isStaff && pathname.startsWith("/dashboard") && !isStaffKnowledge) {
+    const isAdminManagement = role === "admin" && pathname === "/dashboard/users";
+    if (isStaff && pathname.startsWith("/dashboard") && !isStaffKnowledge && !isAdminManagement) {
         return withSecurityHeaders(NextResponse.redirect(getStaffPortalUrl()));
     }
 

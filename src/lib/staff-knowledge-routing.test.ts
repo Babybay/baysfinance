@@ -21,9 +21,21 @@ describe("staff knowledge navigation", () => {
         expect(response.status).toBe(307);
         expect(response.headers.get("location")).not.toBeNull();
     });
+    it("allows only Admin to open client access management", async () => {
+        getToken.mockResolvedValue({ role: "Admin" });
+        expect((await proxy(new NextRequest("http://localhost/dashboard/users"))).headers.get("location")).toBeNull();
+
+        getToken.mockResolvedValue({ role: "Staff" });
+        expect((await proxy(new NextRequest("http://localhost/dashboard/users"))).headers.get("location")).not.toBeNull();
+    });
     it("requires a session for the knowledge route", async () => {
         getToken.mockResolvedValue(null);
         const response = await proxy(new NextRequest("http://localhost/dashboard/erpnext-guide/operating-model"));
         expect(response.headers.get("location")).toContain("/sign-in");
+    });
+    it("allows clients to open a password invitation without a session", async () => {
+        getToken.mockResolvedValue(null);
+        const response = await proxy(new NextRequest("http://localhost/set-password"));
+        expect(response.headers.get("location")).toBeNull();
     });
 });

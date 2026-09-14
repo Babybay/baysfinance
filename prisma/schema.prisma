@@ -10,6 +10,8 @@ model User {
   id               String            @id @default(cuid())
   email            String            @unique
   passwordHash     String
+  inviteTokenHash  String?           @unique
+  inviteExpiresAt  DateTime?
   name             String
   role             Role              @default(Client)
   isActive         Boolean           @default(true)
